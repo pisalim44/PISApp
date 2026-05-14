@@ -1,7 +1,2 @@
-// PISApp/LIM44 — configuração GitHub Pages
-// Cole aqui a URL /exec da implantação do Apps Script criada como Web App.
-// Exemplo: https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxx/exec
-window.PISAPP_API_URL = 'https://script.google.com/macros/s/AKfycbyp60HTz5ImzE0Qf9Nb245oyZhNL0ehaIuIG8g3AH2wiUBAVOQI6t2blzcl_3omO13k/exec;
-
-// Para GitHub Pages, normalmente deixe assim:
-window.PISAPP_PORTAL_URL = 'portal.html';
+window.PISAPP_API_URL = 'https://script.google.com/macros/s/AKfycbwCI9SD_wcJaeXtozZeyNAJ81W0O17X2anhg_iBg3PhOgswcHTqvp6ihYa83ysXFRXJ/exec';
+const PISAPP_API_URL = window.PISAPP_API_URL;
