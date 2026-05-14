@@ -598,7 +598,8 @@ function setStep(n) {
 
 /* ── SUBMIT ── */
 async function submitSol() {
-  if (portalQSegObrigatorio() && !qBlockCompleto('qSegEl')) { toast('Responda todos os itens do Questionário de Segurança.', 'warn'); return; }
+  // INRAD: o questionário de segurança é preenchido no MV, então não deve bloquear o Portal.
+  if (curInst !== 'INRAD' && portalQSegObrigatorio() && !qBlockCompleto('qSegEl')) { toast('Responda todos os itens do Questionário de Segurança.', 'warn'); return; }
   if (ge('qContrSec') && ge('qContrSec').style.display !== 'none' && !qBlockCompleto('qContrEl')) { toast('Responda todos os itens do Questionário de Contraste.', 'warn'); return; }
   toast('⏳ Enviando solicitação...');
   const now = new Date();
@@ -613,15 +614,19 @@ async function submitSol() {
     arquivoID = ur.id || '';
   }
 
-  // Coleta respostas Q. Segurança preenchidas pelo pesquisador
+  // Coleta respostas Q. Segurança preenchidas pelo pesquisador.
+  // INRAD: não coleta Q.Seg no portal, pois será preenchido no MV.
   const qSeg = {};
-  ge('qSegEl').querySelectorAll('.qi').forEach((qi, i) => {
-    const sim = qi.querySelector('.qb.sim'), nao = qi.querySelector('.qb.nao');
-    qSeg[Q_SEG[i]] = sim ? 'Sim' : nao ? 'Não' : '—';
-  });
+  if (curInst !== 'INRAD') {
+    ge('qSegEl').querySelectorAll('.qi').forEach((qi, i) => {
+      const sim = qi.querySelector('.qb.sim'), nao = qi.querySelector('.qb.nao');
+      qSeg[Q_SEG[i]] = sim ? 'Sim' : nao ? 'Não' : '—';
+    });
+  }
 
   // Se o exame tiver contraste, salva também o bloco de contraste para o Worklist exibir tudo.
-  if (ge('qContrSec') && ge('qContrSec').style.display !== 'none') {
+  // INRAD: contraste também segue fluxo MV; não grava no Q.Seg do portal.
+  if (curInst !== 'INRAD' && ge('qContrSec') && ge('qContrSec').style.display !== 'none') {
     ge('qContrEl').querySelectorAll('.qi').forEach((qi, i) => {
       const sim = qi.querySelector('.qb.sim'), nao = qi.querySelector('.qb.nao');
       qSeg[Q_CONTR[i]] = sim ? 'Sim' : nao ? 'Não' : '—';
