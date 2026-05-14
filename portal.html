@@ -225,22 +225,8 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
         <div class="cg mb" id="cgMod">
           <div class="chip" onclick="mchip('cgMod',this)">🧲 RM 7T</div>
           <div class="chip" onclick="mchip('cgMod',this)">💡 TC</div>
-          <div class="chip" onclick="mchip('cgMod',this)">🏥 RM Clínica</div>
-          <div class="chip" onclick="mchip('cgMod',this)">🏥 RM 3T</div>
-          <div class="chip" onclick="mchip('cgMod',this)">📡 RX</div>
           <div class="chip" onclick="mchip('cgMod',this)">🔊 Ultrassom (US)</div>
           <div class="chip" onclick="mchip('cgMod',this)">🔬 Virtangio</div>
-          <div class="chip" onclick="mchip('cgMod',this)">☢️ Medicina Nuclear</div>
-        </div>
-        <div class="dvd"></div>
-        <label class="fl mb">Tipo(s) de Amostra / Sujeito *</label>
-        <div class="cg mb" id="cgAmst">
-          <div class="chip" onclick="mchip('cgAmst',this)">👤 Voluntário Humano</div>
-          <div class="chip" onclick="mchip('cgAmst',this)">🐭 Animal In Vivo</div>
-          <div class="chip" onclick="mchip('cgAmst',this)">🧬 Animal Post Mortem</div>
-          <div class="chip" onclick="mchip('cgAmst',this)">🫁 Peça Anatômica</div>
-          <div class="chip" onclick="mchip('cgAmst',this)">🔬 In Situ</div>
-          <div class="chip" onclick="mchip('cgAmst',this)">🧪 Ex Situ</div>
         </div>
       </div>
       <div class="card">
@@ -318,7 +304,7 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
             <div class="fg"><label class="fl">CID nº</label><input class="fi" id="inradCID" placeholder="Ex: C50.9"></div>
           </div>
           <div class="fr c2 mb">
-            <div class="fg"><label class="fl">Tipo de Exame INRAD *</label><select class="fs" id="inradTipo"><option value="">Selecione</option><option>Ressonância Magnética (RM)</option><option>Tomografia Computadorizada (TC)</option><option>Raio-X (RX)</option><option>Ultrassom (US)</option><option>Medicina Nuclear / PET-CT</option><option>Angiografia</option><option>Outro procedimento de imagem</option></select></div>
+            <div class="fg"><label class="fl">Tipo de Exame INRAD *</label><select class="fs" id="inradTipo"><option value="">Selecione</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option><option>Ultrassom (US)</option><option>RX</option><option>Densitometria Óssea</option><option>Mamografia</option><option>Medicina Nuclear</option></select></div>
             <div class="fg"><label class="fl">Uso de Contraste?</label><div class="cg" id="cgInradContr"><div class="chip" onclick="schip('cgInradContr',this)">Não</div><div class="chip" onclick="schip('cgInradContr',this)">Sim</div></div></div>
           </div>
           <div class="fg mb"><label class="fl">Região Anatômica / Área de Interesse *</label><input class="fi" id="inradRegiao" placeholder="Ex: Crânio e encéfalo sem e com contraste"></div>
@@ -734,6 +720,32 @@ function toast(msg, type) {
   el.classList.add('on'); clearTimeout(tTmr);
   tTmr = setTimeout(() => el.classList.remove('on'), 4500);
 }
+
+
+/* PATCH v6 — modalidades por instituto */
+(function(){
+  const PISA_MODALIDADES = [
+    ['🧲','RM 7T'], ['💡','TC'], ['🔊','Ultrassom (US)'], ['🔬','Virtangio']
+  ];
+  const INRAD_MODALIDADES = ['RM 3T','RM 1,5T','TC','Ultrassom (US)','RX','Densitometria Óssea','Mamografia','Medicina Nuclear'];
+  function renderPortalModalidades(inst){
+    const cg = document.getElementById('cgMod');
+    if(cg){
+      cg.innerHTML = PISA_MODALIDADES.map(([ic,txt])=>`<div class="chip" onclick="mchip('cgMod',this)">${ic} ${txt}</div>`).join('');
+    }
+    const tipo = document.getElementById('inradTipo');
+    if(tipo){
+      tipo.innerHTML = '<option value="">Selecione</option>' + INRAD_MODALIDADES.map(m=>`<option>${m}</option>`).join('');
+    }
+  }
+  const oldPickInst = window.pickInst;
+  window.pickInst = function(inst, el){
+    if(typeof oldPickInst === 'function') oldPickInst(inst, el);
+    renderPortalModalidades(inst);
+  };
+  document.addEventListener('DOMContentLoaded',()=>renderPortalModalidades(window.curInst || 'PISA'));
+})();
+
 </script>
 </body>
 </html>
