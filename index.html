@@ -315,6 +315,38 @@ tr.hidden-row{display:none;}
   .cal-cell{min-height:52px;}
   .cal-ev{font-size:9px;}
 }
+
+
+/* ═══════════════════════════════════════
+   PATCH v7 — Agenda responsiva e dentro do esquadro
+   ═══════════════════════════════════════ */
+.cal-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.cal-month-grid.v7{min-width:980px;grid-auto-rows:minmax(112px,auto);background:var(--bd);gap:1px;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;}
+.cal-month-grid.v7 .cal-dow{position:sticky;top:0;z-index:1;}
+.cal-month-grid.v7 .cal-cell{border:none;min-height:112px;overflow:hidden;}
+.cal-ev.v7{display:block;max-width:100%;line-height:1.25;padding:4px 6px;border-radius:6px;font-size:10.5px;}
+.cal-ev-time{font-family:var(--m);font-weight:700;margin-right:3px;}
+.cal-more{font-size:10px;color:var(--tx3);padding:2px 4px;}
+.cal-week-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;min-width:1050px;}
+.cal-week-day{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:8px;min-height:230px;overflow:hidden;}
+.cal-week-head{font-family:var(--m);font-size:10px;color:var(--tx3);margin-bottom:8px;display:flex;justify-content:space-between;gap:6px;}
+.cal-week-day.today{box-shadow:inset 0 0 0 2px var(--teal);background:rgba(45,191,173,.035);}
+.cal-day-list{display:flex;flex-direction:column;gap:8px;}
+.cal-day-item{display:grid;grid-template-columns:95px 1fr auto;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);}
+.cal-day-hour{font-family:var(--m);font-size:12px;color:var(--navy);white-space:nowrap;}
+.cal-day-title{font-weight:700;color:var(--navy);font-size:13.5px;word-break:break-word;}
+.cal-day-desc{font-size:12px;color:var(--tx2);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cal-badge{display:inline-flex;align-items:center;border-radius:99px;padding:2px 8px;font-size:10px;font-family:var(--m);white-space:nowrap;}
+.cal-badge.gcal{background:rgba(245,158,11,.11);color:var(--yed);}
+.cal-badge.pisa{background:var(--tdim);color:var(--td);}
+.cal-badge.inrad{background:rgba(139,92,246,.11);color:var(--pu);}
+@media(max-width:900px){.cal-day-item{grid-template-columns:75px 1fr}.cal-day-item .fc{grid-column:1/-1}.cal-month-grid.v7{min-width:850px}.cal-week-grid{min-width:900px}}
+
+
+/* v7 Performance/Agenda layout */
+.cal-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.cal-week-grid{display:grid;grid-template-columns:repeat(7,minmax(160px,1fr));gap:6px;min-width:980px;}
+.cal-day-item{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--bd);}
 </style>
   <script src="config.js"></script>
 </head>
@@ -477,7 +509,7 @@ tr.hidden-row{display:none;}
     </div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Modalidade</label>
-        <select class="fs" id="vincMod"><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
+        <select class="fs" id="vincMod"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
       </div>
       <div class="fg"><label class="fl">Equipamento</label><select class="fs" id="vincEquip"><option value="">Selecione</option></select></div>
     </div>
@@ -507,8 +539,8 @@ tr.hidden-row{display:none;}
       <div class="fg"><label class="fl">Coordenador do Projeto</label><input class="fi" id="pjCoord" placeholder="Nome completo"></div>
     </div>
     <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Este projeto terá laudo?</label><select class="fs" id="pjLaudo"><option>Não</option><option>Sim</option></select></div>
-      <div class="fg"><label class="fl">Médico que irá laudar</label><select class="fs" id="pjMedLaud"><option value="">Selecione</option></select></div>
+      <div class="fg"><label class="fl">Este projeto terá laudo?</label><select class="fs" id="pjLaudo" onchange="updateProjetoCamposCondicionais()"><option>Não</option><option>Sim</option></select></div>
+      <div class="fg" id="pjMedLaudBox" style="display:none;"><label class="fl">Médico que irá laudar</label><select class="fs" id="pjMedLaud"><option value="">Selecione</option></select></div>
     </div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">PI *</label><input class="fi" id="pjPI" placeholder="Nome do PI"></div>
@@ -530,11 +562,11 @@ tr.hidden-row{display:none;}
     <div class="card" style="background:var(--sf2);box-shadow:none;margin-bottom:12px;">
       <div class="ct"><div class="cti">🛡️</div> Validações Éticas</div>
       <div class="al a-w">Projetos com animais exigem CEUA válido por 1 ano. Projetos com humano/voluntário humano exigem parecer CAPPesq válido por 1 ano. Após expirar, o sistema bloqueia novas solicitações até renovação.</div>
-      <div class="fr c2 mb">
+      <div class="fr c2 mb" id="pjCEUABox" style="display:none;">
         <div class="fg"><label class="fl">Nº CEUA</label><input class="fi" id="pjCEUA" placeholder="Obrigatório para animal"></div>
         <div class="fg"><label class="fl">Data CEUA</label><input class="fi" id="pjCEUAData" type="date"></div>
       </div>
-      <div class="fr c2 mb">
+      <div class="fr c2 mb" id="pjCAPPBox" style="display:none;">
         <div class="fg"><label class="fl">Nº Parecer CAPPesq</label><input class="fi" id="pjCapp" placeholder="Obrigatório para humano/voluntário"></div>
         <div class="fg"><label class="fl">Data do Parecer CAPPesq</label><input class="fi" id="pjCappData" type="date"></div>
       </div>
@@ -556,7 +588,7 @@ tr.hidden-row{display:none;}
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Nome *</label><input class="fi" id="eqNm" placeholder="Ex: RM 7T Bruker"></div>
       <div class="fg"><label class="fl">Modalidade</label>
-        <select class="fs" id="eqMod"><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Outro</option></select>
+        <select class="fs" id="eqMod"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Outro</option></select>
       </div>
     </div>
     <div class="fr c2 mb">
@@ -704,7 +736,7 @@ tr.hidden-row{display:none;}
       <div class="fg"><label class="fl">DRO do Projeto *</label><input class="fi" id="mkDRO" placeholder="Ex: DRO_0182_2018"></div>
     </div>
     <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="mkModalidade"><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
+      <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="mkModalidade"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
       <div class="fg"><label class="fl">Prioridade</label><select class="fs" id="mkPri"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div>
     </div>
     <div class="fr c2 mb">
@@ -856,7 +888,7 @@ tr.hidden-row{display:none;}
           <div class="ct mb"><div class="cti">🔬</div>Histórico de Exames</div>
           <div class="search-bar">
             <input class="search-inp" placeholder="🔍 Código, sujeito, pesquisador, PACS..." oninput="filterTb('tbEx',this.value)">
-            <select class="filter-sel" onchange="filterCol('tbEx',7,this.value)"><option value="">Todas modalidades</option><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>Ultrassom</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
+            <select class="filter-sel" onchange="filterCol('tbEx',7,this.value)"><option value="">Todas modalidades</option><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
             <select class="filter-sel" onchange="filterCol('tbEx',9,this.value)"><option value="">Todos institutos</option><option>PISA</option><option>INRAD</option></select>
             <select class="filter-sel" onchange="filterCol('tbEx',11,this.value)"><option value="">Todos os status</option><option>Agendado</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option></select>
           </div>
@@ -929,6 +961,27 @@ tr.hidden-row{display:none;}
             <select class="filter-sel" onchange="filterCol('tbMask',6,this.value)"><option value="">Todos status</option><option>Pendente</option><option>Em confecção</option><option>Entregue</option><option>Revisão</option><option>Cancelado</option></select>
           </div>
           <div class="tw"><table><thead><tr><th>ID</th><th>Título</th><th>Indústria</th><th>Modalidade</th><th>Prazo</th><th>Responsável</th><th>Status</th><th>Guideline</th><th>Máscara pronta</th><th>Ações</th></tr></thead><tbody id="tbMask"><tr class="tr-e"><td colspan="10">Carregando...</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+
+      <!-- MÉDICOS LAUDADORES / GOVERNANÇA -->
+      <div class="sec" id="sec-medicos">
+        <div class="fb mb">
+          <div>
+            <div class="ct" style="font-size:16px;">🩺 Médicos Laudadores</div>
+            <div style="font-size:12px;color:var(--tx3);margin-top:3px;">Cadastre os médicos que aparecerão no dropdown dos projetos com laudo.</div>
+          </div>
+        </div>
+        <div class="card mb">
+          <div class="fr c2">
+            <div class="fg"><label class="fl">Nome completo do médico</label><input class="fi" id="medNome" placeholder="Ex: Dra. Maria Silva"></div>
+            <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn bt" onclick="saveMedicoLaudador()">+ Cadastrar médico</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ct mb"><div class="cti">🩺</div>Médicos cadastrados</div>
+          <div class="tw"><table><thead><tr><th>Nome</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbMedicos"><tr class="tr-e"><td colspan="4">Nenhum médico cadastrado.</td></tr></tbody></table></div>
         </div>
       </div>
 
@@ -1227,9 +1280,7 @@ function navTo(id){
 }
 
 async function refreshSec(id){
-  if(['dashboard','worklist','agenda','solicitacoes','sujeitos','exames','projetos','financeiro','equipamentos','academico','admin','mascaras'].includes(id)){
-    await loadAll();
-  }
+  await loadSectionData(id);
   if(id==='dashboard'){renderDash();setTimeout(drawCharts,80);}
   if(id==='worklist')loadWL();
   if(id==='agenda')renderCal();
@@ -1259,13 +1310,33 @@ function initApp(){
 }
 
 async function loadAll(){
+  // Compatibilidade: carga completa somente quando realmente necessária.
   const res=await api('getAll');
   if(!res.ok){toast('Erro ao carregar dados: '+res.msg,'err');return;}
-  DB.sol=res.sol||[];DB.suj=res.suj||[];DB.ex=res.ex||[];DB.proj=res.proj||[];
-  DB.fin=res.fin||[];DB.equip=res.equip||[];DB.log=res.log||[];DB.artigos=res.artigos||[];DB.masks=res.masks||[];
+  DB.sol=res.sol||DB.sol||[];DB.suj=res.suj||DB.suj||[];DB.ex=res.ex||DB.ex||[];DB.proj=res.proj||DB.proj||[];
+  DB.fin=res.fin||DB.fin||[];DB.equip=res.equip||DB.equip||[];DB.log=res.log||DB.log||[];DB.artigos=res.artigos||DB.artigos||[];DB.masks=res.masks||DB.masks||[];DB.medicos=res.medicos||DB.medicos||[];
   setSyncOk();
   populateDDs();
   buildWLFilters();
+}
+
+async function loadSectionData(id){
+  try{
+    let r=null;
+    if(id==='dashboard' || id==='admin'){
+      r=await api('getInit');
+      if(r.ok){DB.proj=r.proj||DB.proj;DB.equip=r.equip||DB.equip;DB.medicos=r.medicos||DB.medicos;DB.fin=r.fin||DB.fin;DB.log=r.log||DB.log;}
+    }
+    if(id==='solicitacoes'){r=await api('getSolicitacoes',{max:600}); if(r.ok)DB.sol=r.sol||[];}
+    if(id==='projetos'){r=await api('getProjetosData'); if(r.ok){DB.proj=r.proj||[];DB.fin=r.fin||DB.fin;DB.medicos=r.medicos||DB.medicos;}}
+    if(id==='financeiro'){r=await api('getFinanceiroData'); if(r.ok){DB.fin=r.fin||[];DB.proj=r.proj||DB.proj;DB.ex=r.ex||DB.ex;}}
+    if(id==='equipamentos'){r=await api('getEquipamentosData'); if(r.ok){DB.equip=r.equip||[];DB.equipLog=r.equipLog||[];}}
+    if(id==='academico'){r=await api('getAcademicoData'); if(r.ok){DB.artigos=r.artigos||[];DB.proj=r.proj||DB.proj;}}
+    if(id==='mascaras'){r=await api('getMascarasData'); if(r.ok){DB.masks=r.masks||[];DB.proj=r.proj||DB.proj;}}
+    if(id==='sujeitos' || id==='exames'){await loadAll();}
+    populateDDs();
+    buildWLFilters();
+  }catch(e){toast('Erro ao sincronizar módulo: '+e.message,'err');}
 }
 
 /* ── DROPDOWNS DINÂMICOS ── */
@@ -1292,7 +1363,7 @@ function populateDDs(){
 function buildWLFilters(){
   const bar=ge('wlFilter');if(!bar)return;
   while(bar.children.length>2)bar.removeChild(bar.lastChild);
-  const mods=['RM 7T','TC','RM Clínica','RM 3T','RX','US','Virtangio','Med. Nuclear'];
+  const mods=['RM 7T','TC','RM 1,5T','RM 3T','RX','US','Virtangio','Medicina Nuclear'];
   mods.forEach(m=>{
     const btn=ce('button');btn.className='wlf-btn';btn.textContent=m;
     btn.onclick=()=>wlFilt(m,btn);
@@ -1338,7 +1409,7 @@ function drawCharts(){
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:(type==='doughnut'||type==='pie')?'right':'top',labels:{font:{size:10},padding:8}}},
         scales:type==='bar'?{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}:{}}});
   };
-  const mods=['RM 7T','TC','RM Clínica','RM 3T','RX','US','Virtangio','Med.Nuc.'];
+  const mods=['RM 7T','TC','RM 1,5T','RM 3T','RX','US','Virtangio','Med.Nuc.'];
   mk('cMod','bar',mods,mods.map(m=>DB.ex.filter(e=>(e['Modalidade']||'').includes(m.replace('Med.Nuc.','Nuclear'))).length),C,'Exames');
   const sts=['Agendado','Em andamento','Concluído','Cancelado'];
   mk('cSts','doughnut',sts,sts.map(s=>DB.ex.filter(e=>(e['Status']||'')==s).length),[C[0],C[2],C[5],C[4]]);
@@ -1353,12 +1424,18 @@ function drawCharts(){
 
 /* ── WORKLIST ── */
 async function loadWL(){
-  await loadAll();
   const t=wlDateValue();
   if(ge('wlDatePick')) ge('wlDatePick').value=t;
   updateWLDateLabel();
-  const r=await api('getCalendar',{date:t,view:'day'});
-  calEvents=r.ok?(r.events||[]):[];
+  const r=await api('getAgenda',{date:t,view:'day'});
+  if(r.ok){
+    DB.ex=r.ex||[];
+    DB.sol=r.sol||DB.sol||[];
+    calEvents=r.events||[];
+  } else {
+    toast('Erro ao carregar Worklist: '+(r.msg||''),'err');
+    calEvents=[];
+  }
   renderWLItems();
 }
 
@@ -1741,10 +1818,11 @@ async function saveQPos(){
 
 /* ── AGENDA (CALENDÁRIO) ── */
 async function renderCal(){
-  await loadAll();
-  const r=await api('getCalendar',{date:localDateISO(calDate),view:calView});
+  const dateStr=localDateISO(calDate);
+  const r=await api('getAgenda',{date:dateStr,view:calView});
   const gcalEvs=r.ok?(r.events||[]):[];
-  const dbEvs=DB.ex.filter(e=>e['Data']||e.data).map(e=>({
+  const dbRows=r.ok?(r.ex||[]):[];
+  const dbEvs=dbRows.filter(e=>e['Data']||e.data).map(e=>({
     id:e['Cod']||e.cod||'',
     title:`[PISA] ${firstVal(e,['Modalidade','mod'],'')} — ${exameSujeito(e)}`,
     date:normDate(e['Data']||e.data||''),
@@ -1776,7 +1854,7 @@ function renderCalMonth(evs){
   const firstDay=new Date(y,m,1).getDay();
   const daysInMonth=new Date(y,m+1,0).getDate();
   const todayStr=today();
-  let html='<div class="cal-month-grid">';
+  let html='<div class="cal-scroll"><div class="cal-month-grid v7">';
   ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>html+=`<div class="cal-dow">${d}</div>`);
   for(let i=0;i<firstDay;i++)html+=`<div class="cal-cell other"></div>`;
   for(let d=1;d<=daysInMonth;d++){
@@ -1789,7 +1867,7 @@ function renderCalMonth(evs){
       ${dayEvs.length>3?`<div style="font-size:9px;color:var(--tx3);">+${dayEvs.length-3} mais</div>`:''}
     </div>`;
   }
-  html+='</div>';ge('calGrid').innerHTML=html;
+  html+='</div></div>';ge('calGrid').innerHTML=html;
 }
 
 function renderCalDay(evs){
@@ -1812,7 +1890,7 @@ function renderCalWeek(evs,monday){
   const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const dates=[];for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);dates.push(d);}
   const todayStr=today();
-  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+  let html='<div class="cal-scroll"><div class="cal-week-grid">';
   dates.forEach(d=>{
     const ds=localDateISO(d);
     const dayEvs=evs.filter(e=>e.date===ds);
@@ -1822,7 +1900,7 @@ function renderCalWeek(evs,monday){
       ${dayEvs.map(e=>`<div class="cal-ev ${e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" style="margin-bottom:4px;" title="${e.title}">${e.start||''} ${e.title}</div>`).join('')}
     </div>`;
   });
-  html+='</div>';ge('calGrid').innerHTML=html;
+  html+='</div></div>';ge('calGrid').innerHTML=html;
 }
 
 function calNav(dir){
@@ -1856,7 +1934,7 @@ function addAgdSlot(){
   div.style.cssText='border:1.5px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:9px;background:var(--sf2);';
   div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-weight:600;font-size:13px;color:var(--navy);">Agendamento ${idx+1}</div>${idx>0?`<button class="btn br btn-xs" onclick="this.closest('.agd-slot').remove()">✕</button>`:''}</div>
     <div class="fr c2">
-      <div class="fg"><label class="fl">Modalidade</label><select class="fs agd-mod"><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
+      <div class="fg"><label class="fl">Modalidade</label><select class="fs agd-mod"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
       <div class="fg"><label class="fl">Equipamento</label><select class="fs agd-equip"><option value="">Selecione</option>${DB.equip.map(eq=>`<option value="${eq['Nome']||''}">${eq['Nome']||''} (${eq['Instituto']||'PISA'})</option>`).join('')}</select></div>
     </div>
     <div class="fr c2">
@@ -2003,7 +2081,7 @@ function addPjMod(){
   const div=ce('div');
   div.style.cssText='border:1.5px solid var(--bd);border-radius:8px;padding:11px;margin-bottom:8px;background:var(--sf2);';
   div.innerHTML=`<div class="fr c3">
-    <div class="fg"><label class="fl">Modalidade</label><select class="fs pjm-mod"><option>RM 7T</option><option>TC</option><option>RM Clínica</option><option>RM 3T</option><option>RX</option><option>US</option><option>Virtangio</option><option>Med. Nuclear</option></select></div>
+    <div class="fg"><label class="fl">Modalidade</label><select class="fs pjm-mod"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
     <div class="fg"><label class="fl">Nº de Exames</label><input class="fi pjm-num" type="number" placeholder="0"></div>
     <div class="fg"><label class="fl">Custo/Exame (R$)</label><input class="fi pjm-custo" type="number" placeholder="0"></div>
   </div>
@@ -2885,6 +2963,137 @@ window.renderMasks = function(){
   }).join('');
 };
 
+
+
+
+/* ═══════════════════════════════════════
+   PATCH v6 — Regras visuais, médicos, modalidades e Q.Seg
+   ═══════════════════════════════════════ */
+(function(){
+  const PISA_MODALIDADES = ['RM 7T','TC','Ultrassom (US)','Virtangio'];
+  const INRAD_MODALIDADES = ['RM 3T','RM 1,5T','TC','Ultrassom (US)','RX','Densitometria Óssea','Mamografia','Medicina Nuclear'];
+  window.PISAPP_MODALIDADES = {PISA:PISA_MODALIDADES, INRAD:INRAD_MODALIDADES};
+
+  function safeGe(id){ try{return ge(id);}catch(e){return document.getElementById(id);} }
+
+  function fillModalidadeSelect(sel, inst){
+    if(!sel) return;
+    const cur = sel.value;
+    const list = inst==='INRAD' ? INRAD_MODALIDADES : PISA_MODALIDADES.concat(INRAD_MODALIDADES.filter(x=>!PISA_MODALIDADES.includes(x)));
+    sel.innerHTML = list.map(m=>`<option>${m}</option>`).join('');
+    if(list.includes(cur)) sel.value = cur;
+  }
+
+  window.updateProjetoCamposCondicionais = function(){
+    const amostras = (typeof mulChip==='function' ? mulChip('cgPjSj') : []).join(' ').toLowerCase();
+    const isAnimal = amostras.includes('animal');
+    const isHumano = amostras.includes('humano') || amostras.includes('volunt');
+    const laudo = (safeGe('pjLaudo')?.value || 'Não') === 'Sim';
+    const ceua = safeGe('pjCEUABox'), capp = safeGe('pjCAPPBox'), med = safeGe('pjMedLaudBox');
+    if(ceua) ceua.style.display = isAnimal ? 'grid' : 'none';
+    if(capp) capp.style.display = isHumano ? 'grid' : 'none';
+    if(med) med.style.display = laudo ? 'block' : 'none';
+    if(!isAnimal){ if(safeGe('pjCEUA')) safeGe('pjCEUA').value=''; if(safeGe('pjCEUAData')) safeGe('pjCEUAData').value=''; }
+    if(!isHumano){ if(safeGe('pjCapp')) safeGe('pjCapp').value=''; if(safeGe('pjCappData')) safeGe('pjCappData').value=''; }
+    if(!laudo && safeGe('pjMedLaud')) safeGe('pjMedLaud').value='';
+  };
+
+  const oldMchip = window.mchip;
+  window.mchip = function(gid, el){
+    if(typeof oldMchip === 'function') oldMchip(gid, el); else el.classList.toggle('selm');
+    if(gid === 'cgPjSj') setTimeout(updateProjetoCamposCondicionais, 0);
+  };
+
+  const oldOpenProjModal = window.openProjModal;
+  window.openProjModal = function(id){
+    if(typeof oldOpenProjModal === 'function') oldOpenProjModal(id);
+    setTimeout(()=>{
+      if(safeGe('pjLaudo')) safeGe('pjLaudo').onchange = updateProjetoCamposCondicionais;
+      document.querySelectorAll('.pjm-mod').forEach(sel=>fillModalidadeSelect(sel, safeGe('pjInst')?.value || ''));
+      if(safeGe('pjInst')) safeGe('pjInst').onchange = ()=>document.querySelectorAll('.pjm-mod').forEach(sel=>fillModalidadeSelect(sel, safeGe('pjInst').value));
+      updateProjetoCamposCondicionais();
+    },50);
+  };
+
+  const oldAddPjMod = window.addPjMod;
+  window.addPjMod = function(){
+    if(typeof oldAddPjMod === 'function') oldAddPjMod();
+    const slots = safeGe('pjModSlots');
+    const sel = slots ? slots.querySelector('.pjm-mod:last-of-type') : null;
+    fillModalidadeSelect(sel, safeGe('pjInst')?.value || '');
+  };
+
+  const oldSaveProj = window.saveProj;
+  window.saveProj = async function(){
+    updateProjetoCamposCondicionais();
+    const laudo = (safeGe('pjLaudo')?.value || 'Não') === 'Sim';
+    if(laudo && !String(safeGe('pjMedLaud')?.value || '').trim()){
+      toast('Selecione o médico que irá laudar.','warn'); return;
+    }
+    if(typeof oldSaveProj === 'function') return oldSaveProj();
+  };
+
+  function ensureMedicosNav(){
+    try{
+      if(!NAVDEF.some(n=>n.id==='medicos')) NAVDEF.splice(NAVDEF.findIndex(n=>n.id==='mascaras')+1,0,{id:'medicos',lbl:'Médicos',ic:'🩺',g:'Governança'});
+      ['admin','gestor'].forEach(r=>{ if(ROLES[r] && !ROLES[r].nav.includes('medicos')) ROLES[r].nav.splice(ROLES[r].nav.indexOf('mascaras')+1,0,'medicos'); });
+    }catch(e){ console.warn('Nav médicos:',e); }
+  }
+  ensureMedicosNav();
+
+  window.renderMedicos = function(){
+    const tb = safeGe('tbMedicos'); if(!tb) return;
+    const rows = (DB.medicos||[]).filter(m=>String(m['Ativo']||'SIM') !== 'NÃO');
+    if(!rows.length){tb.innerHTML='<tr class="tr-e"><td colspan="4">Nenhum médico cadastrado.</td></tr>';return;}
+    tb.innerHTML = rows.map(m=>`<tr><td><strong>${m['Nome']||''}</strong></td><td><span class="pill p-g">Ativo</span></td><td>${m['Cadastro']||'—'}</td><td><button class="btn br btn-xs" onclick="delMedicoLaudador('${String(m['Nome']||'').replace(/'/g,'\\\'')}')">Inativar</button></td></tr>`).join('');
+  };
+
+  window.saveMedicoLaudador = async function(){
+    const nome = String(safeGe('medNome')?.value || '').trim();
+    if(!nome){toast('Informe o nome completo do médico.','warn');return;}
+    const r = await api('addMedico',{nome});
+    if(!r.ok){toast(r.msg||'Erro ao cadastrar médico.','err');return;}
+    safeGe('medNome').value=''; await loadAll(); populateDDs(); renderMedicos(); toast('✓ Médico cadastrado.');
+  };
+
+  window.delMedicoLaudador = async function(nome){
+    if(!confirm('Inativar este médico laudador?')) return;
+    const r = await api('delMedico',{nome});
+    if(!r.ok){toast(r.msg||'Erro ao inativar médico.','err');return;}
+    await loadAll(); populateDDs(); renderMedicos(); toast('✓ Médico inativado.');
+  };
+
+  const oldRefreshSec = window.refreshSec;
+  window.refreshSec = async function(id){
+    if(id === 'medicos'){
+      await loadAll(); renderMedicos(); return;
+    }
+    return oldRefreshSec(id);
+  };
+
+  // Corrige visual do botão Q.Seg imediatamente após assinatura e após recarregar.
+  const oldSaveQSeg = window.saveQSeg;
+  window.saveQSeg = async function(){
+    if(!curStartExame){toast('Nenhum exame selecionado.','err');return;}
+    const beforeCod = curStartExame.item?.Cod || curStartExame.item?.cod;
+    if(typeof oldSaveQSeg === 'function'){
+      await oldSaveQSeg();
+      // reforço pós-save: recarrega e renderiza para exibir check no Worklist
+      try{ await loadAll(); renderWLItems(); }catch(e){}
+      const ex = (DB.ex||[]).find(x=>String(x.Cod||x.cod)===String(beforeCod));
+      if(ex && ex.QSegAssinado !== 'Sim') console.warn('Q.Seg salvo, mas backend ainda não retornou QSegAssinado=Sim para', beforeCod);
+      return;
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>{
+      ensureMedicosNav();
+      if(safeGe('pjLaudo')) safeGe('pjLaudo').onchange = updateProjetoCamposCondicionais;
+      updateProjetoCamposCondicionais();
+    },300);
+  });
+})();
 
 </script>
 </body>
