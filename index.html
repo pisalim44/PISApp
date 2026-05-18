@@ -919,6 +919,22 @@ tr.hidden-row{display:none;}
         </div>
       </div>
 
+
+      <!-- CONTROLE DE QUALIDADE RM/TC -->
+      <div class="sec" id="sec-qualidade">
+        <div class="fb mb">
+          <div>
+            <div class="ct" style="font-size:16px;">✅ Controle de Qualidade RM/TC</div>
+            <div style="font-size:12px;color:var(--tx3);margin-top:3px;">Gera número de exame intransferível e agenda o CQ no Google Agenda correspondente.</div>
+          </div>
+          <div class="fc"><span class="pill p-t" id="qcC">0 registros</span><button class="btn bt btn-sm" onclick="openQCModal()">+ Novo CQ</button></div>
+        </div>
+        <div class="card">
+          <div class="ct mb"><div class="cti">✅</div>Registros de Controle de Qualidade</div>
+          <div class="tw"><table><thead><tr><th>Código</th><th>Data</th><th>Hora</th><th>Tipo</th><th>Modalidade</th><th>Equipamento</th><th>Responsável</th><th>Status</th><th>Resultado</th></tr></thead><tbody id="tbQC"><tr class="tr-e"><td colspan="9">Nenhum CQ cadastrado.</td></tr></tbody></table></div>
+        </div>
+      </div>
+
       <!-- EQUIPAMENTOS -->
       <div class="sec" id="sec-equipamentos">
         <div class="fb mb">
@@ -999,16 +1015,44 @@ tr.hidden-row{display:none;}
   </div>
 </div>
 
+
+<!-- Novo Controle de Qualidade -->
+<div class="ovl" id="ovlQC">
+  <div class="modal" style="max-width:620px;">
+    <div class="mttl">✅ Novo Controle de Qualidade RM/TC</div>
+    <div class="al a-w">O código gerado é intransferível e usará a mesma sequência numérica dos exames.</div>
+    <div class="fr c2">
+      <div class="fg"><label class="fl">Modalidade *</label><select class="fs" id="qcMod"><option>RM 7T</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option></select></div>
+      <div class="fg"><label class="fl">Tipo *</label><select class="fs" id="qcTipo"><option>CQ Rotina</option><option>CQ Diário</option><option>CQ Semanal</option><option>CQ Mensal</option><option>Teste de Aceitação</option><option>Teste Pós-Manutenção</option></select></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label class="fl">Data *</label><input class="fi" id="qcData" type="date"></div>
+      <div class="fg"><label class="fl">Hora *</label><input class="fi" id="qcHora" type="time" value="08:00"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label class="fl">Equipamento</label><select class="fs" id="qcEquip"><option value="">Selecione</option></select></div>
+      <div class="fg"><label class="fl">Responsável</label><input class="fi" id="qcResp" placeholder="Nome do responsável"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label class="fl">Fantoma</label><input class="fi" id="qcFantoma" placeholder="Fantoma utilizado"></div>
+      <div class="fg"><label class="fl">Resultado</label><select class="fs" id="qcResultado"><option>Pendente</option><option>Aprovado</option><option>Reprovado</option><option>Repetir</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observações</label><textarea class="ft" id="qcObs" placeholder="Detalhes do teste..."></textarea></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlQC')">Cancelar</button><button class="btn bt" onclick="saveQC()">✅ Gerar Código e Agendar</button></div>
+  </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="console.warn('Chart.js indisponível')"></script>
 <script>
 'use strict';
 
 /* ── ROLES ── */
 const ROLES = {
-  admin:       {lbl:'Administrador', nav:['worklist','agenda','solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','equipamentos','academico','admin']},
-  biomedico:   {lbl:'Biomédico',     nav:['worklist','agenda','solicitacoes','sujeitos','exames','mascaras','equipamentos']},
+  admin:       {lbl:'Administrador', nav:['worklist','agenda','solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','qualidade','equipamentos','academico','admin']},
+  biomedico:   {lbl:'Biomédico',     nav:['worklist','agenda','solicitacoes','sujeitos','exames','mascaras','qualidade','equipamentos']},
   agendamento: {lbl:'Agendamento',   nav:['worklist','agenda','solicitacoes']},
-  gestor:      {lbl:'Gestor',        nav:['solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','equipamentos','academico']},
+  gestor:      {lbl:'Gestor',        nav:['solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','qualidade','equipamentos','academico']},
   pesquisador: {lbl:'Pesquisador',   nav:[]},
 };
 
@@ -1022,6 +1066,7 @@ const NAVDEF = [
   {id:'projetos',     lbl:'Projetos',      ic:'📁', g:'Governança'},
   {id:'financeiro',   lbl:'Financeiro',    ic:'💰', g:'Governança'},
   {id:'mascaras',     lbl:'Máscaras',      ic:'📋', g:'Governança'},
+  {id:'qualidade',    lbl:'Qualidade RM/TC',ic:'✅', g:'Governança'},
   {id:'equipamentos', lbl:'Equipamentos',  ic:'🧲', g:'Sistema'},
   {id:'academico',    lbl:'Acadêmico',     ic:'📄', g:'Sistema'},
   {id:'admin',        lbl:'Administração', ic:'⚙️', g:'Sistema'},
@@ -1080,7 +1125,7 @@ function api(action,data={}){
 
 
 /* ── STATE ── */
-let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[]};
+let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[],qc:[],medicos:[],equipLog:[]};
 let calEvents=[], calDate=new Date(), calView='day';
 let curUser=null,curRole=null,curNome='',curInst='PISA';
 let wlFilterVal='todos', wlSelectedDate=null;
@@ -1292,6 +1337,7 @@ async function refreshSec(id){
   if(id==='equipamentos')renderEquip();
   if(id==='academico')renderAcad();
   if(id==='mascaras')renderMasks();
+  if(id==='qualidade')renderQC();
   if(id==='admin')renderAdmin();
 }
 
@@ -1333,6 +1379,7 @@ async function loadSectionData(id){
     if(id==='equipamentos'){r=await api('getEquipamentosData'); if(r.ok){DB.equip=r.equip||[];DB.equipLog=r.equipLog||[];}}
     if(id==='academico'){r=await api('getAcademicoData'); if(r.ok){DB.artigos=r.artigos||[];DB.proj=r.proj||DB.proj;}}
     if(id==='mascaras'){r=await api('getMascarasData'); if(r.ok){DB.masks=r.masks||[];DB.proj=r.proj||DB.proj;}}
+    if(id==='qualidade'){r=await api('getQCData'); if(r.ok){DB.qc=r.qc||[];DB.equip=r.equip||DB.equip;}}
     if(id==='sujeitos' || id==='exames'){await loadAll();}
     populateDDs();
     buildWLFilters();
@@ -1356,6 +1403,14 @@ function populateDDs(){
   if(eqEl){
     eqEl.innerHTML='<option value="">Selecione</option>';
     DB.equip.forEach(eq=>{const op=ce('option');op.value=eq['Nome']||'';op.textContent=(eq['Nome']||'')+(eq['Instituto']?' ('+eq['Instituto']+')':'');eqEl.appendChild(op);});
+  }
+  const qcEq=ge('qcEquip');
+  if(qcEq){
+    const cur=qcEq.value; qcEq.innerHTML='<option value="">Selecione</option>';
+    DB.equip.filter(eq=>/RM|TC|Tomografia/i.test((eq['Modalidade']||'')+' '+(eq['Nome']||''))).forEach(eq=>{
+      const op=ce('option');op.value=eq['Nome']||'';op.textContent=(eq['Nome']||'')+(eq['Modalidade']?' — '+eq['Modalidade']:'');qcEq.appendChild(op);
+    });
+    if(cur) qcEq.value=cur;
   }
 }
 
@@ -1384,6 +1439,49 @@ function wlFilt(val,btn){
   if(btn)btn.classList.add('on');
   renderWLItems();
 }
+
+
+/* ── CONTROLE DE QUALIDADE ── */
+function openQCModal(){
+  populateDDs();
+  ge('qcData').value=today();
+  ge('qcHora').value=ge('qcHora').value||'08:00';
+  ge('qcResp').value=curNome||'';
+  ovlOpen('ovlQC');
+}
+async function saveQC(){
+  const d={
+    modalidade:ge('qcMod').value,
+    tipo:ge('qcTipo').value,
+    data:ge('qcData').value,
+    hora:ge('qcHora').value,
+    equipamento:ge('qcEquip').value,
+    responsavel:ge('qcResp').value||curNome,
+    fantoma:ge('qcFantoma').value,
+    resultado:ge('qcResultado').value,
+    observacoes:ge('qcObs').value
+  };
+  if(!d.modalidade||!d.data||!d.hora){toast('Preencha modalidade, data e hora.','err');return;}
+  const r=await api('novoQC',d);
+  if(!r.ok){toast(r.msg||'Erro ao criar CQ','err');return;}
+  toast('CQ criado. Código: '+r.cod,'ok');
+  ovlClose('ovlQC');
+  const rr=await api('getQCData'); if(rr.ok){DB.qc=rr.qc||[];DB.equip=rr.equip||DB.equip;}
+  renderQC();
+}
+function renderQC(){
+  const tb=ge('tbQC'); if(!tb)return;
+  ge('qcC').textContent=(DB.qc||[]).length+' registros';
+  if(!DB.qc||!DB.qc.length){tb.innerHTML='<tr class="tr-e"><td colspan="9">Nenhum CQ cadastrado.</td></tr>';return;}
+  tb.innerHTML=DB.qc.map(q=>`<tr>
+    <td style="font-family:var(--m);color:var(--td);font-weight:700;">${q.Cod||''}</td>
+    <td>${q.Data||''}</td><td>${q.Hora||''}</td><td>${q.Tipo||''}</td>
+    <td>${q.Modalidade||''}</td><td>${q.Equipamento||''}</td><td>${q.Responsavel||''}</td>
+    <td><span class="sts ss2">${q.Status||'Agendado'}</span></td>
+    <td>${q.Resultado||'Pendente'}</td>
+  </tr>`).join('');
+}
+
 
 /* ── DASHBOARD ── */
 function renderDash(){
@@ -1432,6 +1530,7 @@ async function loadWL(){
     DB.ex=r.ex||[];
     DB.sol=r.sol||DB.sol||[];
     calEvents=r.events||[];
+    if(r.calendarErrors && r.calendarErrors.length){ toast('Algumas agendas não carregaram: '+r.calendarErrors.map(e=>e.label).join(', '),'warn'); }
   } else {
     toast('Erro ao carregar Worklist: '+(r.msg||''),'err');
     calEvents=[];
@@ -1628,15 +1727,20 @@ function openVinc(ev){
   populateDDs();ovlOpen('ovlVinc');
 }
 async function confirmVinc(){
+  const fullId=String(curVincEv.id||'');
+  const parts=fullId.includes('|')?fullId.split('|'):[curVincEv.calendarId||'',curVincEv.calId||fullId];
   const res=await api('vincularCal',{
-    calId:curVincEv.id,data:curVincEv.date,hora:curVincEv.start,
+    calendarId:curVincEv.calendarId||parts[0],
+    calId:curVincEv.calId||parts.slice(1).join('|')||fullId,
+    title:curVincEv.title||'',
+    data:curVincEv.date,hora:curVincEv.start,
     sujeito:v('vincSuj'),pacs:v('vincPACS'),modalidade:v('vincMod'),
     equipamento:v('vincEquip'),pesquisador:v('vincPesq'),
     projeto:v('vincProj'),instituto:selChip('cgVincInst')||'PISA',
   });
   if(!res.ok){toast(res.msg,'err');return;}
   await loadAll();ovlClose('ovlVinc');await loadWL();renderCal();
-  toast('✓ Evento vinculado! Código: '+res.cod);
+  toast('✓ Evento vinculado! Código: '+res.cod+(res.qSegEncontrado?' | Q.Seg localizado':''));
 }
 
 /* ── Q. SEGURANÇA ── */
@@ -1821,6 +1925,7 @@ async function renderCal(){
   const dateStr=localDateISO(calDate);
   const r=await api('getAgenda',{date:dateStr,view:calView});
   const gcalEvs=r.ok?(r.events||[]):[];
+  if(r.ok && r.calendarErrors && r.calendarErrors.length){ toast('Agendas sem acesso/erro: '+r.calendarErrors.map(e=>e.label).join(', '),'warn'); }
   const dbRows=r.ok?(r.ex||[]):[];
   const dbEvs=dbRows.filter(e=>e['Data']||e.data).map(e=>({
     id:e['Cod']||e.cod||'',
