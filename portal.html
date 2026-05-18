@@ -123,6 +123,9 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
   .fr.c2,.fr.c3{grid-template-columns:1fr;}
   .pw{padding:20px 14px 50px;}
 }
+
+/* PATCH v11 — destaque de campo obrigatório ausente */
+.req-miss{outline:2px solid var(--ye);box-shadow:0 0 0 4px rgba(245,158,11,.13)!important;border-radius:8px;}
 </style>
   <script src="config.js"></script>
 </head>
@@ -231,6 +234,16 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
       </div>
       <div class="card">
         <div class="ct"><div class="cti">📋</div> Dados do Sujeito / Amostra</div>
+
+        <label class="fl mb">Tipo de Amostra *</label>
+        <div class="cg mb" id="cgAmst">
+          <div class="chip" onclick="mchip('cgAmst',this)">Voluntário Humano</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Animal In Vivo</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Post Mortem</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Peça Anatômica</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">In Situ</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Ex Situ</div>
+        </div>
         <div class="fr c2 mb">
           <div class="fg"><label class="fl">Nome / Identificação do Sujeito *</label><input class="fi" id="pSuj" placeholder="Nome completo ou código de identificação"></div>
           <div class="fg"><label class="fl">Número PACS (se houver)</label><input class="fi" id="pPACS" placeholder="Número PACS"></div>
@@ -539,6 +552,24 @@ function fileToBase64(file) {
 }
 
 /* ── STEPS ── */
+
+function markMissing(id){
+  const el=ge(id);
+  if(!el) return;
+  el.classList.add('req-miss');
+  setTimeout(()=>el.classList.remove('req-miss'),2600);
+  try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+}
+function validatePisaStep3(){
+  const mods = mulChip('cgMod');
+  const amst = mulChip('cgAmst');
+  if(!mods.length){ toast('Selecione pelo menos uma modalidade.', 'warn'); markMissing('cgMod'); return false; }
+  if(!amst.length){ toast('Selecione o tipo de amostra.', 'warn'); markMissing('cgAmst'); return false; }
+  if(!v('pSuj').trim()){ toast('Preencha o sujeito/amostra.', 'warn'); markMissing('pSuj'); return false; }
+  if(!v('pJust').trim()){ toast('Preencha a justificativa do exame.', 'warn'); markMissing('pJust'); return false; }
+  return true;
+}
+
 async function goStep(n) {
   // Validações
   if (n === 2) {
@@ -557,9 +588,7 @@ async function goStep(n) {
     const isRM  = mods.some(m => m.includes('RM') || m.includes('7T'));
     const isContr = selChip('cgContr') === 'Sim' || selChip('cgInradContr') === 'Sim';
     if (curInst === 'PISA') {
-      if (!mods.length || !amst.length || !v('pSuj').trim() || !v('pJust').trim()) {
-        toast('Preencha modalidade, amostra, sujeito e justificativa.', 'warn'); return;
-      }
+      if (!validatePisaStep3()) return;
       ge('qContrSec').style.display = isContr ? 'block' : 'none';
       if (!isVol || !isRM) { await submitSol(); return; }
     } else {
