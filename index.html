@@ -1022,7 +1022,7 @@ tr.hidden-row{display:none;}
     <div class="mttl">✅ Novo Controle de Qualidade RM/TC</div>
     <div class="al a-w">O código gerado é intransferível e usará a mesma sequência numérica dos exames.</div>
     <div class="fr c2">
-      <div class="fg"><label class="fl">Modalidade *</label><select class="fs" id="qcMod"><option>RM 7T</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option></select></div>
+      <div class="fg"><label class="fl">Modalidade *</label><select class="fs" id="qcMod" onchange="populateDDs()"><option>RM 7T</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option></select></div>
       <div class="fg"><label class="fl">Tipo *</label><select class="fs" id="qcTipo"><option>CQ Rotina</option><option>CQ Diário</option><option>CQ Semanal</option><option>CQ Mensal</option><option>Teste de Aceitação</option><option>Teste Pós-Manutenção</option></select></div>
     </div>
     <div class="fr c2">
@@ -2894,8 +2894,50 @@ function toast(msg,type){
     }
     const eqEl=ge('vincEquip');
     if(eqEl){
+      const cur=eqEl.value;
       eqEl.innerHTML='<option value="">Selecione</option>';
-      (DB.equip||[]).forEach(eq=>{const op=ce('option');op.value=eq['Nome']||'';op.textContent=(eq['Nome']||'')+(eq['Instituto']?' ('+eq['Instituto']+')':'');eqEl.appendChild(op);});
+      (DB.equip||[]).forEach(eq=>{
+        const op=ce('option');
+        op.value=eq['Nome']||'';
+        op.textContent=(eq['Nome']||'')+(eq['Instituto']?' ('+eq['Instituto']+')':'');
+        eqEl.appendChild(op);
+      });
+      if(cur) eqEl.value=cur;
+    }
+
+    // HOTFIX v12 — o override v5 de populateDDs estava apagando a lógica do CQ.
+    // Agora o dropdown qcEquip é preenchido com equipamentos de RM/TC cadastrados,
+    // normalizando RM 1,5T, RM Clínica, TC, Somatom e Tomografia.
+    const qcEq=ge('qcEquip');
+    if(qcEq){
+      const cur=qcEq.value;
+      qcEq.innerHTML='<option value="">Selecione</option>';
+      const selectedMod=(ge('qcMod')&&ge('qcMod').value)||'';
+      const norm=s=>String(s||'').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/clinica/g,'1,5t')
+        .replace(/ressonancia magnetica/g,'rm')
+        .replace(/tomografia computadorizada/g,'tc')
+        .trim();
+      const modN=norm(selectedMod);
+      const rows=(DB.equip||[]).filter(eq=>{
+        const nome=norm(eq['Nome']||eq.nome||'');
+        const mod=norm(eq['Modalidade']||eq.modalidade||'');
+        const status=norm(eq['Status']||eq.status||'');
+        const isRmTc=/\brm\b|tc|tomografia|somatom/.test((nome+' '+mod));
+        const statusOk=!status || status==='operacional' || status==='ativo';
+        const modOk=!modN || modN==='rm' || mod.includes(modN) || nome.includes(modN) ||
+          (modN.includes('tc') && (mod.includes('tc')||nome.includes('somatom')||nome.includes('tc'))) ||
+          (modN.includes('rm') && (mod.includes('rm')||nome.includes('rm')));
+        return isRmTc && statusOk && modOk;
+      });
+      rows.forEach(eq=>{
+        const op=ce('option');
+        op.value=eq['Nome']||eq.nome||'';
+        op.textContent=(eq['Nome']||eq.nome||'')+(eq['Modalidade']||eq.modalidade?' — '+(eq['Modalidade']||eq.modalidade):'')+(eq['Instituto']||eq.instituto?' · '+(eq['Instituto']||eq.instituto):'');
+        qcEq.appendChild(op);
+      });
+      if(cur) qcEq.value=cur;
     }
   };
 })();
