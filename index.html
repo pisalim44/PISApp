@@ -502,7 +502,12 @@ tr.hidden-row{display:none;}
   <div class="modal" style="max-width:500px;">
     <div class="mttl">🔗 Vincular Evento ao Sistema</div>
     <div id="vincInfo" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
-    <div class="al a-i">Preencha os dados para criar este exame no sistema.</div>
+    <div class="al a-i">Preencha os dados para criar este exame no sistema. Se souber o Nº da Solicitação, use a busca para puxar automaticamente Q.Seg, pedido e dados do Portal.</div>
+    <div class="fr c2 mb">
+      <div class="fg"><label class="fl">Nº da Solicitação</label><input class="fi" id="vincSolID" placeholder="Ex: SOL-2026-0007"></div>
+      <div class="fg"><label class="fl">Tipo de vínculo</label><select class="fs" id="vincTipo"><option value="exame">Exame / Worklist</option><option value="qc">Controle de Qualidade</option></select></div>
+    </div>
+    <div class="fe mb"><button class="btn bo btn-sm" onclick="buscarSolVinc()">🔎 Buscar Solicitação</button></div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Sujeito / Paciente</label><input class="fi" id="vincSuj" placeholder="Nome ou código"></div>
       <div class="fg"><label class="fl">PACS</label><input class="fi" id="vincPACS" placeholder="Número PACS (se houver)"></div>
@@ -523,6 +528,39 @@ tr.hidden-row{display:none;}
     <div class="fe"><button class="btn bo" onclick="ovlClose('ovlVinc')">Cancelar</button><button class="btn bt" onclick="confirmVinc()">🔗 Vincular e Criar Exame</button></div>
   </div>
 </div>
+
+<!-- Bloqueio de Agenda -->
+<div class="ovl" id="ovlBloq">
+  <div class="modal" style="max-width:720px;">
+    <div class="mttl">🔒 Bloqueio de Agenda</div>
+    <div class="al a-i">Use para reservar períodos recorrentes, por exemplo: todas as sextas-feiras do projeto ELSA.</div>
+    <div class="fr c2 mb">
+      <div class="fg"><label class="fl">Título *</label><input class="fi" id="bloqTitulo" placeholder="Ex: Bloqueio ELSA"></div>
+      <div class="fg"><label class="fl">Projeto / DRO</label><input class="fi" id="bloqProjeto" placeholder="Ex: ELSA ou DRO_0182_2018"></div>
+    </div>
+    <div class="fr c2 mb">
+      <div class="fg"><label class="fl">Início *</label><input class="fi" id="bloqInicio" type="date"></div>
+      <div class="fg"><label class="fl">Fim *</label><input class="fi" id="bloqFim" type="date"></div>
+    </div>
+    <div class="fr c2 mb">
+      <div class="fg"><label class="fl">Hora inicial</label><input class="fi" id="bloqHoraIni" type="time" value="00:00"></div>
+      <div class="fg"><label class="fl">Hora final</label><input class="fi" id="bloqHoraFim" type="time" value="23:59"></div>
+    </div>
+    <div class="fg mb"><label class="fl">Dias da semana</label>
+      <div class="cg" id="bloqDias"><div class="chip" onclick="mchip('bloqDias',this)">DOM</div><div class="chip" onclick="mchip('bloqDias',this)">SEG</div><div class="chip" onclick="mchip('bloqDias',this)">TER</div><div class="chip" onclick="mchip('bloqDias',this)">QUA</div><div class="chip" onclick="mchip('bloqDias',this)">QUI</div><div class="chip" onclick="mchip('bloqDias',this)">SEX</div><div class="chip" onclick="mchip('bloqDias',this)">SAB</div></div>
+    </div>
+    <div class="fr c2 mb">
+      <div class="fg"><label class="fl">Modalidade</label><input class="fi" id="bloqMod" placeholder="Opcional. Ex: RM 7T"></div>
+      <div class="fg"><label class="fl">Equipamento</label><input class="fi" id="bloqEquip" placeholder="Opcional"></div>
+    </div>
+    <div class="fg"><label class="fl">Motivo / Observação</label><textarea class="ft" id="bloqMotivo" placeholder="Ex: Período reservado para agenda ELSA"></textarea></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlBloq')">Fechar</button><button class="btn bt" onclick="saveBloqAgenda()">🔒 Salvar Bloqueio</button></div>
+    <div class="dvd"></div>
+    <div class="ct"><div class="cti">📋</div>Bloqueios ativos</div>
+    <div class="tw"><table><thead><tr><th>Título</th><th>Projeto</th><th>Período</th><th>Dias</th><th>Ações</th></tr></thead><tbody id="tbBloq"><tr class="tr-e"><td colspan="5">Carregando...</td></tr></tbody></table></div>
+  </div>
+</div>
+
 
 <!-- Projeto (novo/editar) -->
 <div class="ovl" id="ovlProj">
@@ -831,7 +869,7 @@ tr.hidden-row{display:none;}
             <button class="btn bo btn-sm" onclick="calNav(1)">›</button>
             <button class="btn bo btn-sm" onclick="calToday()">Hoje</button>
           </div>
-          <div class="cal-view-btns">
+          <div class="cal-view-btns"><button class="btn bo btn-sm" onclick="openBloqModal()">🔒 Bloqueios</button>
             <button class="cal-vbtn on" onclick="calSetView('day',this)">Dia</button>
             <button class="cal-vbtn" onclick="calSetView('week',this)">Semana</button>
             <button class="cal-vbtn" onclick="calSetView('month',this)">Mês</button>
@@ -1379,7 +1417,7 @@ async function loadSectionData(id){
     if(id==='equipamentos'){r=await api('getEquipamentosData'); if(r.ok){DB.equip=r.equip||[];DB.equipLog=r.equipLog||[];}}
     if(id==='academico'){r=await api('getAcademicoData'); if(r.ok){DB.artigos=r.artigos||[];DB.proj=r.proj||DB.proj;}}
     if(id==='mascaras'){r=await api('getMascarasData'); if(r.ok){DB.masks=r.masks||[];DB.proj=r.proj||DB.proj;}}
-    if(id==='qualidade'){r=await api('getQCData'); if(r.ok){DB.qc=r.qc||[];DB.equip=r.equip||DB.equip;}}
+    if(id==='qualidade'){r=await api('getQCData',{date:today(),view:'month'}); if(r.ok){DB.qc=r.qc||[];DB.equip=r.equip||DB.equip;}}
     if(id==='sujeitos' || id==='exames'){await loadAll();}
     populateDDs();
     buildWLFilters();
@@ -1724,23 +1762,41 @@ async function confirmCancel(){
 function openVinc(ev){
   curVincEv=ev;
   ge('vincInfo').innerHTML=`<strong>${ev.title}</strong><br><span style="font-family:var(--m);font-size:11px;color:var(--tx3);">${ev.date||''} · ${ev.start||''}–${ev.end||''}</span><br>${ev.desc?`<span style="font-size:12px;color:var(--tx2);">${ev.desc}</span>`:''}`;
+  ['vincSolID','vincSuj','vincPACS','vincPesq'].forEach(id=>{if(ge(id))ge(id).value='';});
+  if(ge('vincTipo'))ge('vincTipo').value='exame';
   populateDDs();ovlOpen('ovlVinc');
+}
+async function buscarSolVinc(){
+  const id=v('vincSolID').trim();
+  if(!id){toast('Informe o Nº da Solicitação.','warn');return;}
+  const r=await api('buscarSolicitacao',{solID:id,idSolicitacao:id,title:curVincEv&&curVincEv.title||''});
+  if(!r.ok){toast(r.msg||'Solicitação não encontrada.','err');return;}
+  const s=r.sol||{};
+  ge('vincSuj').value=s.Sujeito||s.sujeito||'';
+  ge('vincPACS').value=s.PACS||s.pacs||'';
+  ge('vincPesq').value=s.Pesquisador||s.pesquisador||'';
+  if(ge('vincProj'))ge('vincProj').value=s.Projeto||s.projeto||'';
+  if(ge('vincMod') && (s.Modalidades||s.modalidades))ge('vincMod').value=String(s.Modalidades||s.modalidades).split(';')[0].trim();
+  toast('✓ Solicitação localizada'+(r.qSegEncontrado?' | Q.Seg encontrado':''));
 }
 async function confirmVinc(){
   const fullId=String(curVincEv.id||'');
   const parts=fullId.includes('|')?fullId.split('|'):[curVincEv.calendarId||'',curVincEv.calId||fullId];
-  const res=await api('vincularCal',{
+  const payload={
+    solID:v('vincSolID').trim(),
     calendarId:curVincEv.calendarId||parts[0],
     calId:curVincEv.calId||parts.slice(1).join('|')||fullId,
     title:curVincEv.title||'',
     data:curVincEv.date,hora:curVincEv.start,
     sujeito:v('vincSuj'),pacs:v('vincPACS'),modalidade:v('vincMod'),
-    equipamento:v('vincEquip'),pesquisador:v('vincPesq'),
+    equipamento:v('vincEquip'),pesquisador:v('vincPesq'),responsavel:v('vincPesq'),
     projeto:v('vincProj'),instituto:selChip('cgVincInst')||'PISA',
-  });
+  };
+  const action=(ge('vincTipo')&&ge('vincTipo').value)==='qc'?'vincularCalQC':'vincularCal';
+  const res=await api(action,payload);
   if(!res.ok){toast(res.msg,'err');return;}
   await loadAll();ovlClose('ovlVinc');await loadWL();renderCal();
-  toast('✓ Evento vinculado! Código: '+res.cod+(res.qSegEncontrado?' | Q.Seg localizado':''));
+  toast(action==='vincularCalQC'?'✓ CQ vinculado! Código: '+res.cod:'✓ Evento vinculado! Código: '+res.cod+(res.qSegEncontrado?' | Q.Seg localizado':''));
 }
 
 /* ── Q. SEGURANÇA ── */
@@ -1920,6 +1976,37 @@ async function saveQPos(){
     segIni:v('posSeI'),segFim:v('posSef'),descIni:v('posDi'),descFim:v('posDf'),obs:v('posObs')});
 }
 
+
+
+/* ── BLOQUEIOS DE AGENDA ── */
+async function openBloqModal(){
+  ge('bloqInicio').value=today();
+  ge('bloqFim').value=today();
+  ge('bloqHoraIni').value='00:00';
+  ge('bloqHoraFim').value='23:59';
+  qsa('#bloqDias .chip').forEach(c=>c.classList.remove('sel'));
+  await renderBloqList();
+  ovlOpen('ovlBloq');
+}
+async function renderBloqList(){
+  const r=await api('getBloqueiosAgenda',{});
+  const tb=ge('tbBloq');
+  if(!r.ok||!(r.bloqueios||[]).length){tb.innerHTML='<tr class="tr-e"><td colspan="5">Nenhum bloqueio ativo.</td></tr>';return;}
+  tb.innerHTML=(r.bloqueios||[]).map(b=>`<tr><td>${b.Titulo||''}</td><td>${b.Projeto||'—'}</td><td>${b.Inicio||''} a ${b.Fim||''}<br><span style="font-size:11px;color:var(--tx3);">${b.HoraIni||''}–${b.HoraFim||''}</span></td><td>${b.DiasSemana||''}</td><td><button class="btn br btn-xs" onclick="delBloqAgenda('${b.ID}')">Remover</button></td></tr>`).join('');
+}
+async function saveBloqAgenda(){
+  if(!v('bloqTitulo')||!v('bloqInicio')||!v('bloqFim')){toast('Informe título, início e fim.','warn');return;}
+  const dias=chips('bloqDias');
+  const r=await api('novaBloqueioAgenda',{titulo:v('bloqTitulo'),projeto:v('bloqProjeto'),inicio:v('bloqInicio'),fim:v('bloqFim'),diasSemana:dias.join(','),horaIni:v('bloqHoraIni'),horaFim:v('bloqHoraFim'),modalidade:v('bloqMod'),equipamento:v('bloqEquip'),motivo:v('bloqMotivo'),usuario:curUser});
+  if(!r.ok){toast(r.msg||'Erro ao salvar bloqueio.','err');return;}
+  toast('✓ Bloqueio criado.');await renderBloqList();renderCal();
+}
+async function delBloqAgenda(id){
+  const r=await api('delBloqueioAgenda',{id,usuario:curUser});
+  if(!r.ok){toast(r.msg||'Erro ao remover.','err');return;}
+  toast('✓ Bloqueio removido.');await renderBloqList();renderCal();
+}
+
 /* ── AGENDA (CALENDÁRIO) ── */
 async function renderCal(){
   const dateStr=localDateISO(calDate);
@@ -1927,6 +2014,7 @@ async function renderCal(){
   const gcalEvs=r.ok?(r.events||[]):[];
   if(r.ok && r.calendarErrors && r.calendarErrors.length){ toast('Agendas sem acesso/erro: '+r.calendarErrors.map(e=>e.label).join(', '),'warn'); }
   const dbRows=r.ok?(r.ex||[]):[];
+  const blockRows=r.ok?(r.bloqueios||[]):[];
   const dbEvs=dbRows.filter(e=>e['Data']||e.data).map(e=>({
     id:e['Cod']||e.cod||'',
     title:`[PISA] ${firstVal(e,['Modalidade','mod'],'')} — ${exameSujeito(e)}`,
@@ -1934,7 +2022,7 @@ async function renderCal(){
     start:itemHoraAgendada(e),
     _src:'pisa',_inst:e['Instituto']||'PISA',
   }));
-  const all=[...gcalEvs.map(e=>({...e,_src:'gcal'})),...dbEvs];
+  const all=[...gcalEvs.map(e=>({...e,_src:'gcal'})),...dbEvs,...blockRows.map(e=>({...e,_src:'block'}))];
   if(ge('calTotal')) ge('calTotal').textContent=all.length;
   if(ge('calGoogle')) ge('calGoogle').textContent=gcalEvs.length;
   if(ge('calPisa')) ge('calPisa').textContent=dbEvs.length;
@@ -1968,7 +2056,7 @@ function renderCalMonth(evs){
     const dayEvs=evs.filter(e=>e.date===ds);
     html+=`<div class="cal-cell ${isToday?'today':''}">
       <div class="cal-day-n">${d}</div>
-      ${dayEvs.slice(0,3).map(e=>`<div class="cal-ev ${e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" title="${e.title}">${e.start?e.start+' ':''} ${e.title}</div>`).join('')}
+      ${dayEvs.slice(0,3).map(e=>`<div class="cal-ev ${e._src==='block'?'inrad':e._src==='block'?'inrad':e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" title="${e.title}">${e.start?e.start+' ':''} ${e.title}</div>`).join('')}
       ${dayEvs.length>3?`<div style="font-size:9px;color:var(--tx3);">+${dayEvs.length-3} mais</div>`:''}
     </div>`;
   }
@@ -2002,7 +2090,7 @@ function renderCalWeek(evs,monday){
     const isToday=ds===todayStr;
     html+=`<div style="background:${isToday?'rgba(45,191,173,.05)':''};border:1px solid var(--bd);border-radius:8px;padding:8px;min-height:180px;">
       <div style="font-family:var(--m);font-size:10px;color:var(--tx3);margin-bottom:6px;">${days[d.getDay()]} ${d.getDate()}</div>
-      ${dayEvs.map(e=>`<div class="cal-ev ${e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" style="margin-bottom:4px;" title="${e.title}">${e.start||''} ${e.title}</div>`).join('')}
+      ${dayEvs.map(e=>`<div class="cal-ev ${e._src==='block'?'inrad':e._src==='block'?'inrad':e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" style="margin-bottom:4px;" title="${e.title}">${e.start||''} ${e.title}</div>`).join('')}
     </div>`;
   });
   html+='</div></div>';ge('calGrid').innerHTML=html;
