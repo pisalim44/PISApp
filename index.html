@@ -493,39 +493,63 @@ tr.hidden-row{display:none;}
     <div id="agdSlots"></div>
     <button class="btn bo btn-sm mt" onclick="addAgdSlot()">+ Adicionar Modalidade/Data</button>
     <div class="fg mt"><label class="fl">Observações</label><textarea class="ft" id="agdObs" style="min-height:50px;"></textarea></div>
-    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlAgd')">Cancelar</button><button class="btn bt" onclick="confirmAgd()">📅 Confirmar Agendamento(s)</button></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlAgd')">Cancelar</button><button class="btn bo" onclick="agendarGoogleManual()">📋 Agendar no Google Agenda</button><button class="btn bt" onclick="confirmAgd()">📅 Agendar no PISApp</button></div>
   </div>
 </div>
 
 <!-- Vincular Evento da Agenda -->
 <div class="ovl" id="ovlVinc">
-  <div class="modal" style="max-width:500px;">
+  <div class="modal" style="max-width:620px;">
     <div class="mttl">🔗 Vincular Evento ao Sistema</div>
     <div id="vincInfo" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
-    <div class="al a-i">Preencha os dados para criar este exame no sistema. Se souber o Nº da Solicitação, use a busca para puxar automaticamente Q.Seg, pedido e dados do Portal.</div>
-    <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Nº da Solicitação</label><input class="fi" id="vincSolID" placeholder="Ex: SOL-2026-0007"></div>
-      <div class="fg"><label class="fl">Tipo de vínculo</label><select class="fs" id="vincTipo"><option value="exame">Exame / Worklist</option><option value="qc">Controle de Qualidade</option></select></div>
+
+    <div class="al a-i" id="vincHelp">Escolha primeiro se este evento da agenda é um <strong>Exame</strong> ou um <strong>Controle de Qualidade</strong>.</div>
+
+    <div class="fg mb">
+      <label class="fl">O que este evento representa? *</label>
+      <div class="cg" id="cgVincTipo">
+        <div class="chip sel" onclick="setVincTipo('exame',this)">🔬 Exame</div>
+        <div class="chip" onclick="setVincTipo('qc',this)">✅ Controle de Qualidade</div>
+      </div>
+      <input type="hidden" id="vincTipo" value="exame">
     </div>
-    <div class="fe mb"><button class="btn bo btn-sm" onclick="buscarSolVinc()">🔎 Buscar Solicitação</button></div>
-    <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Sujeito / Paciente</label><input class="fi" id="vincSuj" placeholder="Nome ou código"></div>
-      <div class="fg"><label class="fl">PACS</label><input class="fi" id="vincPACS" placeholder="Número PACS (se houver)"></div>
+
+    <div id="vincExameSec">
+      <div class="al a-w">Informe o <strong>Nº da Solicitação</strong> para buscar automaticamente os dados do Portal, incluindo pedido médico e questionário de segurança.</div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Nº da Solicitação *</label><input class="fi" id="vincSolID" placeholder="Ex: SOL-2026-0007"></div>
+        <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn bo" style="width:100%;justify-content:center;" onclick="buscarSolVinc()">🔎 Buscar Solicitação</button></div>
+      </div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Sujeito / Paciente</label><input class="fi" id="vincSuj" placeholder="Preenchido pela solicitação"></div>
+        <div class="fg"><label class="fl">PACS</label><input class="fi" id="vincPACS" placeholder="Preenchido pela solicitação"></div>
+      </div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Pesquisador</label><input class="fi" id="vincPesq" placeholder="Preenchido pela solicitação"></div>
+        <div class="fg"><label class="fl">Projeto</label><select class="fs" id="vincProj"><option value="">Selecione</option></select></div>
+      </div>
     </div>
+
+    <div id="vincQcSec" style="display:none;">
+      <div class="al a-i">Este evento será reservado como CQ na agenda. O código gerado será intransferível e ficará vinculado ao evento do Google Agenda.</div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Tipo de CQ *</label><select class="fs" id="vincQCTipo"><option>CQ Rotina</option><option>CQ Aceitação</option><option>CQ Pós-Manutenção</option><option>CQ Teste de Equipamento</option><option>Outro</option></select></div>
+        <div class="fg"><label class="fl">Status</label><input class="fi" value="Agendado" readonly></div>
+      </div>
+    </div>
+
     <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Modalidade</label>
-        <select class="fs" id="vincMod"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
+      <div class="fg"><label class="fl">Modalidade *</label>
+        <select class="fs" id="vincMod" onchange="populateDDs()"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
       </div>
       <div class="fg"><label class="fl">Equipamento</label><select class="fs" id="vincEquip"><option value="">Selecione</option></select></div>
     </div>
-    <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Pesquisador</label><input class="fi" id="vincPesq" placeholder="Nome do pesquisador"></div>
-      <div class="fg"><label class="fl">Projeto</label><select class="fs" id="vincProj"><option value="">Selecione</option></select></div>
-    </div>
+
     <div class="fg mb"><label class="fl">Instituto</label>
       <div class="cg" id="cgVincInst"><div class="chip sel" onclick="schip('cgVincInst',this)">PISA/LIM44</div><div class="chip" onclick="schip('cgVincInst',this)">INRAD</div></div>
     </div>
-    <div class="fe"><button class="btn bo" onclick="ovlClose('ovlVinc')">Cancelar</button><button class="btn bt" onclick="confirmVinc()">🔗 Vincular e Criar Exame</button></div>
+
+    <div class="fe"><button class="btn bo" onclick="ovlClose('ovlVinc')">Cancelar</button><button class="btn bt" id="btnVincConfirm" onclick="confirmVinc()">🔗 Vincular como Exame</button></div>
   </div>
 </div>
 
@@ -1071,11 +1095,8 @@ tr.hidden-row{display:none;}
       <div class="fg"><label class="fl">Equipamento</label><select class="fs" id="qcEquip"><option value="">Selecione</option></select></div>
       <div class="fg"><label class="fl">Responsável</label><input class="fi" id="qcResp" placeholder="Nome do responsável"></div>
     </div>
-    <div class="fr c2">
-      <div class="fg"><label class="fl">Fantoma</label><input class="fi" id="qcFantoma" placeholder="Fantoma utilizado"></div>
-      <div class="fg"><label class="fl">Resultado</label><select class="fs" id="qcResultado"><option>Pendente</option><option>Aprovado</option><option>Reprovado</option><option>Repetir</option></select></div>
-    </div>
-    <div class="fg"><label class="fl">Observações</label><textarea class="ft" id="qcObs" placeholder="Detalhes do teste..."></textarea></div>
+    <div class="al a-i">O CQ sempre nasce no PISApp. O sistema gera o número sequencial intransferível e cria a reserva correspondente na agenda.</div>
+    <div class="fg"><label class="fl">Observações</label><textarea class="ft" id="qcObs" placeholder="Detalhes do bloqueio/reserva de CQ..."></textarea></div>
     <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlQC')">Cancelar</button><button class="btn bt" onclick="saveQC()">✅ Gerar Código e Agendar</button></div>
   </div>
 </div>
@@ -1495,8 +1516,6 @@ async function saveQC(){
     hora:ge('qcHora').value,
     equipamento:ge('qcEquip').value,
     responsavel:ge('qcResp').value||curNome,
-    fantoma:ge('qcFantoma').value,
-    resultado:ge('qcResultado').value,
     observacoes:ge('qcObs').value
   };
   if(!d.modalidade||!d.data||!d.hora){toast('Preencha modalidade, data e hora.','err');return;}
@@ -1759,44 +1778,91 @@ async function confirmCancel(){
 }
 
 /* ── VINCULAR EVENTO ── */
+function detectAgendaRef(ev){
+  const txt = String(((ev&&ev.title)||'') + ' ' + ((ev&&ev.desc)||'') + ' ' + ((ev&&ev.description)||''));
+  const sol = txt.match(/\bSOL[-_\s]*(\d{4})[-_\s]*(\d{1,6})\b/i);
+  if(sol){
+    return {tipo:'exame', solID:`SOL-${sol[1]}-${String(sol[2]).padStart(4,'0')}`};
+  }
+  const cq = txt.match(/ID_CQ\s*:\s*(\d{3,10})/i) || txt.match(/\bCQ[-_\s#:]*(\d{3,10}|[A-Z]{2,}[-_\s]*\d{2,10})\b/i) || txt.match(/\[\s*CQ\s+([^\]]+)\]/i);
+  if(cq){
+    return {tipo:'qc', qcCod:String(cq[1]||'').trim()};
+  }
+  return {tipo:'exame'};
+}
+
+function setVincTipo(tipo, el){
+  ge('vincTipo').value = tipo;
+  if(el) schip('cgVincTipo', el);
+  const isQC = tipo === 'qc';
+  ge('vincExameSec').style.display = isQC ? 'none' : 'block';
+  ge('vincQcSec').style.display = isQC ? 'block' : 'none';
+  ge('vincHelp').innerHTML = isQC
+    ? '✅ Este evento será vinculado como <strong>Controle de Qualidade</strong> e receberá um código intransferível.'
+    : '🔬 Este evento será vinculado como <strong>Exame</strong>. Informe o Nº da Solicitação para buscar Q.Seg, pedido médico e dados do Portal.';
+  ge('btnVincConfirm').innerHTML = isQC ? '✅ Vincular como CQ' : '🔗 Vincular como Exame';
+}
 function openVinc(ev){
   curVincEv=ev;
-  ge('vincInfo').innerHTML=`<strong>${ev.title}</strong><br><span style="font-family:var(--m);font-size:11px;color:var(--tx3);">${ev.date||''} · ${ev.start||''}–${ev.end||''}</span><br>${ev.desc?`<span style="font-size:12px;color:var(--tx2);">${ev.desc}</span>`:''}`;
-  ['vincSolID','vincSuj','vincPACS','vincPesq'].forEach(id=>{if(ge(id))ge(id).value='';});
-  if(ge('vincTipo'))ge('vincTipo').value='exame';
+  ge('vincInfo').innerHTML=`<strong>${ev.title||'Google Agenda'}</strong><br><span style="font-family:var(--m);font-size:11px;color:var(--tx3);">${ev.date||''} · ${ev.start||''}–${ev.end||''}</span><br>${ev.desc?`<span style="font-size:12px;color:var(--tx2);">${ev.desc}</span>`:''}`;
+  ['vincSolID','vincSuj','vincPACS','vincPesq','vincQCFantoma'].forEach(id=>{if(ge(id))ge(id).value='';});
+  if(ge('vincQCTipo'))ge('vincQCTipo').value='CQ Rotina';
+  const ref=detectAgendaRef(ev);
+  if(ref.tipo==='qc'){
+    setVincTipo('qc', document.querySelector('#cgVincTipo .chip:nth-child(2)'));
+    ge('vincHelp').innerHTML = `✅ Detectei <strong>Controle de Qualidade</strong>${ref.qcCod?' já identificado como '+ref.qcCod:''}. Confirme modalidade/equipamento e vincule.`;
+  } else {
+    setVincTipo('exame', document.querySelector('#cgVincTipo .chip:nth-child(1)'));
+    if(ref.solID){
+      ge('vincSolID').value=ref.solID;
+      ge('vincHelp').innerHTML = `🔬 Detectei automaticamente a solicitação <strong>${ref.solID}</strong> no evento. Buscando dados do Portal...`;
+      setTimeout(()=>buscarSolVinc(true),150);
+    } else {
+      ge('vincHelp').innerHTML = '🔬 Este evento será vinculado como <strong>Exame</strong>. Se o evento tiver o Nº da Solicitação no título/descrição, o sistema preenche sozinho; caso contrário, informe manualmente.';
+    }
+  }
   populateDDs();ovlOpen('ovlVinc');
 }
-async function buscarSolVinc(){
+async function buscarSolVinc(auto=false){
   const id=v('vincSolID').trim();
-  if(!id){toast('Informe o Nº da Solicitação.','warn');return;}
+  if(!id){if(!auto)toast('Informe o Nº da Solicitação.','warn');return;}
   const r=await api('buscarSolicitacao',{solID:id,idSolicitacao:id,title:curVincEv&&curVincEv.title||''});
   if(!r.ok){toast(r.msg||'Solicitação não encontrada.','err');return;}
   const s=r.sol||{};
-  ge('vincSuj').value=s.Sujeito||s.sujeito||'';
-  ge('vincPACS').value=s.PACS||s.pacs||'';
-  ge('vincPesq').value=s.Pesquisador||s.pesquisador||'';
-  if(ge('vincProj'))ge('vincProj').value=s.Projeto||s.projeto||'';
-  if(ge('vincMod') && (s.Modalidades||s.modalidades))ge('vincMod').value=String(s.Modalidades||s.modalidades).split(';')[0].trim();
-  toast('✓ Solicitação localizada'+(r.qSegEncontrado?' | Q.Seg encontrado':''));
+  ge('vincSuj').value=s.Sujeito||s.sujeito||s['NOME COMPLETO']||'';
+  ge('vincPACS').value=s.PACS||s.pacs||s['Nº RGHC']||'';
+  ge('vincPesq').value=s.Pesquisador||s.pesquisador||s['Nome do Pesquisador/ Coordenador']||'';
+  if(ge('vincProj'))ge('vincProj').value=s.Projeto||s.projeto||s['Identificação do Protocolo de Pesquisa']||'';
+  if(ge('vincMod') && (s.Modalidades||s.modalidades||s.Modalidade))ge('vincMod').value=String(s.Modalidades||s.modalidades||s.Modalidade).split(';')[0].trim();
+  populateDDs();
+  toast('✓ Solicitação localizada'+(r.qSegEncontrado?' | Q.Seg encontrado':' | Q.Seg não localizado'));
 }
 async function confirmVinc(){
+  const tipo=(ge('vincTipo')&&ge('vincTipo').value)||'exame';
+  if(tipo==='exame' && !v('vincSolID').trim()){
+    toast('Informe o Nº da Solicitação antes de vincular o exame.','warn');
+    ge('vincSolID').focus();
+    return;
+  }
+  if(!v('vincMod')){toast('Selecione a modalidade.','warn');return;}
   const fullId=String(curVincEv.id||'');
   const parts=fullId.includes('|')?fullId.split('|'):[curVincEv.calendarId||'',curVincEv.calId||fullId];
   const payload={
     solID:v('vincSolID').trim(),
     calendarId:curVincEv.calendarId||parts[0],
     calId:curVincEv.calId||parts.slice(1).join('|')||fullId,
-    title:curVincEv.title||'',
+    title:curVincEv.title||'',desc:curVincEv.desc||curVincEv.description||'',
     data:curVincEv.date,hora:curVincEv.start,
     sujeito:v('vincSuj'),pacs:v('vincPACS'),modalidade:v('vincMod'),
-    equipamento:v('vincEquip'),pesquisador:v('vincPesq'),responsavel:v('vincPesq'),
+    equipamento:v('vincEquip'),pesquisador:v('vincPesq'),responsavel:v('vincPesq')||curUser,
     projeto:v('vincProj'),instituto:selChip('cgVincInst')||'PISA',
+    tipo:v('vincQCTipo')||'CQ Vinculado',status:'Agendado'
   };
-  const action=(ge('vincTipo')&&ge('vincTipo').value)==='qc'?'vincularCalQC':'vincularCal';
+  const action=tipo==='qc'?'vincularCalQC':'vincularCal';
   const res=await api(action,payload);
   if(!res.ok){toast(res.msg,'err');return;}
   await loadAll();ovlClose('ovlVinc');await loadWL();renderCal();
-  toast(action==='vincularCalQC'?'✓ CQ vinculado! Código: '+res.cod:'✓ Evento vinculado! Código: '+res.cod+(res.qSegEncontrado?' | Q.Seg localizado':''));
+  toast(tipo==='qc'?'✓ CQ vinculado! Código: '+res.cod:'✓ Evento vinculado! Código: '+res.cod+(res.qSegEncontrado?' | Q.Seg localizado':''));
 }
 
 /* ── Q. SEGURANÇA ── */
@@ -2141,7 +2207,8 @@ function addAgdSlot(){
 
 function schipGrp(el,val){el.closest('.cg').querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');}
 
-async function confirmAgd(){
+
+function collectAgdSlots(showWarn){
   const slots=ge('agdSlots').querySelectorAll('.agd-slot');
   const agendamentos=[];let valid=true;
   slots.forEach(sl=>{
@@ -2153,7 +2220,58 @@ async function confirmAgd(){
     if(!date||!hora){valid=false;return;}
     agendamentos.push({modalidade:mod,equipamento:equip,data:date,hora,instituto:inst});
   });
-  if(!valid){toast('Preencha data e horário em todos os agendamentos.','warn');return;}
+  if(!valid && showWarn)toast('Preencha data e horário antes de agendar.','warn');
+  return valid?agendamentos:null;
+}
+function buildGoogleAgendaText(sol, ag){
+  sol=sol||{}; ag=ag||{};
+  const solId=sol['ID']||'';
+  const projeto=sol['Projeto']||sol['CodigoProjeto']||'—';
+  const sujeito=sol['Sujeito']||'—';
+  const pacs=sol['PACS']||'—';
+  const pesq=sol['Pesquisador']||'—';
+  const mod=ag.modalidade||'—';
+  const inst=ag.instituto||sol['Instituto']||'PISA';
+  const pedido=(sol['ArquivoURL']||sol['ArquivoNome'])?'SIM':'NÃO';
+  const qseg=inst==='INRAD'?'MV':(solId?'SIM':'NÃO');
+  const titulo=`[${solId}] ${projeto} | ${mod} | ${sujeito}`;
+  const desc=[
+    'TIPO: EXAME',
+    `ID_SOLICITACAO: ${solId}`,
+    `PROJETO: ${projeto}`,
+    `MODALIDADE: ${mod}`,
+    `INSTITUTO: ${inst}`,
+    `SUJEITO: ${sujeito}`,
+    `PACS: ${pacs}`,
+    `PESQUISADOR: ${pesq}`,
+    `PEDIDO_MEDICO: ${pedido}`,
+    `QSEG: ${qseg}`,
+    'OBS: —'
+  ].join('\n');
+  return {titulo,desc,full:`TÍTULO:\n${titulo}\n\nDESCRIÇÃO:\n${desc}`};
+}
+function gcalDatesParam(date,hora,durMin){
+  try{
+    const start=new Date(`${date}T${hora||'08:00'}:00`);
+    const end=new Date(start.getTime()+Number(durMin||120)*60000);
+    const fmt=d=>d.toISOString().replace(/[-:]|\.\d{3}/g,'');
+    return fmt(start)+'/'+fmt(end);
+  }catch(e){return '';}
+}
+async function agendarGoogleManual(){
+  const ags=collectAgdSlots(true); if(!ags||!ags.length)return;
+  const texts=ags.map((ag,i)=>`AGENDAMENTO ${i+1}\n${buildGoogleAgendaText(curAgdSol,ag).full}`).join('\n\n-----------------------------\n\n');
+  try{ await navigator.clipboard.writeText(texts); toast('Texto padrão copiado para colar no Google Agenda.','ok'); }
+  catch(e){ toast('Não foi possível copiar automaticamente. O texto será aberto no console.','warn'); console.log(texts); }
+  const first=ags[0];
+  const g=buildGoogleAgendaText(curAgdSol,first);
+  const dates=gcalDatesParam(first.data,first.hora,120);
+  const url='https://calendar.google.com/calendar/u/0/r/eventedit?text='+encodeURIComponent(g.titulo)+'&details='+encodeURIComponent(g.desc)+(dates?'&dates='+encodeURIComponent(dates):'');
+  window.open(url,'_blank');
+}
+async function confirmAgd(){
+  const agendamentos=collectAgdSlots(true);
+  if(!agendamentos)return;
   const res=await api('agendar',{sol:curAgdSol,agendamentos});
   if(!res.ok){toast(res.msg||'Erro ao agendar.','err');return;}
   if(curAgdSol)curAgdSol['Status']='Agendado';
