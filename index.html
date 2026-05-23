@@ -347,6 +347,11 @@ tr.hidden-row{display:none;}
 .cal-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
 .cal-week-grid{display:grid;grid-template-columns:repeat(7,minmax(160px,1fr));gap:6px;min-width:980px;}
 .cal-day-item{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--bd);}
+
+/* ── VINCULAR BUSCA SUGESTÕES ── */
+#vincSugestoes > div:hover { background: var(--sf2) !important; }
+#vincSugestoes { border-top: none; }
+
 </style>
   <script src="config.js"></script>
 </head>
@@ -499,11 +504,11 @@ tr.hidden-row{display:none;}
 
 <!-- Vincular Evento da Agenda -->
 <div class="ovl" id="ovlVinc">
-  <div class="modal" style="max-width:620px;">
+  <div class="modal" style="max-width:640px;">
     <div class="mttl">🔗 Vincular Evento ao Sistema</div>
     <div id="vincInfo" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
 
-    <div class="al a-i" id="vincHelp">Escolha primeiro se este evento da agenda é um <strong>Exame</strong> ou um <strong>Controle de Qualidade</strong>.</div>
+    <div class="al a-i" id="vincHelp">Escolha se este evento é um <strong>Exame</strong> ou um <strong>Controle de Qualidade</strong>.</div>
 
     <div class="fg mb">
       <label class="fl">O que este evento representa? *</label>
@@ -515,11 +520,34 @@ tr.hidden-row{display:none;}
     </div>
 
     <div id="vincExameSec">
-      <div class="al a-w">Informe o <strong>Nº da Solicitação</strong> para buscar automaticamente os dados do Portal, incluindo pedido médico e questionário de segurança.</div>
-      <div class="fr c2 mb">
-        <div class="fg"><label class="fl">Nº da Solicitação *</label><input class="fi" id="vincSolID" placeholder="Ex: SOL-2026-0007"></div>
-        <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn bo" style="width:100%;justify-content:center;" onclick="buscarSolVinc()">🔎 Buscar Solicitação</button></div>
+      <!-- BUSCA INTELIGENTE -->
+      <div class="al a-i" style="margin-bottom:10px;">
+        💡 Busque pelo <strong>nome do paciente</strong>, <strong>número PACS</strong> ou <strong>nº da solicitação</strong>. Os dados são preenchidos automaticamente, incluindo pedido médico e questionário.
       </div>
+      <div class="fg mb" style="position:relative;">
+        <label class="fl">Buscar Solicitação *</label>
+        <div style="display:flex;gap:8px;">
+          <input class="fi" id="vincBusca" placeholder="Nome do paciente, PACS ou SOL-2026-XXXX"
+            oninput="vincBuscaLive(this.value)"
+            onkeydown="if(event.key==='Enter')buscarSolVinc()"
+            style="flex:1;">
+          <button class="btn bo" onclick="buscarSolVinc()" style="flex-shrink:0;">🔎 Buscar</button>
+        </div>
+        <!-- Dropdown de sugestões -->
+        <div id="vincSugestoes" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--sf);border:1.5px solid var(--teal);border-radius:0 0 8px 8px;z-index:600;max-height:220px;overflow-y:auto;box-shadow:var(--sh);"></div>
+      </div>
+
+      <!-- Resultado da busca -->
+      <div id="vincSolEncontrada" style="display:none;background:rgba(16,185,129,.06);border:1.5px solid var(--gr);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:13px;color:var(--grd);">✅ Solicitação Localizada</span>
+          <button class="btn br btn-xs" onclick="limparVincSol()">✕ Limpar</button>
+        </div>
+        <div id="vincSolCard" style="font-size:12.5px;display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
+        <div id="vincSolExtras" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Campos preenchidos automaticamente (editáveis) -->
       <div class="fr c2 mb">
         <div class="fg"><label class="fl">Sujeito / Paciente</label><input class="fi" id="vincSuj" placeholder="Preenchido pela solicitação"></div>
         <div class="fg"><label class="fl">PACS</label><input class="fi" id="vincPACS" placeholder="Preenchido pela solicitação"></div>
@@ -528,10 +556,11 @@ tr.hidden-row{display:none;}
         <div class="fg"><label class="fl">Pesquisador</label><input class="fi" id="vincPesq" placeholder="Preenchido pela solicitação"></div>
         <div class="fg"><label class="fl">Projeto</label><select class="fs" id="vincProj"><option value="">Selecione</option></select></div>
       </div>
+      <input type="hidden" id="vincSolID">
     </div>
 
     <div id="vincQcSec" style="display:none;">
-      <div class="al a-i">Este evento será reservado como CQ na agenda. O código gerado será intransferível e ficará vinculado ao evento do Google Agenda.</div>
+      <div class="al a-i">Este evento será reservado como CQ. O código gerado é intransferível e fica vinculado ao evento do Google Agenda.</div>
       <div class="fr c2 mb">
         <div class="fg"><label class="fl">Tipo de CQ *</label><select class="fs" id="vincQCTipo"><option>CQ Rotina</option><option>CQ Aceitação</option><option>CQ Pós-Manutenção</option><option>CQ Teste de Equipamento</option><option>Outro</option></select></div>
         <div class="fg"><label class="fl">Status</label><input class="fi" value="Agendado" readonly></div>
@@ -1805,8 +1834,12 @@ function setVincTipo(tipo, el){
 function openVinc(ev){
   curVincEv=ev;
   ge('vincInfo').innerHTML=`<strong>${ev.title||'Google Agenda'}</strong><br><span style="font-family:var(--m);font-size:11px;color:var(--tx3);">${ev.date||''} · ${ev.start||''}–${ev.end||''}</span><br>${ev.desc?`<span style="font-size:12px;color:var(--tx2);">${ev.desc}</span>`:''}`;
-  ['vincSolID','vincSuj','vincPACS','vincPesq','vincQCFantoma'].forEach(id=>{if(ge(id))ge(id).value='';});
+  // Limpa campos
+  ['vincSolID','vincSuj','vincPACS','vincPesq','vincQCFantoma','vincBusca'].forEach(id=>{if(ge(id))ge(id).value='';});
+  if(ge('vincSolEncontrada'))ge('vincSolEncontrada').style.display='none';
+  if(ge('vincSugestoes'))ge('vincSugestoes').style.display='none';
   if(ge('vincQCTipo'))ge('vincQCTipo').value='CQ Rotina';
+
   const ref=detectAgendaRef(ev);
   if(ref.tipo==='qc'){
     setVincTipo('qc', document.querySelector('#cgVincTipo .chip:nth-child(2)'));
@@ -1814,28 +1847,130 @@ function openVinc(ev){
   } else {
     setVincTipo('exame', document.querySelector('#cgVincTipo .chip:nth-child(1)'));
     if(ref.solID){
+      // Auto-preenche o campo de busca com o nº da solicitação detectado
       ge('vincSolID').value=ref.solID;
-      ge('vincHelp').innerHTML = `🔬 Detectei automaticamente a solicitação <strong>${ref.solID}</strong> no evento. Buscando dados do Portal...`;
-      setTimeout(()=>buscarSolVinc(true),150);
+      if(ge('vincBusca'))ge('vincBusca').value=ref.solID;
+      ge('vincHelp').innerHTML = `🔬 Solicitação <strong>${ref.solID}</strong> detectada automaticamente no evento. Buscando dados do Portal...`;
+      setTimeout(()=>buscarSolVinc(true, ref.solID),200);
     } else {
-      ge('vincHelp').innerHTML = '🔬 Este evento será vinculado como <strong>Exame</strong>. Se o evento tiver o Nº da Solicitação no título/descrição, o sistema preenche sozinho; caso contrário, informe manualmente.';
+      ge('vincHelp').innerHTML = '🔬 Vincular como <strong>Exame</strong>. Digite o nome do paciente, PACS ou Nº da solicitação para buscar automaticamente.';
     }
   }
   populateDDs();ovlOpen('ovlVinc');
 }
-async function buscarSolVinc(auto=false){
-  const id=v('vincSolID').trim();
-  if(!id){if(!auto)toast('Informe o Nº da Solicitação.','warn');return;}
-  const r=await api('buscarSolicitacao',{solID:id,idSolicitacao:id,title:curVincEv&&curVincEv.title||''});
-  if(!r.ok){toast(r.msg||'Solicitação não encontrada.','err');return;}
-  const s=r.sol||{};
-  ge('vincSuj').value=s.Sujeito||s.sujeito||s['NOME COMPLETO']||'';
-  ge('vincPACS').value=s.PACS||s.pacs||s['Nº RGHC']||'';
-  ge('vincPesq').value=s.Pesquisador||s.pesquisador||s['Nome do Pesquisador/ Coordenador']||'';
-  if(ge('vincProj'))ge('vincProj').value=s.Projeto||s.projeto||s['Identificação do Protocolo de Pesquisa']||'';
-  if(ge('vincMod') && (s.Modalidades||s.modalidades||s.Modalidade))ge('vincMod').value=String(s.Modalidades||s.modalidades||s.Modalidade).split(';')[0].trim();
+let vincBuscaTimer = null;
+
+function vincBuscaLive(termo) {
+  clearTimeout(vincBuscaTimer);
+  if (!termo || termo.length < 2) { ge('vincSugestoes').style.display='none'; return; }
+  vincBuscaTimer = setTimeout(async () => {
+    const r = await api('buscarSolsPorTermo', {termo});
+    if (!r.ok || !r.results || !r.results.length) {
+      ge('vincSugestoes').style.display = 'none';
+      return;
+    }
+    const el = ge('vincSugestoes');
+    el.innerHTML = r.results.map(s => `
+      <div onclick="selecionarSolVinc(${JSON.stringify(s).replace(/"/g,'&quot;')})"
+        style="padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--bd);transition:background .12s;"
+        onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--m);font-size:10.5px;color:var(--td);">${s.id}</span>
+          <span style="display:flex;gap:5px;">
+            ${s.temPedido ? '<span style="font-size:10px;background:rgba(16,185,129,.1);color:var(--grd);padding:1px 6px;border-radius:4px;">📎 Pedido</span>' : ''}
+            ${s.temQSeg ? '<span style="font-size:10px;background:rgba(45,191,173,.1);color:var(--td);padding:1px 6px;border-radius:4px;">🛡️ Q.Seg</span>' : ''}
+          </span>
+        </div>
+        <div style="font-weight:600;font-size:13px;color:var(--navy);">${s.sujeito||'—'}</div>
+        <div style="font-size:11.5px;color:var(--tx3);">${s.pesquisador||'—'} · ${s.modalidades||'—'}${s.pacs?' · PACS: '+s.pacs:''}</div>
+      </div>
+    `).join('');
+    el.style.display = 'block';
+  }, 350);
+}
+
+function selecionarSolVinc(s) {
+  ge('vincSugestoes').style.display = 'none';
+  ge('vincBusca').value = s.id + ' — ' + (s.sujeito||'');
+  ge('vincSolID').value = s.id;
+  // Busca completa com todos os dados
+  buscarSolVinc(false, s.id);
+}
+
+function limparVincSol() {
+  ge('vincSolEncontrada').style.display = 'none';
+  ge('vincSolID').value = '';
+  ge('vincBusca').value = '';
+  ge('vincSuj').value = '';
+  ge('vincPACS').value = '';
+  ge('vincPesq').value = '';
+}
+
+async function buscarSolVinc(auto=false, idOverride=null) {
+  // Fecha sugestões
+  if (ge('vincSugestoes')) ge('vincSugestoes').style.display = 'none';
+
+  // Pega o termo: pode ser ID exato, nome, PACS ou termo livre
+  const busca = idOverride || v('vincBusca').trim() || v('vincSolID').trim();
+  if (!busca) { if (!auto) toast('Digite um nome, PACS ou nº de solicitação.', 'warn'); return; }
+
+  const r = await api('buscarSolicitacao', {
+    solID: busca,
+    idSolicitacao: busca,
+    termoBusca: busca,
+    nome: busca,
+    pacs: busca,
+    title: curVincEv && curVincEv.title || ''
+  });
+
+  if (!r.ok) { toast(r.msg || 'Solicitação não encontrada.', 'err'); return; }
+
+  const s = r.sol || {};
+  
+  // Preenche campos
+  ge('vincSolID').value = s.ID || s.id || '';
+  ge('vincSuj').value = s.Sujeito || s.sujeito || s['NOME COMPLETO'] || '';
+  ge('vincPACS').value = s.PACS || s.pacs || s['Nº RGHC'] || '';
+  ge('vincPesq').value = s.Pesquisador || s.pesquisador || s['Nome do Pesquisador/ Coordenador'] || '';
+  if (ge('vincProj')) ge('vincProj').value = s.Projeto || s.projeto || s['Identificação do Protocolo de Pesquisa'] || '';
+  if (ge('vincMod') && (s.Modalidades || s.modalidades || s.Modalidade)) {
+    ge('vincMod').value = String(s.Modalidades || s.modalidades || s.Modalidade).split(';')[0].trim();
+  }
   populateDDs();
-  toast('✓ Solicitação localizada'+(r.qSegEncontrado?' | Q.Seg encontrado':' | Q.Seg não localizado'));
+
+  // Mostra card da solicitação encontrada
+  const solCard = ge('vincSolCard');
+  if (solCard) {
+    const items = [
+      ['Nº Solicitação', s.ID || s.id || '—'],
+      ['Sujeito/Paciente', s.Sujeito || s.sujeito || '—'],
+      ['PACS', s.PACS || s.pacs || '—'],
+      ['Pesquisador', s.Pesquisador || s.pesquisador || '—'],
+      ['Modalidades', s.Modalidades || s.modalidades || '—'],
+      ['Status', s.Status || s.status || '—'],
+    ];
+    solCard.innerHTML = items.map(([lbl, val]) =>
+      `<div><span style="font-family:var(--m);font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;">${lbl}</span><div style="font-weight:500;font-size:12.5px;">${val}</div></div>`
+    ).join('');
+    ge('vincSolEncontrada').style.display = 'block';
+  }
+
+  // Mostra extras: pedido médico e Q.Seg
+  const extras = ge('vincSolExtras');
+  if (extras) {
+    let ex = '';
+    if (r.pedidoMedicoURL) {
+      ex += `<a href="${r.pedidoMedicoURL}" target="_blank" class="btn bo btn-xs">📎 Ver Pedido Médico</a>`;
+    }
+    if (r.qSegEncontrado) {
+      ex += `<span class="pill p-t">🛡️ Questionário de Segurança encontrado</span>`;
+    } else {
+      ex += `<span class="pill p-y">⚠️ Q.Seg não preenchido ainda</span>`;
+    }
+    extras.innerHTML = ex;
+  }
+
+  toast('✓ Solicitação localizada' + (r.qSegEncontrado ? ' | Q.Seg ✅' : ' | Q.Seg pendente'));
 }
 async function confirmVinc(){
   const tipo=(ge('vincTipo')&&ge('vincTipo').value)||'exame';
