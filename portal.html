@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PISApp Portal">
+<title>PISApp/LIM44 — Portal do Pesquisador v7.4</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#2DBFAD;--td:#21A090;--tdim:rgba(45,191,173,.10);--tglow:rgba(45,191,173,.22);
+  --navy:#1B2A4A;--bg:#EEF2F7;--sf:#FFF;--sf2:#F6F9FC;--bd:#DDE5EF;
+  --tx:#1B2A4A;--tx2:#4A6080;--tx3:#8FA3B8;
+  --gr:#10B981;--grd:#059669;--ye:#F59E0B;--yed:#D97706;
+  --re:#EF4444;--red:#DC2626;--pu:#8B5CF6;
+  --shl:0 12px 40px rgba(27,42,74,.13);
+  --f:'Outfit',sans-serif;--m:'JetBrains Mono',monospace;
+  --r:10px;--rs:7px;--rl:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;-webkit-text-size-adjust:100%;}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;}
+button,input,select,textarea{font-family:var(--f);}
+input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
+
+/* ── HEADER ── */
+.portal-header{background:var(--navy);padding:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.header-inner{max-width:800px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.header-logo{display:flex;align-items:center;gap:10px;}
+.logo-ic{width:36px;height:36px;background:var(--teal);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-nm{font-size:18px;font-weight:900;color:#fff;letter-spacing:1px;}
+.logo-sb{font-family:var(--m);font-size:9px;color:var(--teal);letter-spacing:2px;}
+.header-badge{font-family:var(--m);font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;}
+
+/* ── MAIN WRAP ── */
+.pw{max-width:800px;margin:0 auto;padding:32px 20px 60px;}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;margin-bottom:32px;padding:0 8px;}
+.sdot{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-family:var(--m);font-size:12px;color:var(--tx3);position:relative;flex-shrink:0;background:var(--sf);z-index:1;}
+.sdot.act{border-color:var(--teal);color:var(--td);background:var(--tdim);font-weight:700;}
+.sdot.dn{border-color:var(--gr);background:var(--gr);color:#fff;font-weight:700;}
+.slbl{position:absolute;top:36px;left:50%;transform:translateX(-50%);font-family:var(--m);font-size:8.5px;letter-spacing:1px;color:var(--tx3);white-space:nowrap;}
+.sdot.act .slbl{color:var(--td);}
+.sline{flex:1;height:2px;background:var(--bd);margin:0 -2px;}
+.sline.dn{background:var(--gr);}
+
+/* ── CARDS ── */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(27,42,74,.07);}
+.ct{font-size:14px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.cti{width:24px;height:24px;border-radius:7px;background:var(--tdim);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+
+/* ── FORM ── */
+.fg{margin-bottom:12px;}
+.fl{display:block;font-family:var(--m);font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px;letter-spacing:.3px;}
+.fi,.fs,.ft{width:100%;background:var(--sf2);border:1.5px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:13.5px;padding:9px 12px;outline:none;transition:all .18s;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px var(--tglow);}
+.ft{resize:vertical;min-height:70px;}
+.fr{display:grid;gap:12px;}
+.fr.c2{grid-template-columns:1fr 1fr;}
+.fr.c3{grid-template-columns:1fr 1fr 1fr;}
+.dvd{height:1px;background:var(--bd);margin:14px 0;}
+
+/* ── CHIPS ── */
+.cg{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:12.5px;font-weight:500;color:var(--tx2);transition:all .13s;user-select:none;touch-action:manipulation;}
+.chip:hover{border-color:var(--teal);color:var(--td);}
+.chip.sel{border-color:var(--teal);background:var(--tdim);color:var(--td);font-weight:600;}
+.chip.selm{border-color:var(--navy);background:rgba(27,42,74,.07);color:var(--navy);font-weight:600;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;border:none;outline:none;white-space:nowrap;touch-action:manipulation;}
+.bt{background:var(--teal);color:#fff;}.bt:hover{background:var(--td);transform:translateY(-1px);box-shadow:0 4px 12px var(--tglow);}
+.bo{background:transparent;border:1.5px solid var(--bd);color:var(--tx2);}.bo:hover{border-color:var(--teal);color:var(--td);}
+.fe{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;}
+.mb{margin-bottom:14px;}
+.mt{margin-top:14px;}
+
+/* ── ALERTS ── */
+.al{padding:10px 13px;border-radius:var(--rs);font-size:13px;display:flex;align-items:flex-start;gap:7px;margin-bottom:12px;line-height:1.5;}
+.a-i{background:var(--tdim);border:1px solid rgba(45,191,173,.22);color:var(--td);}
+.a-w{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);color:#92400E;}
+.a-ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.18);color:#065F46;}
+.a-n{background:rgba(27,42,74,.05);border:1px solid rgba(27,42,74,.11);color:var(--navy);}
+
+/* ── CODEBOX ── */
+.codebox{background:var(--navy);border-radius:var(--r);padding:18px;text-align:center;margin:14px 0;}
+.codeval{font-family:var(--m);font-size:22px;color:var(--teal);letter-spacing:3px;}
+.codelbl{font-family:var(--m);font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);margin-top:5px;text-transform:uppercase;}
+
+/* ── FILE DROP ── */
+.fdrop{border:2px dashed var(--bd);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;transition:all .18s;background:var(--sf2);}
+.fdrop:hover{border-color:var(--teal);background:var(--tdim);}
+.fdrop.has{border-color:var(--gr);background:rgba(16,185,129,.04);border-style:solid;}
+.fdrop input{display:none;}
+
+/* ── Q ── */
+.qblk{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-bottom:9px;}
+.qh{padding:8px 14px;background:var(--navy);font-family:var(--m);font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.6);text-transform:uppercase;}
+.qi{display:flex;align-items:flex-start;padding:9px 14px;border-bottom:1px solid var(--bd);gap:12px;}
+.qi:last-child{border-bottom:none;}
+.qtx{flex:1;font-size:13px;color:var(--tx);line-height:1.45;}
+.qbs{display:flex;gap:6px;flex-shrink:0;}
+.qb{padding:4px 12px;border-radius:6px;font-size:12px;font-family:var(--m);cursor:pointer;border:1.5px solid var(--bd);background:var(--sf);color:var(--tx2);transition:all .12s;touch-action:manipulation;}
+.qb.sim{border-color:var(--gr);color:var(--grd);background:rgba(16,185,129,.06);}
+.qb.nao{border-color:var(--re);color:var(--red);background:rgba(239,68,68,.06);}
+
+/* ── INRAD SECTION ── */
+.inrad-sec{border:2px solid var(--pu);border-radius:var(--r);padding:16px;background:rgba(139,92,246,.04);margin-bottom:14px;}
+.inrad-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(139,92,246,.11);color:var(--pu);font-family:var(--m);font-size:10.5px;font-weight:600;margin-bottom:12px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--navy);color:#fff;padding:11px 16px;border-radius:var(--r);z-index:9999;display:flex;align-items:center;gap:9px;font-size:13px;opacity:0;pointer-events:none;transform:translateY(10px);transition:all .3s;max-width:320px;box-shadow:var(--shl);border-left:4px solid var(--teal);}
+.toast.on{opacity:1;transform:translateY(0);}
+
+/* ── SUCCESS ── */
+.success-screen{display:none;text-align:center;padding:48px 24px;}
+.success-screen.on{display:block;}
+
+@media(max-width:640px){
+  .fr.c2,.fr.c3{grid-template-columns:1fr;}
+  .pw{padding:20px 14px 50px;}
+}
+
+/* PATCH v11 — destaque de campo obrigatório ausente */
+.req-miss{outline:2px solid var(--ye);box-shadow:0 0 0 4px rgba(245,158,11,.13)!important;border-radius:8px;}
+</style>
+  <script src="config.js"></script>
+</head>
+<body>
+
+<div class="toast" id="toast"><span id="tIc">✓</span><span id="tMsg"></span></div>
+
+<div class="portal-header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="logo-ic"><svg viewBox="0 0 40 40" width="22" height="22" fill="none"><circle cx="20" cy="20" r="17" stroke="white" stroke-width="2"/><circle cx="20" cy="14" r="6" fill="white" opacity=".9"/><path d="M7 33 Q9 24 20 24 Q31 24 33 33" fill="white" opacity=".9"/></svg></div>
+      <div><div class="logo-nm">PISApp/LIM44</div><div class="logo-sb">PORTAL DO PESQUISADOR</div></div>
+    </div>
+    <div class="header-badge">LABIM · PISA · USP</div>
+  </div>
+</div>
+
+<div class="pw">
+
+  <!-- STEPS -->
+  <div class="steps" style="margin-top:20px;">
+    <div class="sdot act" id="sd1">1<span class="slbl">PESQUISADOR</span></div>
+    <div class="sline" id="sl1"></div>
+    <div class="sdot" id="sd2">2<span class="slbl">INSTITUTO</span></div>
+    <div class="sline" id="sl2"></div>
+    <div class="sdot" id="sd3">3<span class="slbl">EXAME</span></div>
+    <div class="sline" id="sl3"></div>
+    <div class="sdot" id="sd4">4<span class="slbl">SEGURANÇA</span></div>
+    <div class="sline" id="sl4"></div>
+    <div class="sdot" id="sd5">5<span class="slbl">CONFIRMAÇÃO</span></div>
+  </div>
+
+  <!-- ── STEP 1: Pesquisador ── -->
+  <div id="ps1">
+    <div class="card">
+      <div class="ct"><div class="cti">👤</div> Dados do Pesquisador Responsável</div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Nome Completo *</label><input class="fi" id="pNm" placeholder="Dr./Dra. Nome Completo"></div>
+        <div class="fg"><label class="fl">E-mail Institucional *</label><input class="fi" id="pEmail" type="email" placeholder="pesquisador@usp.br"></div>
+      </div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Telefone / WhatsApp</label><input class="fi" id="pTel" placeholder="+55 11 99999-9999"></div>
+        <div class="fg"><label class="fl">Departamento / Instituição</label><input class="fi" id="pDepto" placeholder="Ex: INRAD / HC-FMUSP"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fg">
+          <label class="fl">Projeto de Pesquisa *</label>
+          <select class="fs" id="pProjSel">
+            <option value="">Selecione um projeto cadastrado</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Código do Projeto</label><input class="fi" id="pCodProj" placeholder="Preenchido automaticamente" readonly style="background:var(--sf2);"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><div class="cti">📎</div> Pedido Médico / Autorização do Protocolo</div>
+      <div class="al a-i">📋 Anexe o pedido médico ou autorização do protocolo de pesquisa. O arquivo será salvo no Google Drive do LABIM/LIM44.</div>
+      <div class="fdrop" id="fdrop" onclick="document.getElementById('finput').click()">
+        <input type="file" id="finput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="onFile(this)">
+        <div style="font-size:28px;margin-bottom:8px;">📄</div>
+        <div style="font-weight:600;color:var(--tx2);">Clique para selecionar ou arraste o arquivo</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:5px;">PDF, JPG, PNG, DOC, DOCX · Máx. 10MB</div>
+      </div>
+      <div id="fnm" style="display:none;" class="al a-ok mt"></div>
+    </div>
+
+    <div class="fe">
+      <button class="btn bo" onclick="window.close()">Cancelar</button>
+      <button class="btn bt" onclick="goStep(2)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Instituto ── -->
+  <div id="ps2" style="display:none;">
+    <div class="card">
+      <div class="ct"><div class="cti">🏛️</div> Instituto que Realizará o Exame</div>
+      <div class="al a-n">A escolha do instituto define o formulário e o processo de agendamento. Exames no INRAD seguem um protocolo específico exigido pelo sistema interno daquele instituto.</div>
+      <div class="cg mb" id="cgInst">
+        <div class="chip" onclick="pickInst('PISA',this)" style="padding:12px 20px;font-size:14px;">🏥 PISA / LIM44</div>
+        <div class="chip" onclick="pickInst('INRAD',this)" style="padding:12px 20px;font-size:14px;">🏛️ INRAD</div>
+      </div>
+      <div id="instDesc" style="font-size:13px;color:var(--tx2);"></div>
+    </div>
+    <div class="fe">
+      <button class="btn bo" onclick="goStep(1)">← Anterior</button>
+      <button class="btn bt" onclick="goStep(3)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Exame ── -->
+  <div id="ps3" style="display:none;">
+
+    <!-- Seção PISA -->
+    <div id="pisaSec">
+      <div class="card">
+        <div class="ct"><div class="cti">🔬</div> Modalidades Solicitadas</div>
+        <div class="al a-i">💡 Selecione uma ou mais modalidades. Múltiplas modalidades podem ter datas diferentes — o agendamento será coordenado pela equipe.</div>
+        <label class="fl mb">Modalidade(s) *</label>
+        <div class="cg mb" id="cgMod">
+          <div class="chip" onclick="mchip('cgMod',this)">🧲 RM 7T</div>
+          <div class="chip" onclick="mchip('cgMod',this)">💡 TC</div>
+          <div class="chip" onclick="mchip('cgMod',this)">🔊 Ultrassom (US)</div>
+          <div class="chip" onclick="mchip('cgMod',this)">🔬 Virtangio</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct"><div class="cti">📋</div> Dados do Sujeito / Amostra</div>
+
+        <label class="fl mb">Tipo de Amostra *</label>
+        <div class="cg mb" id="cgAmst">
+          <div class="chip" onclick="mchip('cgAmst',this)">Voluntário Humano</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Animal In Vivo</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Post Mortem</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Peça Anatômica</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">In Situ</div>
+          <div class="chip" onclick="mchip('cgAmst',this)">Ex Situ</div>
+        </div>
+        <div class="fr c2 mb">
+          <div class="fg"><label class="fl">Nome / Identificação do Sujeito *</label><input class="fi" id="pSuj" placeholder="Nome completo ou código de identificação"></div>
+          <div class="fg"><label class="fl">Número PACS (se houver)</label><input class="fi" id="pPACS" placeholder="Número PACS"></div>
+        </div>
+        <div class="fr c3 mb">
+          <div class="fg"><label class="fl">Data de Nascimento</label><input class="fi" id="pNasc" type="date"></div>
+          <div class="fg"><label class="fl">Sexo</label><select class="fs" id="pSexo"><option value="">—</option><option>Masculino</option><option>Feminino</option><option>Outro</option><option>N/A</option></select></div>
+          <div class="fg"><label class="fl">Peso (kg)</label><input class="fi" id="pPeso" type="number" placeholder="—"></div>
+        </div>
+        <div class="fr c2 mb">
+          <div class="fg"><label class="fl">Altura (m)</label><input class="fi" id="pAltura" type="number" step="0.01" placeholder="—"></div>
+          <div class="fg"><label class="fl">Contraste?</label><div class="cg" id="cgContr"><div class="chip" onclick="schip('cgContr',this)">Não</div><div class="chip" onclick="schip('cgContr',this)">Sim</div></div></div>
+        </div>
+        <div class="fg mb"><label class="fl">Região de Interesse</label>
+          <div class="cg" id="cgReg"><div class="chip" onclick="mchip('cgReg',this)">Cabeça/Pescoço</div><div class="chip" onclick="mchip('cgReg',this)">Tórax</div><div class="chip" onclick="mchip('cgReg',this)">Abdome</div><div class="chip" onclick="mchip('cgReg',this)">Extremidades</div><div class="chip" onclick="mchip('cgReg',this)">Corpo Inteiro</div><div class="chip" onclick="mchip('cgReg',this)">Outro</div></div>
+        </div>
+        <div class="fr c2 mb">
+          <div class="fg"><label class="fl">Data Preferencial</label><input class="fi" id="pDataPref" type="date"></div>
+          <div class="fg"><label class="fl">Período</label><select class="fs" id="pPeriodo"><option>Manhã (8h–12h)</option><option>Tarde (13h–17h)</option><option>Indiferente</option></select></div>
+        </div>
+        <div class="fg"><label class="fl">Objetivo / Justificativa do Exame *</label><textarea class="ft" id="pJust" placeholder="Descreva o objetivo científico e a necessidade do exame dentro do protocolo de pesquisa..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- Seção INRAD (formulário específico INRAD) -->
+    <div id="inradSec" style="display:none;">
+      <div class="inrad-sec">
+        <div class="inrad-badge">🏛️ Formulário Complementar INRAD</div>
+        <div class="al a-w">⚠️ Estes campos serão exportados em CSV para o fluxo INRAD. Campos já informados nas etapas anteriores são reaproveitados automaticamente para evitar duplicidade.</div>
+
+        <div class="card" style="box-shadow:none;margin-bottom:14px;">
+          <div class="ct"><div class="cti">🧾</div> Identificação do Protocolo e do Paciente</div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Identificação do Protocolo de Pesquisa *</label><input class="fi" id="inradProtocolo" placeholder="Ex: PISA_RM_578_2024 ou código do protocolo"></div>
+            <div class="fg"><label class="fl">Nº RGHC</label><input class="fi" id="inradRGHC" placeholder="Informe o RGHC ou escreva: Não se aplica"></div>
+          </div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Nome Completo do Paciente *</label><input class="fi" id="inradNmPac" placeholder="Nome completo do paciente"></div>
+            <div class="fg"><label class="fl">Nº PACS / Registro interno</label><input class="fi" id="inradPACS" placeholder="Número PACS, se houver"></div>
+          </div>
+          <div class="fr c3 mb">
+            <div class="fg"><label class="fl">Data de Nascimento *</label><input class="fi" id="inradNasc" type="date"></div>
+            <div class="fg"><label class="fl">COR/RAÇA</label><select class="fs" id="inradCorRaca"><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Não informado</option></select></div>
+            <div class="fg"><label class="fl">Estado Civil</label><select class="fs" id="inradEstadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>Não informado</option></select></div>
+          </div>
+          <div class="fr c3 mb">
+            <div class="fg"><label class="fl">Nº CPF</label><input class="fi" id="inradCPF" placeholder="000.000.000-00"></div>
+            <div class="fg"><label class="fl">Nº RG e data de emissão</label><input class="fi" id="inradRG" placeholder="RG / data de emissão"></div>
+            <div class="fg"><label class="fl">Nacionalidade</label><input class="fi" id="inradNacionalidade" placeholder="Ex: Brasileira"></div>
+          </div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Natural de</label><input class="fi" id="inradNaturalDe" placeholder="Cidade/Estado/País"></div>
+            <div class="fg"><label class="fl">Telefones de Contato do Paciente</label><input class="fi" id="inradTelPaciente" placeholder="Telefone/WhatsApp"></div>
+          </div>
+        </div>
+
+        <div class="card" style="box-shadow:none;margin-bottom:14px;">
+          <div class="ct"><div class="cti">👪</div> Filiação, Cônjuge e Endereço</div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Nome da Mãe</label><input class="fi" id="inradMae" placeholder="Nome completo da mãe"></div>
+            <div class="fg"><label class="fl">Nome do Pai</label><input class="fi" id="inradPai" placeholder="Nome completo do pai"></div>
+          </div>
+          <div class="fg mb"><label class="fl">Nome Cônjuge</label><input class="fi" id="inradConjuge" placeholder="Se aplicável"></div>
+          <div class="fg"><label class="fl">Endereço / número / complemento / bairro / CEP / cidade / estado</label><textarea class="ft" id="inradEndereco" placeholder="Endereço completo do paciente" style="min-height:60px;"></textarea></div>
+        </div>
+
+        <div class="card" style="box-shadow:none;margin-bottom:14px;">
+          <div class="ct"><div class="cti">🩺</div> Médico, Exame e Agendamento</div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Nome do Médico - Número do CRM *</label><input class="fi" id="inradMedicoCRM" placeholder="Dr(a). Nome — CRM"></div>
+            <div class="fg"><label class="fl">CID nº</label><input class="fi" id="inradCID" placeholder="Ex: C50.9"></div>
+          </div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Tipo de Exame INRAD *</label><select class="fs" id="inradTipo"><option value="">Selecione</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option><option>Ultrassom (US)</option><option>RX</option><option>Densitometria Óssea</option><option>Mamografia</option><option>Medicina Nuclear</option></select></div>
+            <div class="fg"><label class="fl">Uso de Contraste?</label><div class="cg" id="cgInradContr"><div class="chip" onclick="schip('cgInradContr',this)">Não</div><div class="chip" onclick="schip('cgInradContr',this)">Sim</div></div></div>
+          </div>
+          <div class="fg mb"><label class="fl">Região Anatômica / Área de Interesse *</label><input class="fi" id="inradRegiao" placeholder="Ex: Crânio e encéfalo sem e com contraste"></div>
+          <div class="fg mb"><label class="fl">Hipótese Diagnóstica / Indicação Clínica</label><textarea class="ft" id="inradIndicacao" placeholder="Descreva a indicação clínica e a hipótese diagnóstica..." style="min-height:60px;"></textarea></div>
+          <div class="fg"><label class="fl">Sugestão de datas e períodos para realização do exame</label><textarea class="ft" id="inradSugestaoDatas" placeholder="Ex: segunda pela manhã; terça à tarde; datas específicas..." style="min-height:60px;"></textarea></div>
+        </div>
+
+        <div class="card" style="box-shadow:none;margin-bottom:0;">
+          <div class="ct"><div class="cti">👨‍🔬</div> Pesquisador, Pontuação e Suporte Financeiro</div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Nome do Pesquisador/Coordenador</label><input class="fi" id="inradPesqCoord" placeholder="Preenchido com o pesquisador responsável"></div>
+            <div class="fg"><label class="fl">Telefone de Contato do Pesquisador/Coordenador</label><input class="fi" id="inradTelPesqCoord" placeholder="Telefone/WhatsApp"></div>
+          </div>
+          <div class="fr c2 mb">
+            <div class="fg"><label class="fl">Pontuação</label><input class="fi" id="inradPontuacao" placeholder="Pontuação, se aplicável"></div>
+            <div class="fg"><label class="fl">Suporte Financeiro</label><select class="fs" id="inradSuporteFinanceiro"><option value="">Selecione</option><option>C/ FOMENTO</option><option>S/FOMENTO</option></select></div>
+          </div>
+          <div class="fg"><label class="fl">Observações / Informações Adicionais</label><textarea class="ft" id="inradObs" placeholder="Informações relevantes para o agendamento no INRAD..." style="min-height:60px;"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fe">
+      <button class="btn bo" onclick="goStep(2)">← Anterior</button>
+      <button class="btn bt" onclick="goStep(4)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Segurança (apenas voluntários RM) ── -->
+  <div id="ps4" style="display:none;">
+    <div class="al a-w">⚠️ Questionário obrigatório para voluntários humanos submetidos a exames de RM. As informações são confidenciais e serão revisadas pelo biomédico antes do exame.</div>
+    <div class="card">
+      <div class="ct"><div class="cti">🛡️</div> Questionário de Segurança PRÉ-EXAME em RM</div>
+      <div style="font-family:var(--m);font-size:10px;color:var(--tx3);margin-bottom:14px;">Ref: NDI — Questionário de Segurança PRÉ-EXAME de RM — V4 — INRAD · Versão 1.3 · 22 June 2015</div>
+
+      <div class="qblk"><div class="qh">Histórico Geral</div><div id="qSegEl"></div></div>
+
+      <div id="qContrSec" style="display:none;">
+        <div style="margin:12px 0 8px;font-family:var(--m);font-size:9.5px;letter-spacing:1.5px;color:var(--td);text-transform:uppercase;">— Somente para Exames com Contraste —</div>
+        <div class="qblk"><div class="qh">Contraste</div><div id="qContrEl"></div></div>
+      </div>
+
+      <div class="dvd"></div>
+      <div class="al a-n">📝 Ao confirmar, declaro ter respondido corretamente a todas as perguntas acima e autorizo a realização do exame.</div>
+      <div class="fr c2">
+        <div class="fg"><label class="fl">Nome do Voluntário (confirmação) *</label><input class="fi" id="qNomeConf" placeholder="Nome completo"></div>
+        <div class="fg"><label class="fl">Data de hoje</label><input class="fi" id="qDataConf" type="date"></div>
+      </div>
+    </div>
+
+    <div class="fe">
+      <button class="btn bo" onclick="goStep(3)">← Anterior</button>
+      <button class="btn bt" onclick="goStep(5)">Confirmar e Enviar →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: Confirmação ── -->
+  <div id="ps5" style="display:none;">
+    <div class="success-screen on">
+      <div style="font-size:56px;margin-bottom:16px;">✅</div>
+      <div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:12px;">Solicitação Enviada com Sucesso!</div>
+      <p style="color:var(--tx2);font-size:14px;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto;">
+        Sua solicitação foi registrada no sistema PISApp/LIM44 e na planilha do LABIM/PISA.<br>
+        A equipe entrará em contato para confirmar o agendamento.
+      </p>
+      <div class="codebox" style="max-width:320px;margin:0 auto 24px;">
+        <div class="codelbl">Número da Solicitação</div>
+        <div class="codeval" id="solNumD">—</div>
+        <div class="codelbl" style="margin-top:6px;" id="solDateD"></div>
+      </div>
+      <p style="font-size:13px;color:var(--tx3);margin-bottom:24px;">
+        Um e-mail de confirmação foi enviado para o endereço cadastrado.<br>
+        O pedido médico foi salvo no Google Drive do LABIM/LIM44.
+      </p>
+      <button class="btn bo" onclick="resetPortal()">↩ Enviar Nova Solicitação</button>
+    </div>
+  </div>
+
+</div><!-- /pw -->
+
+<script>
+'use strict';
+
+/* ── SCRIPT URL (injetada pelo Apps Script) ── */
+/* ── API EXTERNA: GITHUB PAGES → APPS SCRIPT ── */
+var SCRIPT_URL = (window.PISAPP_API_URL || '').trim();
+
+function parseApiResponseText(txt){
+  try { return JSON.parse(txt); }
+  catch(e){ return {ok:false,msg:'Resposta inválida da API',raw:String(txt||'').slice(0,180)}; }
+}
+
+function apiJSONP(action,data={}){
+  return new Promise(resolve=>{
+    if(!SCRIPT_URL || SCRIPT_URL.includes('COLE_AQUI')){
+      resolve({ok:false,msg:'Configure PISAPP_API_URL no arquivo config.js'});
+      return;
+    }
+    const payload = JSON.stringify({action,data});
+    const cb = 'pisapp_cb_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+    const url = SCRIPT_URL + (SCRIPT_URL.includes('?')?'&':'?') + 'api=1&callback=' + encodeURIComponent(cb) + '&payload=' + encodeURIComponent(payload);
+    if(url.length > 180000){
+      resolve({ok:false,msg:'Payload muito grande para JSONP. Upload grande exige proxy/API com CORS.'});
+      return;
+    }
+    const sc = document.createElement('script');
+    const timer = setTimeout(()=>{cleanup();resolve({ok:false,msg:'Tempo esgotado ao chamar API'});},45000);
+    function cleanup(){clearTimeout(timer);try{delete window[cb];}catch(e){window[cb]=undefined;} if(sc.parentNode) sc.parentNode.removeChild(sc);}
+    window[cb] = r => { cleanup(); resolve(typeof r==='string'?parseApiResponseText(r):r); };
+    sc.onerror = () => { cleanup(); resolve({ok:false,msg:'Falha ao carregar API via JSONP'}); };
+    sc.src = url;
+    document.head.appendChild(sc);
+  });
+}
+
+function api(action,data={}){
+  const payload = JSON.stringify({action,data});
+  if(!SCRIPT_URL || SCRIPT_URL.includes('COLE_AQUI')){
+    return Promise.resolve({ok:false,msg:'Configure PISAPP_API_URL no arquivo config.js'});
+  }
+  return fetch(SCRIPT_URL,{method:'POST',body:payload,redirect:'follow'})
+    .then(r=>r.text())
+    .then(parseApiResponseText)
+    .catch(async err=>{
+      const r = await apiJSONP(action,data);
+      return r.ok ? r : {ok:false,msg:(err&&err.message?err.message:'Erro de conexão') + ' | Fallback: ' + (r.msg||'falhou')};
+    });
+}
+
+
+/* ── STATE ── */
+let curInst = 'PISA';
+let selFile = null, selFileB64 = null;
+let projList = [];
+let solCtr = 0; // mantido apenas por compatibilidade; o número oficial vem do backend
+
+const Q_SEG = ["1. Já realizou RM antes?","2. Tem claustrofobia?","3. Já foi submetido a alguma cirurgia cardíaca?","3.1. Usa marca-passo cardíaco ou desfibrilador interno?","4. Já foi submetido a alguma cirurgia de cabeça?","4.1. Tem clipe ou placa de metal na cabeça?","4.2. Usa prótese metálica interna no ouvido ou aparelho de surdez?","4.3. Utiliza neuroestimuladores?","5. Já foi submetido a alguma cirurgia ortopédica?","5.1. Tem alguma prótese? Onde?","5.2. Tem fixação metálica ortopédica? Onde?","6. Já foi submetido a alguma cirurgia no abdome?","6.1. Foi colocado clipe ou grampo metálico?","7. Tem prótese mamária?","8. Tem expansor mamário?","9. Já sofreu ferimento com estilhaço de metal ou arma de fogo?","10. Trabalha em local onde manipula metais?","11. Utiliza material de acupuntura?","12. Utiliza prótese dentária ou contenção?","13. Tem sutura metálica ou piercing?","14. Tem tatuagem ou maquiagem definitiva?","15. Utiliza bomba de infusão?","16. Possui cateter ou filtro vascular?","17. Pode estar ou está grávida?"];
+const Q_CONTR = ["1. Apresenta alguma alergia?","2. É asmático?","3. Está amamentando?","4. Mais de 60 anos?","5. Tem pressão alta?","6. Tem Diabetes?","7. Tem gota?","8. Já fez uso de contraste?","8.1. Teve reação alérgica ao contraste?","9. Já realizou cirurgia renal?","10. Tem problema renal?","11. Tem proteína na urina?","12. Tem insuficiência renal?","12.1. Faz Diálise?"];
+
+/* ── UTILS ── */
+const ge = id => document.getElementById(id);
+const v  = id => ge(id) ? ge(id).value : '';
+
+/* ── API ── */
+
+function savePortalCache_(name,obj){try{localStorage.setItem('PISAPP_PORTAL_'+name,JSON.stringify({t:Date.now(),v:obj}));}catch(e){}}
+function readPortalCache_(name,maxMs){try{const o=JSON.parse(localStorage.getItem('PISAPP_PORTAL_'+name)||'null');return o&&Date.now()-o.t<maxMs?o.v:null;}catch(e){return null;}}
+function renderProjectSelect_(){
+  const sel = ge('pProjSel');
+  if(!sel) return;
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">Selecione um projeto cadastrado</option>';
+
+  const list = Array.isArray(projList) ? projList : [];
+  if(!list.length){
+    const op = document.createElement('option');
+    op.value = '';
+    op.disabled = true;
+    op.textContent = 'Nenhum projeto ativo encontrado';
+    sel.appendChild(op);
+    if(ge('pCodProj')) ge('pCodProj').value = '';
+    return;
+  }
+
+  list.forEach((p, idx) => {
+    const nm = p['Nome'] || p['Titulo'] || p.nome || p.titulo || '';
+    const cod = p['Codigo'] || p['Código'] || p.codigo || '';
+    const apel = p['Apelido'] || p.apelido || '';
+    const dur = p['DuracaoAgendaMin'] || p['ReservaAgendaMinutos'] || '';
+    const op = document.createElement('option');
+    op.value = nm || cod || apel;
+    op.dataset.idx = String(idx);
+    op.textContent = (apel ? apel + ' — ' : '') + (cod ? cod + ' — ' : '') + (nm || 'Projeto sem nome') + (dur ? ' · ' + dur + ' min' : '');
+    sel.appendChild(op);
+  });
+
+  sel.onchange = () => {
+    const opt = sel.options[sel.selectedIndex];
+    const p = opt && opt.dataset && opt.dataset.idx !== undefined ? projList[Number(opt.dataset.idx)] : null;
+    ge('pCodProj').value = p ? (p['Codigo']||p['Código']||p.codigo||'') : '';
+    if(!v('inradProtocolo') && ge('inradProtocolo')) ge('inradProtocolo').value = ge('pCodProj').value || sel.value || '';
+  };
+}
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  ge('qDataConf').value = new Date().toISOString().slice(0,10);
+  buildQSeg();
+  await loadProjects();
+});
+
+async function loadProjects() {
+  const sel = ge('pProjSel');
+  if(sel){
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">Carregando projetos...</option>';
+  }
+
+  const cached = readPortalCache_('projetosPublicos', 10*60*1000);
+  if(cached && Array.isArray(cached) && cached.length){
+    projList = cached;
+    renderProjectSelect_();
+  }
+
+  const res = await api('getProjetosPublicos', {ts: Date.now()});
+  if (!res.ok) {
+    if(!projList.length && sel){
+      sel.disabled = false;
+      sel.innerHTML = '<option value="">Erro ao carregar projetos</option>';
+    }
+    toast('Não foi possível carregar os projetos: ' + (res.msg || res.error || 'verifique a API/config.js'), 'warn');
+    return;
+  }
+
+  const raw = res.proj || res.projetos || res.rows || [];
+  projList = raw.filter(p => {
+    const st = String(p['Status'] || p.status || 'Ativo').trim().toLowerCase();
+    return !st || st === 'ativo' || st === 'active';
+  });
+  savePortalCache_('projetosPublicos', projList);
+  renderProjectSelect_();
+}
+
+/* ── BUILD Q ── */
+function buildQSeg() {
+  const el = ge('qSegEl');
+  el.innerHTML = Q_SEG.map(q => `<div class="qi"><div class="qtx">${q}</div><div class="qbs"><button class="qb" onclick="qTog(this,'sim')">Sim</button><button class="qb" onclick="qTog(this,'nao')">Não</button></div></div>`).join('');
+  const el2 = ge('qContrEl');
+  el2.innerHTML = Q_CONTR.map(q => `<div class="qi"><div class="qtx">${q}</div><div class="qbs"><button class="qb" onclick="qTog(this,'sim')">Sim</button><button class="qb" onclick="qTog(this,'nao')">Não</button></div></div>`).join('');
+}
+function qTog(btn, val) { btn.closest('.qbs').querySelectorAll('.qb').forEach(b=>b.classList.remove('sim','nao')); btn.classList.add(val); }
+function qBlockCompleto(id){ return Array.from(ge(id).querySelectorAll('.qi')).every(qi=>qi.querySelector('.qb.sim')||qi.querySelector('.qb.nao')); }
+function portalQSegObrigatorio(){ const mods=mulChip('cgMod'); const amst=mulChip('cgAmst'); return curInst==='PISA' && amst.some(a=>a.includes('Voluntário')) && mods.some(m=>m.includes('RM')||m.includes('7T')); }
+
+/* ── INSTITUTO PICKER ── */
+function syncInradFromBase(){
+  if(!ge('inradProtocolo')) return;
+  if(!v('inradProtocolo')) ge('inradProtocolo').value = v('pCodProj') || v('pProjSel') || '';
+  if(!v('inradNmPac')) ge('inradNmPac').value = v('pSuj') || '';
+  if(!v('inradPACS')) ge('inradPACS').value = v('pPACS') || '';
+  if(!v('inradNasc')) ge('inradNasc').value = v('pNasc') || '';
+  if(!v('inradTelPaciente')) ge('inradTelPaciente').value = '';
+  if(!v('inradPesqCoord')) ge('inradPesqCoord').value = v('pNm') || '';
+  if(!v('inradTelPesqCoord')) ge('inradTelPesqCoord').value = v('pTel') || '';
+  if(!v('inradSuporteFinanceiro')) ge('inradSuporteFinanceiro').value = '';
+}
+
+function pickInst(inst, el) {
+  curInst = inst;
+  document.querySelectorAll('#cgInst .chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  const desc = ge('instDesc');
+  if (inst === 'INRAD') {
+    desc.innerHTML = '<div class="al a-w" style="margin-top:12px;">⚠️ O agendamento no INRAD requer informações específicas do sistema interno daquele instituto. No próximo passo, você preencherá um formulário com os dados obrigatórios para o INRAD.</div>';
+  } else {
+    desc.innerHTML = '<div class="al a-i" style="margin-top:12px;">✅ Exame no PISA/LIM44. No próximo passo, você informará as modalidades e dados do sujeito.</div>';
+  }
+  ge('pisaSec').style.display = inst === 'PISA' ? 'block' : 'none';
+  ge('inradSec').style.display = inst === 'INRAD' ? 'block' : 'none';
+  if (inst === 'INRAD') syncInradFromBase();
+}
+
+/* ── FILE SELECT ── */
+function onFile(input) {
+  const f = input.files[0]; if (!f) return;
+  selFile = f;
+  const dr = ge('fdrop');
+  dr.classList.add('has');
+  dr.innerHTML = `<div style="font-size:26px;margin-bottom:7px;">✅</div><div style="font-weight:600;color:var(--grd);font-size:13px;">${f.name}</div><div style="font-size:11px;color:var(--tx3);margin-top:4px;">${(f.size/1024).toFixed(1)} KB</div>`;
+  ge('fnm').style.display = 'flex'; ge('fnm').textContent = '📎 ' + f.name;
+  const reader = new FileReader();
+  reader.onload = e => { selFileB64 = e.target.result.split(',')[1]; };
+  reader.readAsDataURL(f);
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(String(e.target.result).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ── STEPS ── */
+
+function markMissing(id){
+  const el=ge(id);
+  if(!el) return;
+  el.classList.add('req-miss');
+  setTimeout(()=>el.classList.remove('req-miss'),2600);
+  try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+}
+function validatePisaStep3(){
+  const mods = mulChip('cgMod');
+  const amst = mulChip('cgAmst');
+  if(!mods.length){ toast('Selecione pelo menos uma modalidade.', 'warn'); markMissing('cgMod'); return false; }
+  if(!amst.length){ toast('Selecione o tipo de amostra.', 'warn'); markMissing('cgAmst'); return false; }
+  if(!v('pSuj').trim()){ toast('Preencha o sujeito/amostra.', 'warn'); markMissing('pSuj'); return false; }
+  if(!v('pJust').trim()){ toast('Preencha a justificativa do exame.', 'warn'); markMissing('pJust'); return false; }
+  return true;
+}
+
+async function goStep(n) {
+  // Validações
+  if (n === 2) {
+    if (!v('pNm').trim() || !v('pEmail').trim() || !v('pProjSel')) {
+      toast('Preencha nome, e-mail e projeto.', 'warn'); return;
+    }
+  }
+  if (n === 3) {
+    if (!curInst) { toast('Selecione o instituto.', 'warn'); return; }
+  }
+  if (n === 4) {
+    // Decide se vai para questionário de segurança
+    const mods = mulChip('cgMod');
+    const amst = mulChip('cgAmst');
+    const isVol = amst.some(a => a.includes('Voluntário'));
+    const isRM  = mods.some(m => m.includes('RM') || m.includes('7T'));
+    const isContr = selChip('cgContr') === 'Sim' || selChip('cgInradContr') === 'Sim';
+    if (curInst === 'PISA') {
+      if (!validatePisaStep3()) return;
+      ge('qContrSec').style.display = isContr ? 'block' : 'none';
+      if (!isVol || !isRM) { await submitSol(); return; }
+    } else {
+      if (!v('inradTipo') || !v('inradNmPac').trim() || !v('inradIndicacao').trim()) {
+        toast('Preencha os campos obrigatórios do formulário INRAD.', 'warn'); return;
+      }
+      await submitSol(); return;
+    }
+  }
+  if (n === 5) {
+    if (portalQSegObrigatorio() && !qBlockCompleto('qSegEl')) { toast('Responda todos os itens do Questionário de Segurança.', 'warn'); return; }
+    if (ge('qContrSec') && ge('qContrSec').style.display !== 'none' && !qBlockCompleto('qContrEl')) { toast('Responda todos os itens do Questionário de Contraste.', 'warn'); return; }
+    await submitSol(); return;
+  }
+
+  [1,2,3,4,5].forEach(i => {
+    ge('ps'+i).style.display = i === n ? 'block' : 'none';
+    const dot = ge('sd'+i); dot.classList.remove('act','dn');
+    if (i < n) dot.classList.add('dn');
+    else if (i === n) dot.classList.add('act');
+    if (i < 5) ge('sl'+i).classList.toggle('dn', i < n);
+  });
+  window.scrollTo(0,0);
+}
+
+function setStep(n) {
+  [1,2,3,4,5].forEach(i => {
+    ge('ps'+i).style.display = i === n ? 'block' : 'none';
+    const dot = ge('sd'+i); dot.classList.remove('act','dn');
+    if (i < n) dot.classList.add('dn');
+    else if (i === n) dot.classList.add('act');
+    if (i < 5) ge('sl'+i).classList.toggle('dn', i < n);
+  });
+  window.scrollTo(0,0);
+}
+
+/* ── SUBMIT ── */
+async function submitSol() {
+  // INRAD: o questionário de segurança é preenchido no MV, então não deve bloquear o Portal.
+  if (curInst !== 'INRAD' && portalQSegObrigatorio() && !qBlockCompleto('qSegEl')) { toast('Responda todos os itens do Questionário de Segurança.', 'warn'); return; }
+  if (ge('qContrSec') && ge('qContrSec').style.display !== 'none' && !qBlockCompleto('qContrEl')) { toast('Responda todos os itens do Questionário de Contraste.', 'warn'); return; }
+  toast('⏳ Enviando solicitação...');
+  const now = new Date();
+
+  // Upload arquivo do pedido médico/autorização
+  let arquivoURL = '', arquivoID = '', arquivoNome = selFile ? selFile.name : '';
+  if (selFile) {
+    const b64 = selFileB64 || await fileToBase64(selFile);
+    const ur = await api('uploadArquivo', {base64: b64, filename: selFile.name, mimeType: selFile.type || 'application/octet-stream'});
+    if (!ur.ok) { toast('Erro ao anexar pedido médico: ' + (ur.msg || 'falha no upload'), 'err'); return; }
+    arquivoURL = ur.url || '';
+    arquivoID = ur.id || '';
+  }
+
+  // Coleta respostas Q. Segurança preenchidas pelo pesquisador.
+  // INRAD: não coleta Q.Seg no portal, pois será preenchido no MV.
+  const qSeg = {};
+  if (curInst !== 'INRAD') {
+    ge('qSegEl').querySelectorAll('.qi').forEach((qi, i) => {
+      const sim = qi.querySelector('.qb.sim'), nao = qi.querySelector('.qb.nao');
+      qSeg[Q_SEG[i]] = sim ? 'Sim' : nao ? 'Não' : '—';
+    });
+  }
+
+  // Se o exame tiver contraste, salva também o bloco de contraste para o Worklist exibir tudo.
+  // INRAD: contraste também segue fluxo MV; não grava no Q.Seg do portal.
+  if (curInst !== 'INRAD' && ge('qContrSec') && ge('qContrSec').style.display !== 'none') {
+    ge('qContrEl').querySelectorAll('.qi').forEach((qi, i) => {
+      const sim = qi.querySelector('.qb.sim'), nao = qi.querySelector('.qb.nao');
+      qSeg[Q_CONTR[i]] = sim ? 'Sim' : nao ? 'Não' : '—';
+    });
+  }
+
+  // Dados INRAD
+  if (curInst === 'INRAD') syncInradFromBase();
+  const inradDados = curInst === 'INRAD' ? {
+    carimbo: now.toLocaleString('pt-BR'),
+    email: v('pEmail'),
+    protocolo: v('inradProtocolo') || v('pCodProj') || v('pProjSel'),
+    nomeCompleto: v('inradNmPac'),
+    rghc: v('inradRGHC') || 'Não se aplica',
+    corRaca: v('inradCorRaca'),
+    estadoCivil: v('inradEstadoCivil'),
+    cpf: v('inradCPF'),
+    rgEmissao: v('inradRG'),
+    nasc: v('inradNasc'),
+    nacionalidade: v('inradNacionalidade'),
+    naturalDe: v('inradNaturalDe'),
+    nomeMae: v('inradMae'),
+    nomePai: v('inradPai'),
+    conjuge: v('inradConjuge'),
+    endereco: v('inradEndereco'),
+    telPaciente: v('inradTelPaciente'),
+    medicoCRM: v('inradMedicoCRM'),
+    cid: v('inradCID'),
+    pesquisadorCoordenador: v('inradPesqCoord') || v('pNm'),
+    telPesquisadorCoordenador: v('inradTelPesqCoord') || v('pTel'),
+    sugestaoDatasPeriodos: v('inradSugestaoDatas'),
+    pedido: arquivoNome || '',
+    pedidoURL: arquivoURL || '',
+    pontuacao: v('inradPontuacao'),
+    suporteFinanceiro: v('inradSuporteFinanceiro'),
+    tipo: v('inradTipo'), pacs: v('inradPACS'), regiao: v('inradRegiao'), indicacao: v('inradIndicacao'),
+    contraste: selChip('cgInradContr') || 'Não', obs: v('inradObs')
+  } : {};
+
+  const sol = {
+    data: now.toISOString().slice(0,10), hora: now.toLocaleTimeString('pt-BR'),
+    pesquisador: v('pNm'), email: v('pEmail'), telefone: v('pTel'),
+    departamento: v('pDepto'), projeto: v('pProjSel'), codigoProjeto: v('pCodProj'),
+    instituto: curInst,
+    sujeito: curInst === 'PISA' ? v('pSuj') : v('inradNmPac'),
+    pacs: curInst === 'PISA' ? v('pPACS') : v('inradPACS'),
+    modalidades: curInst === 'PISA' ? mulChip('cgMod') : [v('inradTipo')],
+    amostras: curInst === 'PISA' ? mulChip('cgAmst') : ['Paciente INRAD'],
+    regioes: curInst === 'PISA' ? mulChip('cgReg') : [v('inradRegiao')],
+    nasc: curInst === 'PISA' ? v('pNasc') : v('inradNasc'),
+    sexo: curInst === 'PISA' ? v('pSexo') : v('inradSexo'),
+    peso: v('pPeso'), altura: v('pAltura'),
+    contraste: selChip('cgContr') || selChip('cgInradContr') || 'Não',
+    dataPref: curInst === 'PISA' ? v('pDataPref') : v('inradSugestaoDatas'),
+    periodo: curInst === 'PISA' ? v('pPeriodo') : v('inradSugestaoDatas'),
+    justificativa: curInst === 'PISA' ? v('pJust') : v('inradIndicacao'),
+    arquivoNome, arquivoURL, arquivoID, qSeg, inradDados,
+  };
+
+  const res = await api('novaSol', sol);
+  if (!res.ok) { toast('Erro ao enviar: ' + res.msg, 'err'); return; }
+
+  ge('solNumD').textContent = res.id || 'SOLICITAÇÃO REGISTRADA';
+  ge('solDateD').textContent = now.toLocaleString('pt-BR');
+  setStep(5);
+  toast('✓ Solicitação enviada com sucesso!');
+}
+
+/* ── RESET ── */
+function resetPortal() {
+  selFile = null; selFileB64 = null; curInst = 'PISA';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel','selm'));
+  document.querySelectorAll('.fi,.ft').forEach(el => el.value = '');
+  document.querySelectorAll('.fs').forEach(el => el.selectedIndex = 0);
+  ge('fdrop').classList.remove('has');
+  ge('fdrop').innerHTML = `<input type="file" id="finput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="onFile(this)"><div style="font-size:28px;margin-bottom:8px;">📄</div><div style="font-weight:600;color:var(--tx2);">Clique para selecionar ou arraste o arquivo</div><div style="font-size:12px;color:var(--tx3);margin-top:5px;">PDF, JPG, PNG, DOC, DOCX · Máx. 10MB</div>`;
+  ge('fnm').style.display = 'none';
+  ge('instDesc').innerHTML = '';
+  buildQSeg();
+  setStep(1);
+}
+
+/* ── CHIP HELPERS ── */
+function schip(gid, el) { document.querySelectorAll('#'+gid+' .chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); }
+function mchip(gid, el) { el.classList.toggle('selm'); }
+function selChip(gid)   { const e = document.querySelector('#'+gid+' .sel'); return e ? e.textContent.trim() : null; }
+function mulChip(gid)   { return Array.from(document.querySelectorAll('#'+gid+' .selm')).map(e=>e.textContent.trim()); }
+
+/* ── TOAST ── */
+let tTmr;
+function toast(msg, type) {
+  const el = ge('toast');
+  ge('tIc').textContent = type==='warn' ? '⚠️' : type==='err' ? '✗' : '✓';
+  ge('tMsg').textContent = msg;
+  el.style.borderLeftColor = type==='warn' ? 'var(--ye)' : type==='err' ? 'var(--re)' : 'var(--teal)';
+  el.classList.add('on'); clearTimeout(tTmr);
+  tTmr = setTimeout(() => el.classList.remove('on'), 4500);
+}
+
+
+/* PATCH v6 — modalidades por instituto */
+(function(){
+  const PISA_MODALIDADES = [
+    ['🧲','RM 7T'], ['💡','TC'], ['🔊','Ultrassom (US)'], ['🔬','Virtangio']
+  ];
+  const INRAD_MODALIDADES = ['RM 3T','RM 1,5T','TC','Ultrassom (US)','RX','Densitometria Óssea','Mamografia','Medicina Nuclear'];
+  function renderPortalModalidades(inst){
+    const cg = document.getElementById('cgMod');
+    if(cg){
+      cg.innerHTML = PISA_MODALIDADES.map(([ic,txt])=>`<div class="chip" onclick="mchip('cgMod',this)">${ic} ${txt}</div>`).join('');
+    }
+    const tipo = document.getElementById('inradTipo');
+    if(tipo){
+      tipo.innerHTML = '<option value="">Selecione</option>' + INRAD_MODALIDADES.map(m=>`<option>${m}</option>`).join('');
+    }
+  }
+  const oldPickInst = window.pickInst;
+  window.pickInst = function(inst, el){
+    if(typeof oldPickInst === 'function') oldPickInst(inst, el);
+    renderPortalModalidades(inst);
+  };
+  document.addEventListener('DOMContentLoaded',()=>renderPortalModalidades(window.curInst || 'PISA'));
+})();
+
+</script>
+</body>
+</html>
