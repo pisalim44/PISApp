@@ -296,6 +296,65 @@ tr.hidden-row{display:none;}
 .mob-ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199;}
 .mob-ovl.on{display:block;}
 
+
+
+/* v7.5.9.6 — Agenda visual estilo Google Calendar (somente UI) */
+#sec-agenda{--cal-bg:#f8fafc;--cal-line:#d9e3ef;--cal-hover:#eef6ff;}
+#sec-agenda .agenda-intro{border-radius:12px;background:#eef7ff;border-color:#cfe8ff;color:#244565;}
+#sec-agenda .agenda-filter{align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;border:1px solid var(--bd);border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+#sec-agenda .agenda-filter .wlf-btn{border-radius:999px;padding:7px 13px;font-size:12px;background:#f8fafc;border:1px solid #d9e3ef;box-shadow:none;}
+#sec-agenda .agenda-filter .wlf-btn.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+#sec-agenda .agenda-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+#sec-agenda .agenda-stats .sc{border-radius:14px;padding:10px 12px;background:#fff;border:1px solid var(--bd);box-shadow:0 1px 2px rgba(15,23,42,.04);}
+#sec-agenda .agenda-stats .sl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+#sec-agenda .agenda-stats .sv{font-size:20px;line-height:1.05;}
+.google-cal-nav{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:10px 12px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.google-cal-nav .cal-title{font-size:20px;font-weight:800;text-transform:lowercase;letter-spacing:-.02em;color:#0f2342;min-width:180px;}
+.google-cal-nav .btn-sm{border-radius:999px;padding:7px 11px;background:#fff;}
+.google-cal-nav .cal-view-btns{align-items:center;background:#f8fafc;border:1px solid var(--bd);border-radius:999px;padding:3px;gap:2px;}
+.google-cal-nav .cal-view-btns .btn{border-radius:999px;margin-right:4px;}
+.google-cal-nav .cal-vbtn{border:0;border-radius:999px;background:transparent;padding:8px 14px;color:#334155;font-weight:700;}
+.google-cal-nav .cal-vbtn.on{background:#fff;color:var(--teal);box-shadow:0 1px 4px rgba(15,23,42,.12);}
+#calGrid{background:#fff;border:1px solid var(--bd);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+#calGrid .cal-scroll{padding-bottom:0;background:#fff;}
+#calGrid .cal-month-grid.v7{min-width:980px;grid-auto-rows:minmax(124px,auto);gap:0;border:0;border-radius:0;background:#fff;}
+#calGrid .cal-month-grid.v7 .cal-dow{position:sticky;top:0;z-index:1;background:#fff;color:#64748b;border-bottom:1px solid var(--bd);font-family:var(--m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:12px 6px;}
+#calGrid .cal-month-grid.v7 .cal-cell{background:#fff;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);min-height:124px;padding:7px 6px;transition:background .12s;}
+#calGrid .cal-month-grid.v7 .cal-cell:hover{background:#f8fbff;}
+#calGrid .cal-month-grid.v7 .cal-cell.other{background:#f8fafc;}
+#calGrid .cal-month-grid.v7 .cal-cell.today{background:#eefdfb;}
+#calGrid .cal-day-n{font-family:var(--m);font-size:12px;color:#64748b;margin-bottom:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+#calGrid .cal-cell.today .cal-day-n{background:var(--teal);color:#fff;}
+#calGrid .cal-ev{position:relative;display:flex;align-items:center;gap:4px;max-width:100%;line-height:1.25;padding:3px 7px;border-radius:7px;font-size:10.5px;font-weight:600;margin:0 0 3px 0;border-left:0;box-shadow:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+#calGrid .cal-ev::before{content:'';width:6px;height:6px;min-width:6px;border-radius:50%;background:currentColor;opacity:.9;}
+#calGrid .cal-ev-time{font-family:var(--m);font-weight:800;letter-spacing:-.02em;color:inherit;}
+#calGrid .cal-more{font-size:10px;color:#64748b;padding:2px 6px;border-radius:999px;background:#f1f5f9;display:inline-block;margin-top:2px;}
+#calGrid .cal-ev.gcal{background:#fff4df;color:#c46c00;}
+#calGrid .cal-ev.pisa{background:#e8fbf7;color:#087d70;}
+#calGrid .cal-ev.inrad{background:#f1edff;color:#6d39d1;}
+#calGrid .cal-ev.block,#calGrid .cal-ev.inrad.block{background:#fee2e2;color:#b91c1c;}
+#calGrid .cal-ev.grp-rm7t{background:#ede9fe;color:#6d28d9;}
+#calGrid .cal-ev.grp-rm3t{background:#dbeafe;color:#1d4ed8;}
+#calGrid .cal-ev.grp-rm15t{background:#dcfce7;color:#15803d;}
+#calGrid .cal-ev.grp-tc{background:#ffedd5;color:#c2410c;}
+#calGrid .cal-week-grid{gap:0;min-width:980px;border:0;background:#fff;}
+#calGrid .cal-week-day{border:0;border-right:1px solid var(--bd);border-radius:0;min-height:420px;padding:10px;background:#fff;}
+#calGrid .cal-week-day.today{background:#eefdfb;box-shadow:inset 0 3px 0 var(--teal);}
+#calGrid .cal-week-head{font-family:var(--m);font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bd);padding-bottom:8px;margin-bottom:8px;}
+#calGrid .cal-day-list{padding:8px 12px 14px;background:#fff;}
+#calGrid .cal-day-item{display:grid;grid-template-columns:104px 1fr auto;gap:14px;align-items:flex-start;padding:13px 14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;margin-bottom:9px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+#calGrid .cal-day-item:hover{background:#f8fbff;}
+#calGrid .cal-day-hour{font-family:var(--m);font-size:12px;font-weight:800;color:#0f2342;white-space:nowrap;}
+#calGrid .cal-day-title{font-weight:800;color:#0f2342;font-size:14px;word-break:break-word;}
+#calGrid .cal-day-desc{font-size:12px;color:#64748b;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+#calGrid .cal-badge{border-radius:999px;padding:3px 9px;font-size:10px;font-family:var(--m);white-space:nowrap;font-weight:700;}
+#calGrid .cal-badge.gcal{background:#fff4df;color:#c46c00;}
+#calGrid .cal-badge.pisa{background:#e8fbf7;color:#087d70;}
+#calGrid .cal-badge.inrad{background:#f1edff;color:#6d39d1;}
+#calGrid .cal-badge.block{background:#fee2e2;color:#b91c1c;}
+@media(max-width:900px){#sec-agenda .agenda-stats{grid-template-columns:1fr 1fr 1fr}.google-cal-nav .cal-title{font-size:17px;min-width:auto}#calGrid .cal-month-grid.v7{min-width:850px}#calGrid .cal-week-grid{min-width:900px}#calGrid .cal-day-item{grid-template-columns:82px 1fr}}
+@media(max-width:640px){#sec-agenda .agenda-stats{grid-template-columns:1fr}.google-cal-nav{align-items:flex-start}.google-cal-nav .cal-view-btns{width:100%;justify-content:flex-end;overflow-x:auto}#sec-agenda .agenda-filter{overflow-x:auto;flex-wrap:nowrap}}
+
 /* ── RESPONSIVE ── */
 @media(max-width:960px){
   :root{--sw:0px;}
@@ -956,7 +1015,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 
       <!-- WORKLIST -->
       <div class="sec" id="sec-worklist">
-        <div class="al a-i mb">📋 Exames do dia — sistema + Google Agenda. Use os filtros para localizar rapidamente por equipamento ou modalidade.</div>
+        <div class="al a-i mb">📋 Exames do dia — sistema + Google Agenda. Filtre por grupo principal: RM 7T, RM 3T, RM 1,5T ou TC.</div>
         <div class="wl-filter" id="wlFilter">
           <span style="font-family:var(--m);font-size:11px;color:var(--tx3);">Filtrar:</span>
           <button class="wlf-btn on" onclick="wlFilt('todos',this)">Todos</button>
@@ -970,9 +1029,13 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 
       <!-- AGENDA -->
       <div class="sec" id="sec-agenda">
-        <div class="al a-n mb">📅 Agenda consolidada: exames confirmados no PISApp + uma ou mais agendas Google, como TC e RM 7T.</div>
-        <div class="g3 mb"><div class="sc sc-t"><div class="sl">Eventos no período</div><div class="sv" id="calTotal">0</div></div><div class="sc sc-y"><div class="sl">Google Agenda</div><div class="sv" id="calGoogle">0</div></div><div class="sc sc-g"><div class="sl">PISApp</div><div class="sv" id="calPisa">0</div></div></div>
-        <div class="cal-nav">
+        <div class="al a-n mb agenda-intro">📅 Agenda consolidada: exames confirmados no PISApp + Google Agenda. Use os mesmos 4 grupos principais da Worklist.</div>
+        <div class="wl-filter agenda-filter" id="agendaFilter">
+          <span style="font-family:var(--m);font-size:11px;color:var(--tx3);">Filtrar:</span>
+          <button class="wlf-btn on" onclick="agendaFilt('todos',this)">Todos</button>
+        </div>
+        <div class="g3 mb agenda-stats"><div class="sc sc-t"><div class="sl">Eventos filtrados</div><div class="sv" id="calTotal">0</div></div><div class="sc sc-y"><div class="sl">Google Agenda</div><div class="sv" id="calGoogle">0</div></div><div class="sc sc-g"><div class="sl">PISApp</div><div class="sv" id="calPisa">0</div></div></div>
+        <div class="cal-nav google-cal-nav">
           <div class="fc">
             <button class="btn bo btn-sm" onclick="calNav(-1)">‹</button>
             <div class="cal-title" id="calTitle">—</div>
@@ -1580,7 +1643,7 @@ let curUser=null,curRole=null,curNome='',curInst='PISA',curSessionToken=null;
 window.PISAPP_SESSION_TOKEN = localStorage.getItem('PISAPP_SESSION_TOKEN') || '';
 function saveSession_(token){curSessionToken=token||'';window.PISAPP_SESSION_TOKEN=curSessionToken;if(curSessionToken)localStorage.setItem('PISAPP_SESSION_TOKEN',curSessionToken);else localStorage.removeItem('PISAPP_SESSION_TOKEN');}
 function handleAuthExpired_(res){try{if(curUser){toast((res&&res.msg)||'Sessão expirada. Faça login novamente.','warn');}}catch(e){} saveSession_(''); curUser=''; curRole=''; try{ge('shell').classList.remove('on'); ge('loginScreen').style.display='flex';}catch(e){}}
-let wlFilterVal='todos', wlSelectedDate=null;
+let wlFilterVal='todos', agendaFilterVal='todos', wlSelectedDate=null;
 let AGENDA_REQ_ID=0, WORKLIST_REQ_ID=0;
 let LAST_AGENDA_OK={}, LAST_WORKLIST_OK={};
 let curStartExame=null, curPosIdx=null, curCancelCod=null;
@@ -2014,30 +2077,89 @@ function populateDDs(){
   }
 }
 
-/* ── WL FILTER BUTTONS ── */
-function buildWLFilters(){
-  const bar=ge('wlFilter');if(!bar)return;
-  while(bar.children.length>2)bar.removeChild(bar.lastChild);
-  const mods=['RM 7T','TC','RM 1,5T','RM 3T','RX','US','Virtangio','Medicina Nuclear'];
-  mods.forEach(m=>{
-    const btn=ce('button');btn.className='wlf-btn';btn.textContent=m;
-    btn.onclick=()=>wlFilt(m,btn);
-    bar.appendChild(btn);
-  });
-  // Add equipamentos
-  DB.equip.forEach(eq=>{
-    const nm=eq['Nome']||'';if(!nm||mods.includes(nm))return;
-    const btn=ce('button');btn.className='wlf-btn';btn.textContent=nm;
-    btn.onclick=()=>wlFilt(nm,btn);
+/* ── FILTROS PRINCIPAIS WORKLIST / AGENDA ── */
+const PISAPP_MAIN_FILTERS = [
+  {key:'RM7T',   label:'RM 7T'},
+  {key:'RM3T',   label:'RM 3T'},
+  {key:'RM15T',  label:'RM 1,5T'},
+  {key:'TC',     label:'TC'}
+];
+
+function normFilterText_(v){
+  return String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase()
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function compactFilterText_(v){
+  return normFilterText_(v).replace(/[^A-Z0-9]+/g,'');
+}
+function itemFilterHaystack_(item){
+  item=item||{};
+  return [
+    item.GrupoAgenda,item.grupoAgenda,item.calendarKey,item.CalendarKey,
+    item.Modalidade,item.modalidade,item.mod,
+    item.Equipamento,item.equipamento,item.equip,
+    item.CalendarLabel,item.calendarLabel,item.calendarName,item.CalendarName,
+    item.CalendarID,item.calendarId,item.CalID,item.calId,
+    item.title,item.Titulo,item.desc,item.Descricao,item.description,
+    item._src,item._inst,item.Instituto,item.instituto
+  ].filter(Boolean).join(' ');
+}
+function canonicalFilterGroup_(itemOrText){
+  const txt = (typeof itemOrText === 'string') ? itemOrText : itemFilterHaystack_(itemOrText);
+  const n = normFilterText_(txt);
+  const c = compactFilterText_(txt);
+  if(!n && !c) return 'OUTROS';
+
+  // Ordem proposital: diferenciar RM 7T / RM 3T / RM 1,5T antes de cair em RM genérico.
+  if(/RM\s*7\s*T/.test(n) || /7\s*T/.test(n) || c.includes('RM7T') || c.includes('7TESLA')) return 'RM7T';
+  if(/RM\s*3\s*T/.test(n) || /3\s*T/.test(n) || c.includes('RM3T') || c.includes('3TESLA')) return 'RM3T';
+  if(/RM\s*1[,. ]?5\s*T/.test(n) || /1[,. ]?5\s*T/.test(n) || c.includes('RM15T') || c.includes('RM1E5T') || c.includes('1E5T') || c.includes('15TESLA')) return 'RM15T';
+  if(/\bTC\b/.test(n) || n.includes('TOMOGRAFIA') || c.includes('TOMOGRAF') || /\bCT\b/.test(n)) return 'TC';
+
+  return 'OUTROS';
+}
+function matchesMainFilter_(item, filterVal){
+  if(!filterVal || filterVal==='todos') return true;
+  return canonicalFilterGroup_(item) === filterVal;
+}
+function renderMainFilterButtons_(barId, activeVal, handlerName){
+  const bar=ge(barId); if(!bar) return;
+  while(bar.children.length>2) bar.removeChild(bar.lastChild);
+  const allBtn=bar.querySelector('.wlf-btn');
+  if(allBtn) allBtn.classList.toggle('on', activeVal==='todos');
+  PISAPP_MAIN_FILTERS.forEach(f=>{
+    const btn=ce('button');
+    btn.className='wlf-btn'+(activeVal===f.key?' on':'');
+    btn.textContent=f.label;
+    btn.onclick=()=>window[handlerName](f.key,btn);
     bar.appendChild(btn);
   });
 }
-
+function buildWLFilters(){
+  renderMainFilterButtons_('wlFilter', wlFilterVal, 'wlFilt');
+}
+function buildAgendaFilters(){
+  renderMainFilterButtons_('agendaFilter', agendaFilterVal, 'agendaFilt');
+}
 function wlFilt(val,btn){
-  wlFilterVal=val;
-  qsa('.wlf-btn').forEach(b=>b.classList.remove('on'));
-  if(btn)btn.classList.add('on');
+  wlFilterVal=val||'todos';
+  qsa('#wlFilter .wlf-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  else buildWLFilters();
   renderWLItems();
+}
+function agendaFilt(val,btn){
+  agendaFilterVal=val||'todos';
+  qsa('#agendaFilter .wlf-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  else buildAgendaFilters();
+  renderCal();
+}
+function filterAgendaEvents_(events){
+  return (events||[]).filter(e=>matchesMainFilter_(e, agendaFilterVal));
 }
 
 
@@ -2272,9 +2394,12 @@ function renderWLItems(){
   const t=wlDateValue();
   let items=DB.ex.filter(e=>normDate(e['Data']||e.data||'')===t);
   if(wlFilterVal!=='todos'){
-    items=items.filter(e=>(e['Modalidade']||'').includes(wlFilterVal)||(e['Equipamento']||'').includes(wlFilterVal));
+    items=items.filter(e=>matchesMainFilter_(e, wlFilterVal));
   }
-  const calOnly=calEvents.filter(ev=>!items.some(e=>String(e['CalID']||e.calId||'')===String(ev.id||'')));
+  let calOnly=calEvents.filter(ev=>!items.some(e=>String(e['CalID']||e.calId||'')===String(ev.id||'')));
+  if(wlFilterVal!=='todos'){
+    calOnly=calOnly.filter(ev=>matchesMainFilter_(ev, wlFilterVal));
+  }
   ge('wlCount').textContent=items.length+' exames';
   ge('wlCalCnt').textContent=calOnly.length+' Agenda';
 
@@ -2868,6 +2993,7 @@ async function delBloqAgenda(id){
 
 /* ── AGENDA (CALENDÁRIO) ── */
 async function renderCal(){
+  buildAgendaFilters();
   const req=++AGENDA_REQ_ID;
   const dateStr=localDateISO(calDate);
   const cacheKey=agendaCacheKey_(dateStr,calView);
@@ -2901,12 +3027,14 @@ async function renderCal(){
     title:`[PISA] ${firstVal(e,['Modalidade','mod'],'')} — ${exameSujeito(e)}`,
     date:normDate(e['Data']||e.data||''),
     start:itemHoraAgendada(e),
+    grupoAgenda:e.GrupoAgenda||e.grupoAgenda||canonicalFilterGroup_(e),
     _src:'pisa',_inst:e['Instituto']||'PISA',
   }));
-  const all=[...gcalEvs.map(e=>({...e,_src:'gcal'})),...dbEvs,...blockRows.map(e=>({...e,_src:'block'}))];
+  const allRaw=[...gcalEvs.map(e=>({...e,_src:'gcal'})),...dbEvs,...blockRows.map(e=>({...e,_src:'block'}))];
+  const all=filterAgendaEvents_(allRaw);
   if(ge('calTotal')) ge('calTotal').textContent=all.length;
-  if(ge('calGoogle')) ge('calGoogle').textContent=gcalEvs.length;
-  if(ge('calPisa')) ge('calPisa').textContent=dbEvs.length;
+  if(ge('calGoogle')) ge('calGoogle').textContent=all.filter(e=>e._src==='gcal').length;
+  if(ge('calPisa')) ge('calPisa').textContent=all.filter(e=>e._src==='pisa').length;
 
   if(calView==='month'){
     ge('calTitle').textContent=calDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
@@ -2923,6 +3051,35 @@ async function renderCal(){
   }
 }
 
+function calEventGroupClass_(e){
+  const g=String((e&&((e.grupoAgenda)||(e.GrupoAgenda))) || canonicalFilterGroup_(e) || '').toUpperCase().replace(/\s+/g,'');
+  if(g==='RM7T') return 'grp-rm7t';
+  if(g==='RM3T') return 'grp-rm3t';
+  if(g==='RM1,5T'||g==='RM1.5T'||g==='RM15T') return 'grp-rm15t';
+  if(g==='TC') return 'grp-tc';
+  return '';
+}
+function calEventSrcClass_(e){
+  if(e&&e._src==='block') return 'block';
+  if(e&&e._src==='gcal') return 'gcal';
+  if(e&&e._inst==='INRAD') return 'inrad';
+  return 'pisa';
+}
+function calEventCssClass_(e){ return ['cal-ev', calEventSrcClass_(e), calEventGroupClass_(e)].filter(Boolean).join(' '); }
+function calBadgeClass_(e){ return ['cal-badge', calEventSrcClass_(e)].filter(Boolean).join(' '); }
+function calEventCompactTitle_(e){
+  let t=String((e&&e.title)||'').trim();
+  t=t.replace(/^\[PISA\]\s*/i,'').replace(/^PISApp\s*[—-]\s*/i,'');
+  t=t.replace(/\s+/g,' ');
+  return t || 'Evento';
+}
+function calEventTypeLabel_(e){
+  if(e&&e._src==='block') return 'Bloqueio';
+  if(e&&e._src==='gcal') return 'Google Agenda';
+  if(e&&e._inst==='INRAD') return 'INRAD';
+  return 'PISApp';
+}
+
 function renderCalMonth(evs){
   const y=calDate.getFullYear(),m=calDate.getMonth();
   const firstDay=new Date(y,m,1).getDay();
@@ -2937,8 +3094,8 @@ function renderCalMonth(evs){
     const dayEvs=evs.filter(e=>e.date===ds);
     html+=`<div class="cal-cell ${isToday?'today':''}">
       <div class="cal-day-n">${d}</div>
-      ${dayEvs.slice(0,3).map(e=>`<div class="cal-ev ${e._src==='block'?'inrad':e._src==='block'?'inrad':e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" title="${e.title}">${e.start?e.start+' ':''} ${e.title}</div>`).join('')}
-      ${dayEvs.length>3?`<div style="font-size:9px;color:var(--tx3);">+${dayEvs.length-3} mais</div>`:''}
+      ${dayEvs.slice(0,4).map(e=>`<div class="${calEventCssClass_(e)}" title="${calEventCompactTitle_(e)}">${e.start?`<span class="cal-ev-time">${e.start}</span>`:''}<span>${calEventCompactTitle_(e)}</span></div>`).join('')}
+      ${dayEvs.length>4?`<div class="cal-more">+${dayEvs.length-4} mais</div>`:''}
     </div>`;
   }
   html+='</div></div>';ge('calGrid').innerHTML=html;
@@ -2947,17 +3104,18 @@ function renderCalMonth(evs){
 function renderCalDay(evs){
   const ds=localDateISO(calDate);
   const dayEvs=evs.filter(e=>e.date===ds).sort((a,b)=>(a.start||'')>(b.start||'')?1:-1);
-  let html='<div class="card"><div style="min-height:260px;">';
-  if(!dayEvs.length)html+='<div style="text-align:center;padding:40px;color:var(--tx3);">Sem eventos para este dia.</div>';
-  else html+=dayEvs.map(e=>`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);">
-    <div style="font-family:var(--m);font-size:12px;min-width:90px;color:var(--tx3);">${e.start||'—'}${e.end?' – '+e.end:''}</div>
-    <div style="flex:1;">
-      <div style="font-weight:600;font-size:13.5px;color:var(--navy);">${e.title}</div>
-      ${e.desc?`<div style="font-size:12px;color:var(--tx2);margin-top:2px;">${e.desc}</div>`:''}
-      ${e._src==='gcal'?`<button class="btn bo btn-xs" style="margin-top:6px;" data-pisapp-action="vincular-evento" data-event="${encodeURIComponent(JSON.stringify(e))}" type="button">🔗 Vincular ao Sistema</button>`:''}
+  let html='<div class="cal-day-list">';
+  if(!dayEvs.length)html+='<div style="text-align:center;padding:52px 20px;color:var(--tx3);">Sem eventos para este dia.</div>';
+  else html+=dayEvs.map(e=>`<div class="cal-day-item">
+    <div class="cal-day-hour">${e.start||'—'}${e.end?' – '+e.end:''}</div>
+    <div>
+      <div class="cal-day-title">${calEventCompactTitle_(e)}</div>
+      ${e.desc?`<div class="cal-day-desc">${e.desc}</div>`:''}
+      ${e._src==='gcal'?`<button class="btn bo btn-xs" style="margin-top:8px;" data-pisapp-action="vincular-evento" data-event="${encodeURIComponent(JSON.stringify(e))}" type="button">🔗 Vincular ao Sistema</button>`:''}
     </div>
+    <span class="${calBadgeClass_(e)}">${calEventTypeLabel_(e)}</span>
   </div>`).join('');
-  html+='</div></div>';ge('calGrid').innerHTML=html;
+  html+='</div>';ge('calGrid').innerHTML=html;
 }
 
 function renderCalWeek(evs,monday){
@@ -2967,11 +3125,11 @@ function renderCalWeek(evs,monday){
   let html='<div class="cal-scroll"><div class="cal-week-grid">';
   dates.forEach(d=>{
     const ds=localDateISO(d);
-    const dayEvs=evs.filter(e=>e.date===ds);
+    const dayEvs=evs.filter(e=>e.date===ds).sort((a,b)=>(a.start||'')>(b.start||'')?1:-1);
     const isToday=ds===todayStr;
-    html+=`<div style="background:${isToday?'rgba(45,191,173,.05)':''};border:1px solid var(--bd);border-radius:8px;padding:8px;min-height:180px;">
-      <div style="font-family:var(--m);font-size:10px;color:var(--tx3);margin-bottom:6px;">${days[d.getDay()]} ${d.getDate()}</div>
-      ${dayEvs.map(e=>`<div class="cal-ev ${e._src==='block'?'inrad':e._src==='block'?'inrad':e._src==='gcal'?'gcal':e._inst==='INRAD'?'inrad':'pisa'}" style="margin-bottom:4px;" title="${e.title}">${e.start||''} ${e.title}</div>`).join('')}
+    html+=`<div class="cal-week-day ${isToday?'today':''}">
+      <div class="cal-week-head"><span>${days[d.getDay()]}</span><strong>${d.getDate()}</strong></div>
+      ${dayEvs.map(e=>`<div class="${calEventCssClass_(e)}" title="${calEventCompactTitle_(e)}">${e.start?`<span class="cal-ev-time">${e.start}</span>`:''}<span>${calEventCompactTitle_(e)}</span></div>`).join('')}
     </div>`;
   });
   html+='</div></div>';ge('calGrid').innerHTML=html;
@@ -5723,8 +5881,8 @@ async function showSolLog(solIdx){
 
 <script>
 (function(){
-  window.PISAPP_FRONTEND_VERSION = '7.5.9.4';
-  window.PISAPP_FRONTEND_BUILD = 'agenda-multimodalidade-robusta';
+  window.PISAPP_FRONTEND_VERSION = '7.5.9.5';
+  window.PISAPP_FRONTEND_BUILD = 'filtros-principais-worklist-agenda';
   window.pisappSelfTest = async function(opts={}){
     const out = {ok:true, startedAt:new Date().toISOString(), frontend:{version:window.PISAPP_FRONTEND_VERSION, build:window.PISAPP_FRONTEND_BUILD}, checks:[]};
     function add(nome, ok, msg, data){ out.checks.push({nome, ok:!!ok, msg:msg||'', data:data||null}); if(!ok) out.ok=false; }
