@@ -1979,9 +1979,19 @@ async function loadSectionData(id){
       r=await api('getSujeitosData',{max:500},{silent:true}); if(r.ok){DB.suj=r.suj||[];DB.proj=r.proj||DB.proj;markLoaded_(id);saveModuleCache_(id,['suj','proj']);}
     }
     if(id==='exames'){
-      if(isFresh_(id,120000)) return;
-      if(!(DB.ex&&DB.ex.length) && applyModuleCache_(id,5*60*1000,['ex','sol','equip','proj','medicos'])){ markLoaded_(id); return; }
-      r=await api('getExamesData',{date:today(),view:'month',max:600},{silent:true}); if(r.ok){DB.ex=r.ex||[];DB.sol=r.sol||DB.sol;DB.equip=r.equip||DB.equip;DB.proj=r.proj||DB.proj;DB.medicos=r.medicos||DB.medicos;markLoaded_(id);saveModuleCache_(id,['ex','sol','equip','proj','medicos']);}
+      // v7.5.9.7: Histórico de Exames deve listar o histórico interno completo.
+      // Antes estava chamando getExamesData({date:today(), view:'month'}), o que escondia
+      // exames de teste/meses anteriores e podia salvar cache vazio. Agora a aba Exames
+      // carrega a base interna sem filtro de mês; os filtros visuais da tela continuam funcionando.
+      if(isFresh_(id,60000) && DB.ex && DB.ex.length) return;
+      r=await api('getExamesData',{max:1200},{silent:true});
+      if(r.ok){
+        DB.ex=r.ex||[];DB.sol=r.sol||DB.sol;DB.equip=r.equip||DB.equip;DB.proj=r.proj||DB.proj;DB.medicos=r.medicos||DB.medicos;
+        markLoaded_(id);
+        if(DB.ex && DB.ex.length) saveModuleCache_(id,['ex','sol','equip','proj','medicos']);
+      } else {
+        toast('Não foi possível carregar Exames: '+(r.msg||'erro desconhecido'),'err');
+      }
     }
     if(id==='projetos'){
       if(isFresh_(id,300000)) return;
