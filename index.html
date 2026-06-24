@@ -1431,7 +1431,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             <div class="ct" style="font-size:16px;">✅ Controle de Qualidade RM/TC</div>
             <div style="font-size:12px;color:var(--tx3);margin-top:3px;">Gera número de exame intransferível e agenda o CQ no Google Agenda correspondente.</div>
           </div>
-          <div class="fc"><span class="pill p-t" id="qcC">0 registros</span><button class="btn bt btn-sm" onclick="openQCModal()">+ Novo CQ</button></div>
+          <div class="fc"><span class="pill p-t" id="qcC">0 registros</span><button class="btn bo btn-sm" onclick="openCQItensConfigModal()">⚙️ Itens da rotina</button><button class="btn bt btn-sm" onclick="openQCModal()">+ Novo CQ</button></div>
         </div>
         <div class="card mb">
           <div class="ch"><div class="ct"><div class="cti">📊</div>Resumo operacional de CQ</div><button class="btn bo btn-xs" onclick="renderQCSummary()">🔄 Atualizar resumo</button></div>
@@ -1649,6 +1649,44 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 </div>
 
 <!-- Novo Controle de Qualidade -->
+<!-- Configuração dos itens da rotina de CQ (RM 7T/3T/1.5T) -->
+<div class="ovl" id="ovlCQItensConfig">
+  <div class="modal" style="max-width:680px;">
+    <div class="mttl">⚙️ Itens da rotina de CQ (RM 7T/3T/1,5T)</div>
+    <div class="al a-i mb">Esses itens valem para todos os equipamentos de RM. Cadastre uma vez e use em todo CQ.</div>
+    <div class="card mb" style="background:var(--sf2);box-shadow:none;">
+      <div class="ct mb" style="font-size:12px;">+ Novo item</div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Nome do item</label><input class="fi" id="cqiNome" placeholder="Ex: SNR central"></div>
+        <div class="fg"><label class="fl">Tipo</label><select class="fs" id="cqiTipo" onchange="toggleCQItemLimits()"><option value="numerico">Numérico (com limite)</option><option value="passfail">Pass/Fail</option></select></div>
+      </div>
+      <div class="fr c2 mb" id="cqiLimitsBox">
+        <div class="fg"><label class="fl">Limite mínimo</label><input class="fi" id="cqiMin" type="number" step="any" placeholder="opcional"></div>
+        <div class="fg"><label class="fl">Limite máximo</label><input class="fi" id="cqiMax" type="number" step="any" placeholder="opcional"></div>
+      </div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Unidade</label><input class="fi" id="cqiUnidade" placeholder="Ex: dB, %, mm"></div>
+        <div class="fg"><label class="fl">Ordem de exibição</label><input class="fi" id="cqiOrdem" type="number" placeholder="0"></div>
+      </div>
+      <button class="btn bt btn-sm" onclick="saveCQItemConfig_()">+ Adicionar / Salvar item</button>
+    </div>
+    <div class="ct mb" style="font-size:12px;">Itens cadastrados</div>
+    <div class="tw"><table><thead><tr><th>Item</th><th>Tipo</th><th>Limites</th><th>Unidade</th><th>Ações</th></tr></thead><tbody id="tbCQItens"><tr class="tr-e"><td colspan="5">Nenhum item cadastrado.</td></tr></tbody></table></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlCQItensConfig')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- Resultados estruturados de um CQ -->
+<div class="ovl" id="ovlCQResultados">
+  <div class="modal" style="max-width:680px;">
+    <div class="mttl">📋 Resultados do CQ <span id="cqrCodLabel" style="font-family:var(--m);color:var(--tx3);"></span></div>
+    <div class="al a-i mb">Preencha cada item da rotina. O status (dentro/fora do limite, pass/fail) é calculado automaticamente.</div>
+    <div id="cqrItensList"></div>
+    <div class="fg mb" style="margin-top:10px;"><label class="fl">Responsável pelo preenchimento</label><input class="fi" id="cqrResp" placeholder="Nome"></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlCQResultados')">Cancelar</button><button class="btn bt" onclick="saveCQResultados_()">✅ Salvar Resultados</button></div>
+  </div>
+</div>
+
 <div class="ovl" id="ovlQC">
   <div class="modal" style="max-width:620px;">
     <div class="mttl">✅ Novo Controle de Qualidade RM/TC</div>
@@ -2492,18 +2530,26 @@ async function saveQC(){
   ovlClose('ovlQC');
   const rr=await api('getQCData'); if(rr.ok){DB.qc=rr.qc||[];DB.equip=rr.equip||DB.equip;}
   renderQC();
+  // Para RM, oferece preencher os resultados estruturados imediatamente
+  if(/^RM/i.test(d.modalidade)){
+    setTimeout(()=>openCQResultadosModal(r.cod),300);
+  }
 }
 function renderQC(){
   const tb=ge('tbQC'); if(!tb)return;
   ge('qcC').textContent=(DB.qc||[]).length+' registros';
   if(!DB.qc||!DB.qc.length){tb.innerHTML='<tr class="tr-e"><td colspan="9">Nenhum CQ cadastrado.</td></tr>';return;}
-  tb.innerHTML=DB.qc.map(q=>`<tr>
+  tb.innerHTML=DB.qc.map(q=>{
+    const isRM=/^RM/i.test(q.Modalidade||'');
+    const resultadoPill=(()=>{const r=q.Resultado||'Pendente';const cls=r==='Aprovado'?'p-g':r==='Reprovado'?'p-r':'p-y';return `<span class="pill ${cls}">${r}</span>`;})();
+    const acao=isRM?`<button class="btn bo btn-xs" style="margin-left:6px;" onclick="openCQResultadosModal('${(q.Cod||'').replace(/'/g,"\\'")}')">📋 Itens</button>`:'';
+    return `<tr>
     <td style="font-family:var(--m);color:var(--td);font-weight:700;">${q.Cod||''}</td>
     <td>${q.Data||''}</td><td>${q.Hora||''}</td><td>${q.Tipo||''}</td>
     <td>${q.Modalidade||''}</td><td>${q.Equipamento||''}</td><td>${q.Responsavel||''}</td>
     <td><span class="sts ss2">${q.Status||'Agendado'}</span></td>
-    <td>${q.Resultado||'Pendente'}</td>
-  </tr>`).join('');
+    <td>${resultadoPill}${acao}</td>
+  </tr>`;}).join('');
   renderQCSummary();
 }
 
@@ -2545,6 +2591,160 @@ function renderQCSummary(){
   tb.innerHTML=list.map(r=>`<tr><td><strong>${r.eq}</strong></td><td>${r.total}</td><td><span class="pill p-y">${r.pendente}</span></td><td><span class="pill p-g">${r.ok}</span></td><td><span class="pill p-r">${r.alerta}</span></td><td>${r.last||'—'}</td></tr>`).join('');
 }
 function drawQCCharts(){ renderQCSummary(); }
+
+// ═══════════════════════════════════════
+// CQ — ITENS ESTRUTURADOS (RM 7T/3T/1,5T)
+// ═══════════════════════════════════════
+let _cqItensCache=[];
+
+function toggleCQItemLimits(){
+  const tipo=v('cqiTipo');
+  const box=ge('cqiLimitsBox');
+  if(box) box.style.display=tipo==='numerico'?'grid':'none';
+}
+
+async function openCQItensConfigModal(){
+  ['cqiNome','cqiMin','cqiMax','cqiUnidade','cqiOrdem'].forEach(id=>{if(ge(id))ge(id).value='';});
+  if(ge('cqiTipo'))ge('cqiTipo').value='numerico';
+  toggleCQItemLimits();
+  ovlOpen('ovlCQItensConfig');
+  await loadCQItensConfig_();
+}
+
+async function loadCQItensConfig_(){
+  const tb=ge('tbCQItens');
+  if(tb) tb.innerHTML='<tr class="tr-e"><td colspan="5">Carregando...</td></tr>';
+  const r=await api('getCQItensConfig',{});
+  if(!r.ok){if(tb)tb.innerHTML='<tr class="tr-e"><td colspan="5">Erro ao carregar.</td></tr>';return;}
+  _cqItensCache=r.itens||[];
+  renderCQItensTable_();
+}
+
+function renderCQItensTable_(){
+  const tb=ge('tbCQItens'); if(!tb)return;
+  if(!_cqItensCache.length){tb.innerHTML='<tr class="tr-e"><td colspan="5">Nenhum item cadastrado. Adicione o primeiro acima.</td></tr>';return;}
+  tb.innerHTML=_cqItensCache.map(it=>{
+    const tipo=it['Tipo']||'numerico';
+    const limites=tipo==='numerico'
+      ? `${it['LimiteMin']!==''&&it['LimiteMin']!==undefined?'min '+it['LimiteMin']:''}${it['LimiteMin']&&it['LimiteMax']?' / ':''}${it['LimiteMax']!==''&&it['LimiteMax']!==undefined?'max '+it['LimiteMax']:''}` || '—'
+      : 'Pass/Fail';
+    return `<tr>
+      <td><strong>${it['Item']||''}</strong></td>
+      <td>${tipo==='numerico'?'Numérico':'Pass/Fail'}</td>
+      <td style="font-family:var(--m);font-size:12px;">${limites||'—'}</td>
+      <td>${it['Unidade']||'—'}</td>
+      <td><button class="btn br btn-xs" onclick="delCQItemConfig_('${(it['Item']||'').replace(/'/g,"\\'")}')">Remover</button></td>
+    </tr>`;
+  }).join('');
+}
+
+window.saveCQItemConfig_ = async function(){
+  const item=v('cqiNome'); if(!item){toast('Informe o nome do item.','warn');return;}
+  const tipo=v('cqiTipo');
+  const d={item, tipo, limiteMin:v('cqiMin'), limiteMax:v('cqiMax'), unidade:v('cqiUnidade'), ordem:v('cqiOrdem')||0};
+  const r=await api('saveCQItemConfig',d);
+  if(!r.ok){toast(r.msg||'Erro ao salvar item.','err');return;}
+  toast('✓ Item salvo.');
+  ['cqiNome','cqiMin','cqiMax','cqiUnidade','cqiOrdem'].forEach(id=>{if(ge(id))ge(id).value='';});
+  await loadCQItensConfig_();
+};
+
+window.delCQItemConfig_ = async function(item){
+  if(!confirm('Remover o item "'+item+'" da rotina de CQ?'))return;
+  const r=await api('delCQItemConfig',{item});
+  if(!r.ok){toast(r.msg||'Erro ao remover.','err');return;}
+  toast('✓ Item removido.');
+  await loadCQItensConfig_();
+};
+
+// ── Preenchimento dos resultados de um CQ específico ──
+let _cqResultadosCQCod='';
+
+window.openCQResultadosModal = async function(cqCod){
+  _cqResultadosCQCod=cqCod;
+  ge('cqrCodLabel').textContent=cqCod;
+  ge('cqrResp').value=curNome||'';
+  ge('cqrItensList').innerHTML='<div style="color:var(--tx3);font-size:12px;">Carregando itens...</div>';
+  ovlOpen('ovlCQResultados');
+
+  // Carrega config dos itens + resultados já salvos (se houver, para reedição)
+  const [cfgRes, resRes] = await Promise.all([
+    api('getCQItensConfig',{}),
+    api('getCQResultados',{cqCod})
+  ]);
+
+  const itens=(cfgRes.ok?cfgRes.itens:[])||[];
+  if(!itens.length){
+    ge('cqrItensList').innerHTML='<div class="al a-w">Nenhum item de rotina cadastrado. Configure os itens em "⚙️ Itens da rotina" antes de preencher resultados.</div>';
+    return;
+  }
+  const existentes={};
+  ((resRes.ok?resRes.resultados:[])||[]).forEach(r=>{existentes[r['Item']]=r;});
+
+  ge('cqrItensList').innerHTML=itens.map((it,idx)=>{
+    const tipo=it['Tipo']||'numerico';
+    const nome=it['Item']||'';
+    const unidade=it['Unidade']||'';
+    const min=it['LimiteMin'];
+    const max=it['LimiteMax'];
+    const valorAtual=existentes[nome]?existentes[nome]['Valor']:'';
+    const limitsTxt=tipo==='numerico'
+      ? [min!==''&&min!==undefined?'mín '+min:'',max!==''&&max!==undefined?'máx '+max:''].filter(Boolean).join(' / ')
+      : '';
+    if(tipo==='numerico'){
+      return `<div class="fr c2 mb" data-cqr-item="${nome.replace(/"/g,'&quot;')}" data-cqr-tipo="numerico" data-cqr-min="${min!==undefined?min:''}" data-cqr-max="${max!==undefined?max:''}" data-cqr-unidade="${unidade.replace(/"/g,'&quot;')}">
+        <div class="fg"><label class="fl">${nome} ${limitsTxt?`<span style="color:var(--tx3);font-weight:400;">(${limitsTxt}${unidade?' '+unidade:''})</span>`:''}</label><input class="fi cqr-valor" type="number" step="any" value="${valorAtual}" placeholder="Valor medido"></div>
+        <div class="fg" style="display:flex;align-items:flex-end;"><div class="cqr-status-preview" style="font-size:12px;color:var(--tx3);">—</div></div>
+      </div>`;
+    }else{
+      return `<div class="fg mb" data-cqr-item="${nome.replace(/"/g,'&quot;')}" data-cqr-tipo="passfail">
+        <label class="fl">${nome}</label>
+        <select class="fs cqr-valor"><option value="">Selecione</option><option value="pass" ${valorAtual==='pass'?'selected':''}>✅ Pass</option><option value="fail" ${valorAtual==='fail'?'selected':''}>❌ Fail</option></select>
+      </div>`;
+    }
+  }).join('');
+
+  // Preview de status em tempo real para itens numéricos
+  qsa('[data-cqr-tipo="numerico"]').forEach(box=>{
+    const input=box.querySelector('.cqr-valor');
+    const preview=box.querySelector('.cqr-status-preview');
+    const min=box.dataset.cqrMin, max=box.dataset.cqrMax;
+    const update=()=>{
+      const val=parseFloat(input.value);
+      if(isNaN(val)){preview.textContent='—';preview.style.color='var(--tx3)';return;}
+      const minN=min!==''?parseFloat(min):null, maxN=max!==''?parseFloat(max):null;
+      const fora=(minN!==null&&val<minN)||(maxN!==null&&val>maxN);
+      preview.textContent=fora?'❌ Fora do limite':'✅ Dentro do limite';
+      preview.style.color=fora?'var(--re)':'var(--gr)';
+    };
+    input.addEventListener('input',update);
+    update();
+  });
+};
+
+window.saveCQResultados_ = async function(){
+  const boxes=qsa('[data-cqr-item]');
+  if(!boxes.length){toast('Nenhum item para salvar.','warn');return;}
+  const resultados=[];
+  let algumVazio=false;
+  boxes.forEach(box=>{
+    const item=box.dataset.cqrItem;
+    const tipo=box.dataset.cqrTipo;
+    const valor=box.querySelector('.cqr-valor').value;
+    if(valor==='') algumVazio=true;
+    resultados.push({
+      item, tipo, valor,
+      limiteMin: box.dataset.cqrMin||'', limiteMax: box.dataset.cqrMax||'', unidade: box.dataset.cqrUnidade||''
+    });
+  });
+  if(algumVazio && !confirm('Alguns itens estão vazios. Deseja salvar mesmo assim?')) return;
+  const r=await api('saveCQResultados',{cqCod:_cqResultadosCQCod, resultados, responsavel:v('cqrResp')});
+  if(!r.ok){toast(r.msg||'Erro ao salvar resultados.','err');return;}
+  toast('✓ Resultados salvos — CQ '+(r.resultadoGeral||'')+'.');
+  ovlClose('ovlCQResultados');
+  const rr=await api('getQCData'); if(rr.ok){DB.qc=rr.qc||[];}
+  renderQC();
+};
 
 /* ── DASHBOARD ── */
 function renderDash(){
@@ -3592,6 +3792,7 @@ function addAgdSlot(initialMod){
       <div class="fg"><label class="fl">Tempo de reserva da agenda (min) *</label><input class="fi agd-dur" type="number" min="15" step="15" placeholder="90" onchange="updateAgdSlotReserva(this.closest('.agd-slot'))"></div>
       <div class="fg"><label class="fl">Resumo da reserva</label><div class="al a-n agd-dur-hint" style="margin:0;min-height:39px;align-items:center;">Reserva: —</div></div>
     </div>
+    <div class="fg"><label class="fl">Código do pedido médico / identificação externa <span style="color:var(--tx3);font-weight:400;">(opcional)</span></label><input class="fi agd-codext" placeholder="Ex: ELSA-0231 — preencha quando o projeto exigir anonimização"></div>
     <div class="fg"><label class="fl">Instituto</label><div class="cg agd-inst"><div class="chip ${curInst==='PISA'?'sel':''}" onclick="schipGrp(this,'PISA')">PISA/LIM44</div><div class="chip ${curInst==='INRAD'?'sel':''}" onclick="schipGrp(this,'INRAD')">INRAD</div></div></div>`;
   div.classList.add('agd-slot');
   ge('agdSlots').appendChild(div);
@@ -3619,8 +3820,9 @@ function collectAgdSlots(showWarn){
     const hora=sl.querySelector('.agd-hora').value;
     const inst=sl.querySelector('.chip.sel')?.textContent?.includes('INRAD')?'INRAD':'PISA';
     const durMin=Number(sl.querySelector('.agd-dur')?.value||getReservaMinForSol_(curAgdSol,mod));
+    const codigoExterno=(sl.querySelector('.agd-codext')?.value||'').trim();
     if(!date||!hora||!durMin){valid=false;return;}
-    agendamentos.push({modalidade:mod,equipamento:equip,data:date,hora,instituto:inst,durMin,reservaMinutos:durMin,tipoReserva:(ge('agdTipoReserva')?ge('agdTipoReserva').value:'Exame'),obs:(ge('agdObs')?ge('agdObs').value:''),motivo:(ge('agdMotivo')?ge('agdMotivo').value:'')});
+    agendamentos.push({modalidade:mod,equipamento:equip,data:date,hora,instituto:inst,durMin,reservaMinutos:durMin,codigoExterno,tipoReserva:(ge('agdTipoReserva')?ge('agdTipoReserva').value:'Exame'),obs:(ge('agdObs')?ge('agdObs').value:''),motivo:(ge('agdMotivo')?ge('agdMotivo').value:'')});
   });
   if(!valid && showWarn)toast('Preencha data e horário antes de agendar.','warn');
   return valid?agendamentos:null;
@@ -4169,7 +4371,7 @@ async function setStatusFinanceiro_(cod, status){
 }
 
 // ── Modal: Emitir Fatura ──
-function openEmitirFaturaModal(){
+async function openEmitirFaturaModal(){
   const cks=Array.from(qsa('.afaturar-ck')).filter(c=>c.checked);
   if(!cks.length){toast('Selecione ao menos um exame.','warn');return;}
   // Verifica que todos são do mesmo projeto
@@ -4186,13 +4388,25 @@ function openEmitirFaturaModal(){
   ge('fatNumeroNF').value='';
   ge('fatPrestador').value='';
   ge('fatURL').value='';
-  ge('fatDesc').value=`Serviços de imagem — ${proj} — ${cods.length} exame${cods.length!==1?'s':''}`;
+  ge('fatDesc').value='⏳ Gerando descrição automática...';
   ge('fatObs').value='';
   ge('fatExamesList').innerHTML=cods.map(c=>`<div style="padding:2px 0;">• ${c}</div>`).join('');
   // Guarda cods no modal para usar no save
   ge('ovlEmitirFatura').dataset.cods=JSON.stringify(cods);
   ge('ovlEmitirFatura').dataset.proj=proj;
   ovlOpen('ovlEmitirFatura');
+
+  // Busca a descrição automática do backend — usa CodigoExterno quando disponível
+  try{
+    const res=await api('previewDescricaoFatura',{projeto:proj, exameCods:cods});
+    if(res.ok && res.descricao){
+      ge('fatDesc').value=res.descricao;
+    }else{
+      ge('fatDesc').value=`Serviços de imagem — ${proj} — ${cods.length} exame${cods.length!==1?'s':''}`;
+    }
+  }catch(e){
+    ge('fatDesc').value=`Serviços de imagem — ${proj} — ${cods.length} exame${cods.length!==1?'s':''}`;
+  }
 }
 
 window.saveEmitirFatura = async function(){
