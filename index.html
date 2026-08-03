@@ -817,7 +817,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
     </div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Valor (R$) *</label><input class="fi" id="payValor" type="number" min="0" step="0.01" placeholder="0,00"></div>
-      <div class="fg"><label class="fl">Forma de Pagamento</label><select class="fs" id="payForma"><option>Transferência</option><option>TED</option><option>PIX</option><option>Boleto</option><option>Cheque</option><option>Outro</option></select></div>
+      <div class="fg"><label class="fl">Forma de Pagamento</label><select class="fs" id="payForma"><option>Transferência</option><option>Transferência CG</option><option>TED</option><option>PIX</option><option>Boleto</option><option>Cheque</option><option>Outro</option></select></div>
     </div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">NF Vinculada <span style="color:var(--tx3);font-weight:400;">(ID da NF, opcional)</span></label><input class="fi" id="payNFVinc" placeholder="Ex: NF-20260617..."></div>
@@ -949,7 +949,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
     </div>
     <div class="card" style="background:var(--sf2);box-shadow:none;margin-bottom:12px;">
       <div class="ct"><div class="cti">🛡️</div> Validações Éticas</div>
-      <div class="al a-w">Projetos com animais exigem CEUA válido por 1 ano. Projetos com humano/voluntário humano exigem parecer CAPPesq válido por 1 ano. Após expirar, o sistema bloqueia novas solicitações até renovação.</div>
+      <div class="al a-w">Projetos com animais exigem CEUA válido por 1 ano. Projetos com humano/voluntário humano exigem parecer CAPPesq válido por 1 ano. Projetos com peças anatômicas/post-mortem exigem anuência do SVOC válida por 1 ano. Após expirar ou faltar, o sistema bloqueia novas solicitações até renovação.</div>
       <div class="fr c2 mb" id="pjCEUABox" style="display:none;">
         <div class="fg"><label class="fl">Nº CEUA</label><input class="fi" id="pjCEUA" placeholder="Obrigatório para animal"></div>
         <div class="fg"><label class="fl">Data CEUA</label><input class="fi" id="pjCEUAData" type="date"></div>
@@ -957,6 +957,28 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
       <div class="fr c2 mb" id="pjCAPPBox" style="display:none;">
         <div class="fg"><label class="fl">Nº Parecer CAPPesq</label><input class="fi" id="pjCapp" placeholder="Obrigatório para humano/voluntário"></div>
         <div class="fg"><label class="fl">Data do Parecer CAPPesq</label><input class="fi" id="pjCappData" type="date"></div>
+      </div>
+      <div class="fg mb" style="margin-top:2px;">
+        <label style="display:flex;gap:8px;align-items:center;font-size:12.5px;cursor:pointer;">
+          <input type="checkbox" id="pjSVOCReq" onchange="this.dataset.touched='1';updateProjetoCamposCondicionais()">
+          Requer anuência do SVOC (peças anatômicas / exames post-mortem)
+        </label>
+      </div>
+      <div class="fr c2 mb" id="pjSVOCBox" style="display:none;">
+        <div class="fg"><label class="fl">Nº Parecer SVOC</label><input class="fi" id="pjSVOC" placeholder="Obrigatório quando marcado acima"></div>
+        <div class="fg"><label class="fl">Data do Parecer SVOC</label><input class="fi" id="pjSVOCData" type="date"></div>
+      </div>
+      <div class="fg mb" id="pjSVOCUrlWrap" style="display:none;">
+        <label class="fl">URL do documento SVOC (opcional)</label><input class="fi" id="pjSVOCUrl" placeholder="Link do Drive, se houver">
+      </div>
+      <div class="ct mb" style="font-size:13px;margin-top:10px;">🧾 Dados de Faturamento (Sacado) — usados para gerar a Requisição de NF automaticamente</div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Razão Social / Nome do Sacado</label><input class="fi" id="pjSacadoNome" placeholder="Ex: Fundação de Amparo à Pesquisa..."></div>
+        <div class="fg"><label class="fl">CNPJ/CPF</label><input class="fi" id="pjSacadoCNPJ" placeholder="00.000.000/0000-00"></div>
+      </div>
+      <div class="fr c2 mb">
+        <div class="fg"><label class="fl">Inscrição Estadual/RG</label><input class="fi" id="pjSacadoInscEst" placeholder="Opcional"></div>
+        <div class="fg"><label class="fl">Endereço completo</label><input class="fi" id="pjSacadoEndereco" placeholder="Rua, número, bairro, cidade, UF, CEP"></div>
       </div>
     </div>
     <div class="fr c2 mb">
@@ -1342,6 +1364,25 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="sc" style="background:var(--sf2);"><div class="sl" style="color:var(--ored);">A receber</div><div class="sv" id="finAR" style="font-size:18px;color:var(--ored);">R$ 0</div><div style="font-size:11px;color:var(--tx3);">a faturar + faturado</div></div>
           <div class="sc sc-g"><div class="sl">Recebido</div><div class="sv" id="finPg" style="font-size:18px;">R$ 0</div><div style="font-size:11px;color:var(--tx3);">pagamentos confirmados</div></div>
         </div>
+        <!-- Filtro rápido de período (aplica-se às abas A faturar / Exames×pagamentos / Pagamentos / Notas Fiscais) -->
+        <div class="fb mb" style="align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="font-weight:700;font-size:12.5px;color:var(--navy);">⏱️ Filtro rápido de período:</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn bt btn-sm fin-quick-chip sel" data-k="all" onclick="finQuickSetRange('all')">Tudo</button>
+            <button class="btn bo btn-sm fin-quick-chip" data-k="hoje" onclick="finQuickSetRange('hoje')">Hoje</button>
+            <button class="btn bo btn-sm fin-quick-chip" data-k="mes" onclick="finQuickSetRange('mes')">Este mês</button>
+            <button class="btn bo btn-sm fin-quick-chip" data-k="3m" onclick="finQuickSetRange('3m')">Últimos 3 meses</button>
+            <button class="btn bo btn-sm fin-quick-chip" data-k="ano" onclick="finQuickSetRange('ano')">Este ano</button>
+            <button class="btn bo btn-sm fin-quick-chip" data-k="custom" onclick="finQuickSetRange('custom')">Personalizado</button>
+          </div>
+          <div id="finQuickCustomWrap" style="display:none;gap:6px;align-items:center;">
+            <input type="date" class="fi" id="finQuickIni" style="max-width:150px;">
+            <span style="font-size:12px;color:var(--tx3);">até</span>
+            <input type="date" class="fi" id="finQuickFim" style="max-width:150px;">
+            <button class="btn bt btn-sm" onclick="finQuickApplyCustom()">Aplicar</button>
+          </div>
+          <div id="finQuickInfo" style="font-size:11.5px;color:var(--tx3);"></div>
+        </div>
         <!-- Sub-abas -->
         <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--bd);padding-bottom:0;flex-wrap:wrap;">
           <button class="btn bt btn-sm fin-tab sel" id="ftab-dash"     onclick="switchFinTab('dash')">📈 Dashboard</button>
@@ -1462,6 +1503,132 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             </div>
             <div class="tw"><table><thead><tr><th>ID</th><th>Projeto</th><th>Nº NF</th><th>Emissão</th><th>Vencimento</th><th>Valor(R$)</th><th>Descrição</th><th>Prestador</th><th>Status</th><th>Arquivo</th><th>Ações</th></tr></thead><tbody id="tbNF"><tr class="tr-e"><td colspan="11">Nenhuma nota fiscal registrada.</td></tr></tbody></table></div>
           </div>
+        </div>
+      </div>
+
+
+      <!-- IMPORTAÇÃO MV (segunda porta de entrada do Financeiro: RX, US, TC/RM INRAD) -->
+      <div class="sec" id="sec-importmv">
+        <div class="fb mb">
+          <div class="ct" style="font-size:16px;">📥 Importação MV</div>
+          <div class="fc">
+            <button class="btn bo btn-sm" onclick="forceReloadSection('importmv')">🔄 Atualizar histórico</button>
+          </div>
+        </div>
+        <div class="al a-i mb" style="font-size:12.5px;">
+          Use esta tela para importar exames de modalidades que <strong>não passam pelo Worklist</strong> (RX, US, TC do INRAD, RM 1,5T do INRAD),
+          extraídos do MV em planilha. Depois de confirmados, os exames entram no Financeiro exatamente como um exame do Worklist —
+          status inicial <strong>"A faturar"</strong> — sem distinção de origem no restante do sistema.
+          <br>Aceita arquivos <strong>.xlsx, .xls ou .csv</strong> exportados do MV.
+        </div>
+
+        <!-- Passo 1: arquivo + mapeamento de colunas -->
+        <div class="card mb">
+          <div class="ct mb"><div class="cti">1️⃣</div>Selecionar arquivo e mapear colunas</div>
+          <div class="fg">
+            <label class="fl">Arquivo do MV (.xlsx, .xls ou .csv)</label>
+            <input type="file" id="mvFileInput" accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="onMVFileSelected(this)">
+          </div>
+          <div id="mvMappingWrap" style="display:none;">
+            <div class="sl mb" id="mvFileInfo" style="font-weight:600;color:var(--navy);"></div>
+            <div class="g2 mb">
+              <div class="fg"><label class="fl">Projeto / DRO de destino do lote *</label><select class="fs" id="mvProjeto"></select></div>
+              <div class="fg"><label class="fl">Instituto</label>
+                <select class="fs" id="mvInstituto">
+                  <option value="INRAD" selected>INRAD</option>
+                  <option value="PISA">PISA</option>
+                </select>
+              </div>
+            </div>
+            <div id="mvSheetPickWrap" class="fg" style="display:none;">
+              <label class="fl">Planilha (aba) do arquivo</label>
+              <select class="fs" id="mvSheetPick" onchange="onMVSheetChange(this.value)"></select>
+            </div>
+            <div class="al a-w mb" style="font-size:11.5px;">Todo o lote será importado para o mesmo projeto/instituto selecionados acima. Para lotes de projetos diferentes, importe em arquivos/lotes separados.</div>
+            <div class="ct mb" style="font-size:13px;">Mapeamento de colunas da planilha</div>
+            <div class="g2" id="mvFieldMap"></div>
+            <div class="fe mt" style="justify-content:space-between;align-items:center;">
+              <div class="sl">Linhas lidas: <strong id="mvPreviewCount">0</strong></div>
+              <div class="fc">
+                <button class="btn bo" onclick="doMVConciliar()" title="Auditoria: compara o arquivo com o que já está no PISApp, sem criar exames.">🔬 Conciliar (auditoria)</button>
+                <button class="btn bt" onclick="doMVReconciliar()">🔎 Reconciliar p/ importar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conciliação MV × Financeiro × Worklist (auditoria, não altera dados) -->
+        <div class="card mb" id="mvConcWrap" style="display:none;">
+          <div class="ct mb"><div class="cti">🔬</div>Conciliação MV × Financeiro × Worklist</div>
+          <div class="al a-i mb" style="font-size:12px;" id="mvConcInfo"></div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid var(--bd);padding-bottom:0;flex-wrap:wrap;">
+            <button class="btn bt btn-sm mv-tab sel" id="mctab-semfin" onclick="switchMVConcTab('semfin')">MV sem PISApp (0)</button>
+            <button class="btn bo btn-sm mv-tab" id="mctab-semfinal" onclick="switchMVConcTab('semfinal')">Não finalizados (0)</button>
+            <button class="btn bo btn-sm mv-tab" id="mctab-finsemMV" onclick="switchMVConcTab('finsemMV')">Financeiro sem MV (0)</button>
+            <button class="btn bo btn-sm mv-tab" id="mctab-div" onclick="switchMVConcTab('div')">Divergências (0)</button>
+          </div>
+          <div id="mcpane-semfin"><div class="al a-w mb" style="font-size:11.5px;">Exames que aparecem na planilha do MV mas não foram encontrados no PISApp de nenhuma forma — risco de nunca entrarem no Financeiro.</div><div id="mvConcListSemFin" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div></div>
+          <div id="mcpane-semfinal" style="display:none;"><div class="al a-w mb" style="font-size:11.5px;">Exames que existem no PISApp e batem com a planilha do MV, mas ainda não foram finalizados no Worklist.</div><div id="mvConcListSemFinal" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div></div>
+          <div id="mcpane-finsemMV" style="display:none;"><div class="al a-w mb" style="font-size:11.5px;">Exames cobráveis no PISApp (A faturar/Faturado/Pago) no período do arquivo, mas que não aparecem na planilha do MV — confira se realmente ocorreram.</div><div id="mvConcListFinSemMV" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div></div>
+          <div id="mcpane-div" style="display:none;"><div class="al a-w mb" style="font-size:11.5px;">Múltiplos exames casando com a mesma linha do MV, ou modalidade divergente entre MV e PISApp.</div><div id="mvConcListDiv" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div></div>
+        </div>
+        <div class="card mb" id="mvReconWrap" style="display:none;">
+          <div class="ct mb"><div class="cti">2️⃣</div>Revisar e confirmar importação</div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid var(--bd);padding-bottom:0;flex-wrap:wrap;">
+            <button class="btn bt btn-sm mv-tab sel" id="mvtab-prontos" onclick="switchMVTab('prontos')">Prontos (0)</button>
+            <button class="btn bo btn-sm mv-tab" id="mvtab-dup" onclick="switchMVTab('dup')">Duplicados (0)</button>
+            <button class="btn bo btn-sm mv-tab" id="mvtab-pend" onclick="switchMVTab('pend')">Com pendência (0)</button>
+          </div>
+          <div id="mvpane-prontos">
+            <div class="fb mb" style="align-items:center;">
+              <label style="display:flex;gap:6px;align-items:center;font-size:12px;"><input type="checkbox" checked onchange="mvSelAll(this.checked)"> Selecionar todos</label>
+              <div class="sl" id="mvSelCount">0 de 0 selecionados</div>
+            </div>
+            <div id="mvListProntos" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div>
+            <div class="fe mt">
+              <button class="btn bt" onclick="doMVConfirmar()">✅ Confirmar importação dos selecionados</button>
+            </div>
+          </div>
+          <div id="mvpane-dup" style="display:none;">
+            <div id="mvListDup" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div>
+          </div>
+          <div id="mvpane-pend" style="display:none;">
+            <div id="mvListPend" style="max-height:340px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;"></div>
+          </div>
+        </div>
+
+        <!-- Passo 3: histórico de lotes -->
+        <div class="card mb">
+          <div class="ct mb"><div class="cti">🗂️</div>Histórico de lotes importados</div>
+          <div class="tw"><table><thead><tr><th>Lote</th><th>Data</th><th>Usuário</th><th>Arquivo</th><th>Linhas</th><th>OK</th><th>Erros</th><th>Status</th></tr></thead><tbody id="tbImportMV"><tr class="tr-e"><td colspan="8">Carregando...</td></tr></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="ct mb"><div class="cti">🔬</div>Histórico de conciliações</div>
+          <div class="tw"><table><thead><tr><th>ID</th><th>Data</th><th>Usuário</th><th>Período</th><th>Linhas MV</th><th>MV s/ PISApp</th><th>Não finalizados</th><th>Financeiro s/ MV</th><th>Divergências</th></tr></thead><tbody id="tbConcMV"><tr class="tr-e"><td colspan="9">Nenhuma conciliação realizada ainda.</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+
+      <!-- CONFERÊNCIA DO WORKLIST (double-check: exames em risco de não faturar) -->
+      <div class="sec" id="sec-conferencia">
+        <div class="fb mb">
+          <div class="ct" style="font-size:16px;">🔍 Conferência do Worklist</div>
+          <div class="fc">
+            <button class="btn bo btn-sm" onclick="forceReloadSection('conferencia')">🔄 Atualizar</button>
+          </div>
+        </div>
+        <div class="al a-i mb" style="font-size:12.5px;">
+          Lista automaticamente exames com risco de perda de faturamento: <strong>em andamento há muito tempo</strong> (pode ter sido esquecido sem finalizar),
+          <strong>agendados no passado</strong> e nunca iniciados, ou <strong>concluídos sem StatusFinanceiro</strong> definido. Resolva cada caso com as ações rápidas abaixo.
+        </div>
+        <div class="g4 mb">
+          <div class="sc sc-r"><div class="sl">Total pendente</div><div class="sv" id="confTotal" style="font-size:18px;">0</div></div>
+          <div class="sc sc-y"><div class="sl">Em andamento (longo)</div><div class="sv" id="confLongo" style="font-size:18px;">0</div></div>
+          <div class="sc sc-y"><div class="sl">Agendado no passado</div><div class="sv" id="confPassado" style="font-size:18px;">0</div></div>
+          <div class="sc sc-r"><div class="sl">Sem StatusFinanceiro</div><div class="sv" id="confSemFin" style="font-size:18px;">0</div></div>
+        </div>
+        <div class="card">
+          <div class="tw"><table><thead><tr><th>Exame</th><th>Data</th><th>Projeto</th><th>Sujeito</th><th>Modalidade</th><th>Motivo</th><th>Ações</th></tr></thead><tbody id="tbConferencia"><tr class="tr-e"><td colspan="7">Carregando...</td></tr></tbody></table></div>
         </div>
       </div>
 
@@ -1595,6 +1762,25 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div id="cfgLabOut" class="al a-ok mt" style="display:none;"></div>
         </div>
 
+        <div class="card mt" id="cardInradSync">
+          <div class="ct mb"><div class="cti">📋</div>Sincronização com a Planilha do Forms INRAD</div>
+          <div class="al a-n">A cada agendamento/reagendamento com Instituto = INRAD, o PISApp localiza a linha correspondente (por Protocolo + Nome) e preenche "Agendado?"/"Responsável pelo Agendamento". Se não encontrar, cria uma linha nova só com os campos que o PISApp já coleta — nenhum outro campo é inventado.</div>
+          <div class="fg"><label class="fl">URL da planilha de respostas do Forms</label><input class="fi" id="cfgInradSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+          <div class="fg"><label class="fl">Nome da aba (opcional — deixe em branco para usar a primeira aba)</label><input class="fi" id="cfgInradSheetAba" placeholder="Respostas ao formulário 1"></div>
+          <div class="fe mt"><button class="btn bo" onclick="testarInradSyncUI()">🧪 Testar conexão</button></div>
+          <div id="cfgInradSyncOut" class="al a-n mt" style="display:none;"></div>
+        </div>
+
+        <div class="card mt" id="cardNfTemplate">
+          <div class="ct mb"><div class="cti">🧾</div>Requisição de Nota Fiscal / RPS</div>
+          <div class="al a-n">Faça upload do modelo (com placeholders {{TOKEN}}) no Google Drive, converta para Google Docs, e cole aqui o ID do arquivo. O botão "Gerar Requisição" na aba Notas Fiscais do Financeiro usará esse modelo.</div>
+          <div class="fr c2">
+            <div class="fg"><label class="fl">ID do modelo (Google Docs)</label><input class="fi" id="cfgNfTemplateId" placeholder="ID do arquivo no Drive"></div>
+            <div class="fg"><label class="fl">Área requisitante (padrão)</label><input class="fi" id="cfgAreaRequisitante" placeholder="PISA/LIM44 — Instituto de Radiologia (INRAD)"></div>
+          </div>
+          <div class="fg"><label class="fl">Local de entrega da NF-e/RPS (padrão)</label><input class="fi" id="cfgLocalEntregaNF" placeholder="Prédio, Andar, Sala e Telefone"></div>
+        </div>
+
         <div class="card mt">
           <div class="ct mb"><div class="cti">🧪</div>Projeto / Protocolo / Equipamento / Tempo</div>
           <div class="al a-n">Use regras específicas para definir a reserva: projeto + protocolo + modalidade + equipamento. A regra específica tem prioridade sobre o tempo do projeto.</div>
@@ -1715,15 +1901,17 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="console.warn('Chart.js indisponível')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="console.warn('SheetJS (XLSX) indisponível — importação MV aceitará apenas CSV')"></script>
 <script>
 'use strict';
 
 /* ── ROLES ── */
 const ROLES = {
-  admin:       {lbl:'Administrador', nav:['worklist','agenda','solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','qualidade','equipamentos','academico','admin']},
-  biomedico:   {lbl:'Biomédico',     nav:['worklist','agenda','solicitacoes','sujeitos','exames','mascaras','qualidade','equipamentos']},
-  agendamento: {lbl:'Agendamento',   nav:['worklist','agenda','solicitacoes']},
-  gestor:      {lbl:'Gestor',        nav:['solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','mascaras','qualidade','equipamentos','academico']},
+  admin:       {lbl:'Administrador', nav:['worklist','agenda','solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','importmv','conferencia','mascaras','qualidade','equipamentos','academico','admin']},
+  biomedico:   {lbl:'Biomédico',     nav:['worklist','agenda','solicitacoes','sujeitos','exames','mascaras','qualidade','equipamentos','conferencia']},
+  agendamento: {lbl:'Agendamento',   nav:['worklist','agenda','solicitacoes','conferencia']},
+  gestor:      {lbl:'Gestor',        nav:['solicitacoes','sujeitos','exames','dashboard','projetos','financeiro','importmv','conferencia','mascaras','qualidade','equipamentos','academico']},
+  financeiro:  {lbl:'Financeiro',    nav:['dashboard','financeiro','importmv','conferencia']},
   pesquisador: {lbl:'Pesquisador',   nav:[]},
 };
 
@@ -1736,6 +1924,8 @@ const NAVDEF = [
   {id:'dashboard',    lbl:'Dashboard',     ic:'📊', g:'Governança'},
   {id:'projetos',     lbl:'Projetos',      ic:'📁', g:'Governança'},
   {id:'financeiro',   lbl:'Financeiro',    ic:'💰', g:'Governança'},
+  {id:'importmv',     lbl:'Importar MV',   ic:'📥', g:'Governança'},
+  {id:'conferencia',  lbl:'Conferência',   ic:'🔍', g:'Governança'},
   {id:'mascaras',     lbl:'Máscaras',      ic:'📋', g:'Governança'},
   {id:'qualidade',    lbl:'Qualidade RM/TC',ic:'✅', g:'Governança'},
   {id:'equipamentos', lbl:'Equipamentos',  ic:'🧲', g:'Sistema'},
@@ -1974,8 +2164,8 @@ function downloadTextFile(filename, text, mime){
 
 
 /* ── STATE ── */
-let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[],qc:[],medicos:[],equipLog:[],dash:null};
-let LOADED={dashboard:false,worklist:false,agenda:false,solicitacoes:false,sujeitos:false,exames:false,projetos:false,financeiro:false,equipamentos:false,academico:false,mascaras:false,qualidade:false,admin:false};
+let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[],qc:[],medicos:[],equipLog:[],dash:null,importMV:[],conferencia:[],concMV:[]};
+let LOADED={dashboard:false,worklist:false,agenda:false,solicitacoes:false,sujeitos:false,exames:false,projetos:false,financeiro:false,equipamentos:false,academico:false,mascaras:false,qualidade:false,admin:false,importmv:false,conferencia:false};
 let LAST_LOAD={};
 let calEvents=[], calDate=new Date(), calView='day';
 let curUser=null,curRole=null,curNome='',curInst='PISA',curSessionToken=null;
@@ -2219,6 +2409,8 @@ async function refreshSec(id, req){
     if(id==='exames')renderEx();
     if(id==='projetos')renderProj();
     if(id==='financeiro')renderFin();
+    if(id==='importmv')renderImportMV();
+    if(id==='conferencia')renderConferencia();
     if(id==='equipamentos')renderEquip();
     if(id==='academico')renderAcad();
     if(id==='mascaras')renderMasks();
@@ -2372,6 +2564,13 @@ async function loadSectionData(id, opts){
       if(!(DB.equip&&DB.equip.length) && applyModuleCache_(id,15*60*1000,['equip','equipLog'])){ markLoaded_(id); return; }
       r=await api('getEquipamentosData',{}, {silent:true}); if(_isStale()) return; if(r.ok){DB.equip=r.equip||[];DB.equipLog=r.equipLog||[];markLoaded_(id);saveModuleCache_(id,['equip','equipLog']);}
     }
+    if(id==='importmv'){
+      r=await api('getImportacoesMV',{}, {silent:true}); if(_isStale()) return; if(r.ok){DB.importMV=r.data||[];markLoaded_(id);}
+      const r2=await api('getConciliacoesMV',{}, {silent:true}); if(!_isStale() && r2.ok){DB.concMV=r2.data||[];renderConcMVHistorico();}
+    }
+    if(id==='conferencia'){
+      r=await api('getFilaConferenciaWorklist',{}, {silent:true}); if(_isStale()) return; if(r.ok){DB.conferencia=r.itens||[];markLoaded_(id);}
+    }
     if(id==='academico'){
       if(isFresh_(id,120000)) return;
       r=await api('getAcademicoData',{}, {silent:true}); if(_isStale()) return; if(r.ok){DB.artigos=r.artigos||[];DB.proj=r.proj||DB.proj;markLoaded_(id);}
@@ -2450,6 +2649,441 @@ function populateDDs(){
     });
     if(cur) qcEq.value=cur;
   }
+}
+
+/* ═══════════════════════════════════════
+   IMPORTAÇÃO MV — segunda porta de entrada do Financeiro
+   Exames RX/US/TC-INRAD/RM1.5T-INRAD extraídos do MV em CSV,
+   reconciliados e confirmados entram no Financeiro como "A faturar",
+   no mesmo fluxo de um exame nascido no Worklist.
+   ═══════════════════════════════════════ */
+function mvEsc_(v){
+  return String(v===undefined||v===null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let MV_FILE_NAME = '';
+let MV_HEADERS = [];
+let MV_RAW_ROWS = [];   // linhas cruas, uma por objeto {cabeçalhoOriginal: valor}
+let MV_RECON = null;    // último resultado de reconciliarImportMV
+let MV_SELECTED = new Set(); // índices selecionados dentro de MV_RECON.prontos
+
+const MV_FIELD_DEFS = [
+  {key:'pacs',        label:'PACS / Nº do exame'},
+  {key:'nome',        label:'Nome do paciente *'},
+  {key:'dataNasc',    label:'Data de nascimento'},
+  {key:'dataExame',   label:'Data do exame *'},
+  {key:'modalidade',  label:'Modalidade / Procedimento *'},
+  {key:'medico',      label:'Médico solicitante'},
+  {key:'duracao',     label:'Duração (min)'},
+  {key:'chaveExterna',label:'Nº de atendimento / chave MV'}
+];
+const MV_GUESS_KEYWORDS = {
+  pacs:        ['pacs','accession','numero do exame','nº exame','n° exame'],
+  nome:        ['nome','paciente'],
+  dataNasc:    ['nascimento','data nasc'],
+  dataExame:   ['data do exame','data exame','data realiz','data atendimento','data'],
+  modalidade:  ['modalidade','procedimento','exame','tipo'],
+  medico:      ['medico','médico','solicitante'],
+  duracao:     ['duracao','duração','tempo'],
+  chaveExterna:['atendimento','protocolo','chave','registro']
+};
+
+function mvParseCSV_(text){
+  const firstLine = (text.split(/\r?\n/)[0]||'');
+  const sep = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  const rows=[]; let row=[]; let field=''; let inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQuotes=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===sep){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ /* ignora */ }
+      else field+=c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c||'').trim()!==''));
+}
+
+function mvGuessColumn_(headers, keywords){
+  const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  for(const k of keywords){ const hit=headers.find(h=>norm(h).includes(k)); if(hit) return hit; }
+  return '';
+}
+
+let MV_WORKBOOK = null; // workbook SheetJS quando o arquivo é .xlsx/.xls
+
+function onMVFileSelected(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  MV_FILE_NAME=f.name;
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  MV_WORKBOOK=null;
+  const sheetWrap=ge('mvSheetPickWrap'); if(sheetWrap) sheetWrap.style.display='none';
+
+  if(ext==='csv'){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{ mvApplyParsedRows_(mvParseCSV_(String(e.target.result||''))); }
+      catch(err){ toast('Erro ao ler CSV: '+(err&&err.message?err.message:err),'err'); }
+    };
+    reader.onerror=()=>toast('Falha ao ler o arquivo.','err');
+    reader.readAsText(f,'UTF-8');
+    return;
+  }
+
+  // .xlsx / .xls — requer SheetJS (carregado via CDN)
+  if(typeof XLSX==='undefined'){
+    toast('Biblioteca XLSX não carregou (sem internet?). Exporte a planilha como CSV e tente novamente.','err');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=new Uint8Array(e.target.result);
+      MV_WORKBOOK=XLSX.read(data,{type:'array'});
+      const names=MV_WORKBOOK.SheetNames||[];
+      if(!names.length){ toast('Arquivo sem planilhas.','err'); return; }
+      if(names.length>1 && sheetWrap){
+        const sel=ge('mvSheetPick');
+        sel.innerHTML=names.map(n=>`<option value="${mvEsc_(n)}">${mvEsc_(n)}</option>`).join('');
+        sheetWrap.style.display='';
+      }
+      mvLoadSheetRows_(names[0]);
+    }catch(err){ toast('Erro ao ler XLSX: '+(err&&err.message?err.message:err),'err'); }
+  };
+  reader.onerror=()=>toast('Falha ao ler o arquivo.','err');
+  reader.readAsArrayBuffer(f);
+}
+
+function onMVSheetChange(name){
+  if(!MV_WORKBOOK) return;
+  mvLoadSheetRows_(name);
+}
+
+function mvLoadSheetRows_(sheetName){
+  const ws=MV_WORKBOOK && MV_WORKBOOK.Sheets ? MV_WORKBOOK.Sheets[sheetName] : null;
+  if(!ws){ toast('Planilha não encontrada no arquivo.','err'); return; }
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''})
+    .map(r=>r.map(c=>String(c===undefined||c===null?'':c).trim()));
+  mvApplyParsedRows_(rows);
+}
+
+function mvApplyParsedRows_(rows){
+  rows=(rows||[]).filter(r=>r.some(c=>String(c||'').trim()!==''));
+  if(rows.length<2){ toast('Arquivo/planilha sem linhas de dados.','err'); return; }
+  MV_HEADERS=rows[0].map(h=>String(h||'').trim());
+  MV_RAW_ROWS=rows.slice(1).map(r=>{
+    const o={}; MV_HEADERS.forEach((h,i)=>o[h]=r[i]!==undefined?String(r[i]).trim():''); return o;
+  });
+  MV_RECON=null; MV_SELECTED=new Set();
+  const rw=ge('mvReconWrap'); if(rw) rw.style.display='none';
+  renderMVMapping();
+  toast(`✓ ${MV_RAW_ROWS.length} linha(s) lida(s) de ${MV_FILE_NAME}`);
+}
+
+function renderMVMapping(){
+  const wrap=ge('mvMappingWrap'); if(!wrap) return;
+  if(!MV_HEADERS.length){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  ge('mvFileInfo').textContent = `${MV_FILE_NAME} — ${MV_RAW_ROWS.length} linha(s), ${MV_HEADERS.length} coluna(s)`;
+  const optsHtml = '<option value="">— não usar —</option>' + MV_HEADERS.map(h=>`<option value="${mvEsc_(h)}">${mvEsc_(h)}</option>`).join('');
+  ge('mvFieldMap').innerHTML = MV_FIELD_DEFS.map(f=>`
+    <div class="fg"><label class="fl">${f.label}</label><select class="fs" id="mvmap-${f.key}">${optsHtml}</select></div>`).join('');
+  MV_FIELD_DEFS.forEach(f=>{
+    const guess=mvGuessColumn_(MV_HEADERS, MV_GUESS_KEYWORDS[f.key]||[]);
+    const el=ge('mvmap-'+f.key); if(el && guess) el.value=guess;
+  });
+  let projOpts='<option value="">Selecione o projeto/DRO</option>';
+  (DB.proj||[]).filter(projectStatusAtivo_).forEach(p=>{
+    const nm=projectNome_(p); if(!nm) return;
+    projOpts+=`<option value="${mvEsc_(nm)}">${mvEsc_(projectLabel_(p))}</option>`;
+  });
+  ge('mvProjeto').innerHTML=projOpts;
+  ge('mvPreviewCount').textContent = MV_RAW_ROWS.length;
+}
+
+function mvBuildLinhas_(){
+  const get=k=>{ const el=ge('mvmap-'+k); return el?el.value:''; };
+  const cPacs=get('pacs'), cNome=get('nome'), cDataNasc=get('dataNasc'), cDataExame=get('dataExame'),
+        cModalidade=get('modalidade'), cMedico=get('medico'), cDuracao=get('duracao'), cChave=get('chaveExterna');
+  const projeto=(ge('mvProjeto')||{}).value||'';
+  const instituto=(ge('mvInstituto')||{}).value||'INRAD';
+  return MV_RAW_ROWS.map(r=>({
+    pacs: cPacs?r[cPacs]:'', nome: cNome?r[cNome]:'', dataNasc: cDataNasc?r[cDataNasc]:'',
+    dataExame: cDataExame?r[cDataExame]:'', modalidade: cModalidade?r[cModalidade]:'',
+    medico: cMedico?r[cMedico]:'', duracao: cDuracao?r[cDuracao]:'',
+    chaveExterna: cChave?r[cChave]:'', projeto:projeto, instituto:instituto
+  }));
+}
+
+async function doMVReconciliar(){
+  if(!MV_RAW_ROWS.length){ toast('Selecione um arquivo primeiro.','err'); return; }
+  if(!(ge('mvProjeto')||{}).value){ toast('Selecione o projeto/DRO de destino do lote.','err'); return; }
+  if(!(ge('mvmap-nome')||{}).value || !(ge('mvmap-dataExame')||{}).value || !(ge('mvmap-modalidade')||{}).value){
+    toast('Mapeie ao menos Nome, Data do exame e Modalidade.','err'); return;
+  }
+  const linhasMV=mvBuildLinhas_();
+  toast('⏳ Reconciliando...');
+  const r=await api('reconciliarImportMV',{linhasMV});
+  if(!r.ok){ toast('Erro: '+(r.msg||'falha na reconciliação'),'err'); return; }
+  MV_RECON=r;
+  MV_SELECTED=new Set((r.prontos||[]).map((_,i)=>i));
+  renderMVReconciliacao();
+  toast(`✓ Reconciliado: ${(r.prontos||[]).length} prontos, ${(r.duplicados||[]).length} duplicados, ${(r.semProjeto||[]).length+(r.semModalidade||[]).length+(r.semData||[]).length} com pendência.`);
+}
+
+function mvRowLabel_(item){
+  return `${mvEsc_(item.nome||item.pacs||'(sem nome)')} — ${mvEsc_(item.modalidade||'')} — ${mvEsc_(item.dataExame||'')}`;
+}
+
+function renderMVReconciliacao(){
+  const wrap=ge('mvReconWrap'); if(!wrap) return;
+  if(!MV_RECON){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  const r=MV_RECON;
+  ge('mvtab-prontos').textContent = 'Prontos ('+(r.prontos||[]).length+')';
+  ge('mvtab-dup').textContent = 'Duplicados ('+(r.duplicados||[]).length+')';
+  ge('mvtab-pend').textContent = 'Com pendência ('+((r.semProjeto||[]).length+(r.semModalidade||[]).length+(r.semData||[]).length)+')';
+
+  ge('mvListProntos').innerHTML = (r.prontos||[]).length ? (r.prontos||[]).map((item,i)=>`
+    <label style="display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">
+      <input type="checkbox" ${MV_SELECTED.has(i)?'checked':''} onchange="mvToggleSel(${i},this.checked)">
+      <span>${mvRowLabel_(item)}${item.chaveExterna?(' · ref. '+mvEsc_(item.chaveExterna)):''}</span>
+    </label>`).join('') : '<div class="al a-i">Nenhum item pronto para importação.</div>';
+
+  ge('mvListDup').innerHTML = (r.duplicados||[]).length ? (r.duplicados||[]).map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">${mvRowLabel_(item)} — já existe como <strong>${mvEsc_(item.exameCodExistente||'')}</strong></div>`).join('')
+    : '<div class="al a-i">Nenhum duplicado encontrado.</div>';
+
+  const pend=[].concat(
+    (r.semProjeto||[]).map(x=>Object.assign({},x,{motivo:'Projeto não encontrado'})),
+    (r.semModalidade||[]).map(x=>Object.assign({},x,{motivo:'Modalidade não reconhecida'})),
+    (r.semData||[]).map(x=>Object.assign({},x,{motivo:'Data do exame inválida/ausente'}))
+  );
+  ge('mvListPend').innerHTML = pend.length ? pend.map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">${mvRowLabel_(item)} — <span style="color:var(--red);">${mvEsc_(item.motivo)}</span></div>`).join('')
+    : '<div class="al a-i">Nenhuma pendência.</div>';
+
+  ge('mvSelCount').textContent = MV_SELECTED.size + ' de ' + (r.prontos||[]).length + ' selecionados';
+  switchMVTab('prontos');
+}
+
+function mvToggleSel(i,checked){
+  if(checked) MV_SELECTED.add(i); else MV_SELECTED.delete(i);
+  const c=ge('mvSelCount'); if(c) c.textContent = MV_SELECTED.size + ' de ' + ((MV_RECON&&MV_RECON.prontos)||[]).length + ' selecionados';
+}
+function mvSelAll(v){
+  if(!MV_RECON) return;
+  MV_SELECTED = v ? new Set((MV_RECON.prontos||[]).map((_,i)=>i)) : new Set();
+  renderMVReconciliacao();
+}
+function switchMVTab(tab){
+  ['prontos','dup','pend'].forEach(t=>{
+    const btn=ge('mvtab-'+t), pane=ge('mvpane-'+t);
+    if(btn) btn.classList.toggle('sel', t===tab);
+    if(pane) pane.style.display = t===tab ? '' : 'none';
+  });
+}
+
+async function doMVConfirmar(){
+  if(!MV_RECON || !MV_SELECTED.size){ toast('Selecione ao menos um exame pronto para confirmar.','err'); return; }
+  const lote = (MV_RECON.prontos||[]).filter((_,i)=>MV_SELECTED.has(i));
+  if(!confirm(`Confirmar importação de ${lote.length} exame(s) do MV? Eles entrarão no Financeiro como "A faturar".`)) return;
+  toast('⏳ Importando...');
+  const r=await api('confirmarImportMV',{lote, arquivo:MV_FILE_NAME});
+  if(!r.ok){ toast('Erro: '+(r.msg||'falha na importação'),'err'); return; }
+  toast(`✓ ${(r.criados||[]).length} exame(s) importado(s)${(r.erros||[]).length?(', '+r.erros.length+' erro(s) — veja o console'):''}.`);
+  if((r.erros||[]).length) console.warn('Erros na importação MV:', r.erros);
+  MV_RECON=null; MV_SELECTED=new Set(); MV_RAW_ROWS=[]; MV_HEADERS=[]; MV_WORKBOOK=null;
+  const fi=ge('mvFileInput'); if(fi) fi.value='';
+  const mw=ge('mvMappingWrap'); if(mw) mw.style.display='none';
+  const rw=ge('mvReconWrap'); if(rw) rw.style.display='none';
+  const sw=ge('mvSheetPickWrap'); if(sw) sw.style.display='none';
+  LOADED.financeiro=false; LOADED.exames=false; LOADED.importmv=false;
+  await loadSectionData('importmv'); renderImportMV();
+}
+
+function renderImportMV(){
+  const rows=(DB.importMV||[]).slice().reverse();
+  const tb=ge('tbImportMV'); if(!tb) return;
+  tb.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td>${mvEsc_(r.LoteID||'')}</td>
+      <td>${mvEsc_(r.DataImportacao||'')}</td>
+      <td>${mvEsc_(r.Usuario||'')}</td>
+      <td>${mvEsc_(r.Arquivo||'')}</td>
+      <td>${mvEsc_(r.TotalLinhas||'0')}</td>
+      <td style="color:var(--gr);">${mvEsc_(r.TotalOK||'0')}</td>
+      <td style="color:${Number(r.TotalErro||0)>0?'var(--red)':'var(--tx3)'};">${mvEsc_(r.TotalErro||'0')}</td>
+      <td>${mvEsc_(r.Status||'')}</td>
+    </tr>`).join('') : '<tr class="tr-e"><td colspan="8">Nenhuma importação realizada ainda.</td></tr>';
+}
+
+/* ═══════════════════════════════════════
+   CONCILIAÇÃO MV × FINANCEIRO × WORKLIST (item 2.2 — auditoria, não altera dados)
+   Reaproveita o arquivo/mapeamento já carregado no passo 1 da Importação MV.
+   ═══════════════════════════════════════ */
+function renderConcMVHistorico(){
+  const rows=(DB.concMV||[]).slice().reverse();
+  const tb=ge('tbConcMV'); if(!tb) return;
+  tb.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td style="font-family:var(--m);font-size:11px;">${mvEsc_(r.ID||'')}</td>
+      <td>${mvEsc_(r.DataConciliacao||'')}</td>
+      <td>${mvEsc_(r.Usuario||'')}</td>
+      <td>${mvEsc_(r.PeriodoInicio||'—')} a ${mvEsc_(r.PeriodoFim||'—')}</td>
+      <td>${mvEsc_(r.TotalMV||'0')}</td>
+      <td style="color:${Number(r.TotalMVSemFinanceiro||0)>0?'var(--red)':'var(--tx3)'};">${mvEsc_(r.TotalMVSemFinanceiro||'0')}</td>
+      <td style="color:${Number(r.TotalMVSemFinalizacao||0)>0?'var(--ye)':'var(--tx3)'};">${mvEsc_(r.TotalMVSemFinalizacao||'0')}</td>
+      <td style="color:${Number(r.TotalFinanceiroSemMV||0)>0?'var(--red)':'var(--tx3)'};">${mvEsc_(r.TotalFinanceiroSemMV||'0')}</td>
+      <td style="color:${Number(r.TotalDivergentes||0)>0?'var(--red)':'var(--tx3)'};">${mvEsc_(r.TotalDivergentes||'0')}</td>
+    </tr>`).join('') : '<tr class="tr-e"><td colspan="9">Nenhuma conciliação realizada ainda.</td></tr>';
+}
+
+async function doMVConciliar(){
+  if(!MV_RAW_ROWS.length){ toast('Selecione um arquivo primeiro.','err'); return; }
+  if(!(ge('mvmap-nome')||{}).value || !(ge('mvmap-dataExame')||{}).value || !(ge('mvmap-modalidade')||{}).value){
+    toast('Mapeie ao menos Nome, Data do exame e Modalidade.','err'); return;
+  }
+  const linhasMV=mvBuildLinhas_();
+  toast('⏳ Conciliando (auditoria)...');
+  const r=await api('conciliarPlanilhaMV',{linhasMV});
+  if(!r.ok){ toast('Erro: '+(r.msg||'falha na conciliação'),'err'); return; }
+  renderMVConciliacao(r);
+  toast(`✓ Conciliação concluída: ${r.totalDivergencias} divergência(s) no período ${r.periodoInicio||'—'} a ${r.periodoFim||'—'}.`);
+  const r2=await api('getConciliacoesMV',{}); if(r2.ok){DB.concMV=r2.data||[];renderConcMVHistorico();}
+}
+
+function mvConcRowLabel_(item){
+  return `${mvEsc_(item.nome||item.pacs||'(sem nome)')} — ${mvEsc_(item.modalidade||'')} — ${mvEsc_(item.dataExame||'')}`;
+}
+
+function renderMVConciliacao(r){
+  const wrap=ge('mvConcWrap'); if(!wrap) return;
+  wrap.style.display='';
+  ge('mvConcInfo').textContent = `Período analisado: ${r.periodoInicio||'—'} a ${r.periodoFim||'—'} · ${r.totalMV} linha(s) do MV · ${r.totalDivergencias} divergência(s) no total.`;
+  ge('mctab-semfin').textContent='MV sem PISApp ('+(r.mvSemFinanceiro||[]).length+')';
+  ge('mctab-semfinal').textContent='Não finalizados ('+(r.mvSemFinalizacao||[]).length+')';
+  ge('mctab-finsemMV').textContent='Financeiro sem MV ('+(r.financeiroSemMV||[]).length+')';
+  ge('mctab-div').textContent='Divergências ('+(r.duplicadosOuDivergentes||[]).length+')';
+
+  ge('mvConcListSemFin').innerHTML = (r.mvSemFinanceiro||[]).length ? r.mvSemFinanceiro.map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">${mvConcRowLabel_(item)}${item.chaveExterna?(' · ref. '+mvEsc_(item.chaveExterna)):''} — <span style="color:var(--red);">${mvEsc_(item.motivo)}</span></div>`).join('')
+    : '<div class="al a-i">Nenhuma linha do MV ficou sem correspondência no PISApp. 🎉</div>';
+
+  ge('mvConcListSemFinal').innerHTML = (r.mvSemFinalizacao||[]).length ? r.mvSemFinalizacao.map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <span>${mvConcRowLabel_(item)} — exame <strong>${mvEsc_(item.exameCod||'')}</strong> (${mvEsc_(item.exameStatus||'')}, ${mvEsc_(item.exameProjeto||'')})</span>
+      <button class="btn bt btn-xs" onclick="confFinalizarAgora('${mvEsc_(item.exameCod||'')}', this)">Finalizar agora</button>
+    </div>`).join('')
+    : '<div class="al a-i">Todos os exames encontrados já estão finalizados.</div>';
+
+  ge('mvConcListFinSemMV').innerHTML = (r.financeiroSemMV||[]).length ? r.financeiroSemMV.map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">
+      <strong>${mvEsc_(item.exameCod||'')}</strong> — ${mvEsc_(item.sujeito||'')} — ${mvEsc_(item.modalidade||'')} — ${mvEsc_(item.data||'')} — ${mvEsc_(item.projeto||'')} — StatusFinanceiro: ${mvEsc_(item.statusFinanceiro||'')}
+    </div>`).join('')
+    : '<div class="al a-i">Nenhum exame cobrável ficou de fora da planilha do MV.</div>';
+
+  ge('mvConcListDiv').innerHTML = (r.duplicadosOuDivergentes||[]).length ? r.duplicadosOuDivergentes.map(item=>`
+    <div style="padding:6px 4px;border-bottom:1px solid var(--bd);font-size:12.5px;">${mvConcRowLabel_(item)} — <span style="color:var(--red);">${mvEsc_(item.motivo)}</span></div>`).join('')
+    : '<div class="al a-i">Nenhuma divergência ou duplicidade encontrada.</div>';
+
+  switchMVConcTab('semfin');
+}
+
+function switchMVConcTab(tab){
+  ['semfin','semfinal','finsemMV','div'].forEach(t=>{
+    const btn=ge('mctab-'+t), pane=ge('mcpane-'+t);
+    if(btn) btn.classList.toggle('sel', t===tab);
+    if(pane) pane.style.display = t===tab ? '' : 'none';
+  });
+}
+
+/* ═══════════════════════════════════════
+   CONFERÊNCIA DO WORKLIST (item 2.1 — fila de conferência / double-check)
+   ═══════════════════════════════════════ */
+function renderConferencia(){
+  const itens=DB.conferencia||[];
+  const tb=ge('tbConferencia'); if(!tb) return;
+
+  const total=itens.length;
+  const longo=itens.filter(i=>i.tipo==='EM_ANDAMENTO_LONGO').length;
+  const passado=itens.filter(i=>i.tipo==='AGENDADO_PASSADO').length;
+  const semFin=itens.filter(i=>i.tipo==='SEM_STATUS_FINANCEIRO').length;
+  if(ge('confTotal'))ge('confTotal').textContent=total;
+  if(ge('confLongo'))ge('confLongo').textContent=longo;
+  if(ge('confPassado'))ge('confPassado').textContent=passado;
+  if(ge('confSemFin'))ge('confSemFin').textContent=semFin;
+
+  if(!itens.length){ tb.innerHTML='<tr class="tr-e"><td colspan="7">🎉 Nenhum exame pendente de conferência.</td></tr>'; return; }
+
+  tb.innerHTML = itens.map(it=>{
+    const cod=mvEsc_(it.exameCod||'');
+    let acoes='';
+    if(it.tipo==='EM_ANDAMENTO_LONGO'){
+      acoes=`<button class="btn bt btn-xs" onclick="confFinalizarAgora('${cod}', this)">Finalizar agora</button> <button class="btn br btn-xs" onclick="confCancelar('${cod}', this)">Cancelar</button>`;
+    } else if(it.tipo==='AGENDADO_PASSADO'){
+      acoes=`<button class="btn bo btn-xs" onclick="confVerNoWorklist('${mvEsc_(it.data||'')}')">Ver no Worklist</button> <button class="btn br btn-xs" onclick="confCancelar('${cod}', this)">Cancelar</button>`;
+    } else if(it.tipo==='SEM_STATUS_FINANCEIRO'){
+      acoes=`<button class="btn bt btn-xs" onclick="confDefinirFaturar('${cod}', this)">Definir "A faturar"</button>`;
+    }
+    return `<tr>
+      <td style="font-family:var(--m);">${cod}</td>
+      <td>${mvEsc_(it.data||'')}</td>
+      <td>${mvEsc_(it.projeto||'')}</td>
+      <td>${mvEsc_(it.sujeito||'')}</td>
+      <td>${mvEsc_(it.modalidade||'')}</td>
+      <td style="font-size:12px;">${mvEsc_(it.msg||'')}</td>
+      <td>${acoes}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function confRefresh_(){
+  LOADED.conferencia=false;
+  await loadSectionData('conferencia');
+  renderConferencia();
+}
+
+async function confFinalizarAgora(cod, btn){
+  if(!confirm('Finalizar agora o exame '+cod+'? Ele será marcado como Concluído com o horário atual.')) return;
+  if(btn) btn.disabled=true;
+  const agora=new Date(); const hhmm=String(agora.getHours()).padStart(2,'0')+':'+String(agora.getMinutes()).padStart(2,'0');
+  const r=await api('updateExame',{cod, fimReal:hhmm, usuario:curNome||curUser});
+  if(!r.ok){ toast(r.msg||'Erro ao finalizar.','err'); if(btn) btn.disabled=false; return; }
+  toast('✓ Exame '+cod+' finalizado.');
+  LOADED.exames=false; LOADED.financeiro=false;
+  await confRefresh_();
+}
+
+async function confCancelar(cod, btn){
+  const motivo=prompt('Motivo do cancelamento de '+cod+':', 'Revisado na conferência do Worklist');
+  if(motivo===null) return;
+  if(btn) btn.disabled=true;
+  const r=await api('cancelar',{cod, motivo:motivo||'Revisado na conferência do Worklist', usuario:curNome||curUser});
+  if(!r.ok){ toast(r.msg||'Erro ao cancelar.','err'); if(btn) btn.disabled=false; return; }
+  toast('✓ Exame '+cod+' cancelado.');
+  LOADED.exames=false;
+  await confRefresh_();
+}
+
+async function confDefinirFaturar(cod, btn){
+  if(btn) btn.disabled=true;
+  const r=await api('setStatusFinanceiro',{exameCod:cod, statusFinanceiro:'A faturar'});
+  if(!r.ok){ toast(r.msg||'Erro ao definir status financeiro.','err'); if(btn) btn.disabled=false; return; }
+  toast('✓ Exame '+cod+' marcado como "A faturar".');
+  LOADED.financeiro=false;
+  await confRefresh_();
+}
+
+async function confVerNoWorklist(data){
+  await refreshSec('worklist');
+  if(data){ wlSelectedDate=data; changeWLDate(data); }
+  await loadWL();
 }
 
 /* ── FILTROS PRINCIPAIS WORKLIST / AGENDA ── */
@@ -4322,6 +4956,45 @@ function togglePacoteFields(){
 }
 
 // ── Aba: A faturar ──
+/* ── Financeiro: filtro rápido de período (item 4) ── */
+let FIN_QUICK_RANGE = {key:'all', ini:'', fim:''};
+function finQuickSetRange(key){
+  const t=new Date(); const pad=n=>String(n).padStart(2,'0');
+  const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  let ini='',fim='';
+  if(key==='hoje'){ ini=iso(t); fim=iso(t); }
+  else if(key==='mes'){ ini=iso(new Date(t.getFullYear(),t.getMonth(),1)); fim=iso(new Date(t.getFullYear(),t.getMonth()+1,0)); }
+  else if(key==='3m'){ ini=iso(new Date(t.getFullYear(),t.getMonth()-2,1)); fim=iso(new Date(t.getFullYear(),t.getMonth()+1,0)); }
+  else if(key==='ano'){ ini=iso(new Date(t.getFullYear(),0,1)); fim=iso(new Date(t.getFullYear(),11,31)); }
+  else if(key==='custom'){ /* aguarda finQuickApplyCustom */ }
+  document.querySelectorAll('.fin-quick-chip').forEach(b=>b.classList.toggle('sel', b.dataset.k===key));
+  const custWrap=ge('finQuickCustomWrap'); if(custWrap) custWrap.style.display = key==='custom' ? 'flex' : 'none';
+  if(key==='custom') return; // espera o usuário clicar em "Aplicar"
+  FIN_QUICK_RANGE={key:key,ini:ini,fim:fim};
+  finQuickRefreshInfo_();
+  renderAFaturar(); renderFinExames(); renderPagamentos(); renderNotasFiscais();
+}
+function finQuickApplyCustom(){
+  const ini=(ge('finQuickIni')||{}).value||''; const fim=(ge('finQuickFim')||{}).value||'';
+  if(!ini && !fim){ toast('Informe ao menos uma data.','err'); return; }
+  FIN_QUICK_RANGE={key:'custom',ini:ini,fim:fim};
+  finQuickRefreshInfo_();
+  renderAFaturar(); renderFinExames(); renderPagamentos(); renderNotasFiscais();
+}
+function finQuickRefreshInfo_(){
+  const info=ge('finQuickInfo'); if(!info) return;
+  if(FIN_QUICK_RANGE.key==='all'){ info.textContent=''; return; }
+  info.textContent = 'Período ativo: ' + (FIN_QUICK_RANGE.ini||'—') + ' a ' + (FIN_QUICK_RANGE.fim||'—');
+}
+function finDateInRange_(dateStr){
+  if(!FIN_QUICK_RANGE || FIN_QUICK_RANGE.key==='all') return true;
+  if(!dateStr) return false;
+  const d=String(dateStr).slice(0,10);
+  if(FIN_QUICK_RANGE.ini && d<FIN_QUICK_RANGE.ini) return false;
+  if(FIN_QUICK_RANGE.fim && d>FIN_QUICK_RANGE.fim) return false;
+  return true;
+}
+
 function renderAFaturar(){
   const projFilt=(ge('afaturarProjFilt')||{}).value||'';
   let exs=(DB.ex||[]).filter(e=>
@@ -4329,6 +5002,7 @@ function renderAFaturar(){
     (e['Status']||'')==='Concluído'
   );
   if(projFilt) exs=exs.filter(e=>(e['Projeto']||'')==projFilt);
+  exs=exs.filter(e=>finDateInRange_(e['Data']));
 
   // Badge na aba
   const badge=ge('ftab-afaturar-badge');
@@ -4607,6 +5281,8 @@ function renderFinExames(){
     exsTabela=exsTabela.filter(e=>(e['Projeto']||'')==projFilt);
     exsKPI=exsKPI.filter(e=>(e['Projeto']||'')==projFilt);
   }
+  exsTabela=exsTabela.filter(e=>finDateInRange_(e['Data']));
+  exsKPI=exsKPI.filter(e=>finDateInRange_(e['Data']));
 
   // Monta índice: exameCod → lista de pagamentos confirmados que o incluem
   const paysByCod = {};
@@ -4673,6 +5349,7 @@ function renderPagamentos(){
   // "Ativo" = qualquer status exceto Cancelado; caso contrário filtra pelo valor exato
   if(stFilt==='Ativo') rows=rows.filter(r=>r['Status']!=='Cancelado');
   else if(stFilt) rows=rows.filter(r=>r['Status']===stFilt);
+  rows=rows.filter(r=>finDateInRange_(r['DataPagamento']));
   const tb=ge('tbPag'); if(!tb)return;
   if(!rows.length){tb.innerHTML='<tr class="tr-e"><td colspan="10">Nenhum pagamento.</td></tr>';return;}
   tb.innerHTML=rows.map(r=>{
@@ -4704,6 +5381,7 @@ function renderNotasFiscais(){
   let rows=(DB.nf||[]);
   if(projFilt) rows=rows.filter(r=>r['Projeto']===projFilt);
   if(stFilt)   rows=rows.filter(r=>r['Status']===stFilt);
+  rows=rows.filter(r=>finDateInRange_(r['DataEmissao']));
   const tb=ge('tbNF'); if(!tb)return;
   if(!rows.length){tb.innerHTML='<tr class="tr-e"><td colspan="11">Nenhuma nota fiscal.</td></tr>';return;}
   const today=today_();
@@ -4723,9 +5401,28 @@ function renderNotasFiscais(){
       <td style="font-size:12px;">${r['Prestador']||'—'}</td>
       <td><span class="pill ${stCls}">${st}</span></td>
       <td>${arqLink}</td>
-      <td><button class="btn br btn-xs" onclick="delNFConfirm('${r['ID']||''}')">Cancelar</button></td>
+      <td><button class="btn bo btn-xs" onclick="gerarRequisicaoNFUI('${r['ID']||''}', this)">📄 Requisição</button> <button class="btn br btn-xs" onclick="delNFConfirm('${r['ID']||''}')">Cancelar</button></td>
     </tr>`;
   }).join('');
+}
+
+async function gerarRequisicaoNFUI(nfId, btn){
+  const nf=(DB.nf||[]).find(r=>String(r.ID||'')===String(nfId));
+  if(!nf){ toast('Nota fiscal não encontrada.','err'); return; }
+  const vencimentoPadrao=(()=>{ const d=new Date(); d.setDate(d.getDate()+30); return d.toISOString().slice(0,10); })();
+  const venc=prompt('Data de vencimento da requisição (AAAA-MM-DD):', nf.DataVencimento||vencimentoPadrao);
+  if(venc===null) return;
+  if(btn) btn.disabled=true;
+  toast('⏳ Gerando requisição...');
+  let exameCods=[]; try{ exameCods=JSON.parse(nf.ExameCods||'[]'); }catch(e){}
+  const r=await api('gerarRequisicaoNF',{nfId, projeto:nf.Projeto, valor:nf.Valor, qtdExames:exameCods.length, vencimento:venc});
+  if(btn) btn.disabled=false;
+  if(!r.ok){ toast(r.msg||'Erro ao gerar requisição.','err'); return; }
+  const a=document.createElement('a');
+  a.href='data:application/pdf;base64,'+r.base64;
+  a.download=r.filename||'requisicao_nf.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('✓ Requisição gerada e baixada.');
 }
 
 // ── Modals: Pagamento ──
@@ -5603,7 +6300,8 @@ window.saveQSeg = async function(){
 window.openProjModal = function(id){
   ge('projMttl').textContent=id?'✏️ Editar Projeto':'📁 Novo Projeto';
   ge('projEditId').value=id||'';ge('pjModSlots').innerHTML='';populateDDs();
-  ['pjNm','pjCd','pjApelido','pjExec','pjCoord','pjPI','pjPIe','pjGr','pjOr','pjReservaMin','pjAgendaObs','pjValorPos','pjValorPacote','pjLimitePacote','pjIn','pjFm','pjDs','pjCEUA','pjCEUAData','pjCapp','pjCappData'].forEach(i=>{if(ge(i))ge(i).value='';});
+  ['pjNm','pjCd','pjApelido','pjExec','pjCoord','pjPI','pjPIe','pjGr','pjOr','pjReservaMin','pjAgendaObs','pjValorPos','pjValorPacote','pjLimitePacote','pjIn','pjFm','pjDs','pjCEUA','pjCEUAData','pjCapp','pjCappData','pjSVOC','pjSVOCData','pjSVOCUrl','pjSacadoNome','pjSacadoCNPJ','pjSacadoInscEst','pjSacadoEndereco'].forEach(i=>{if(ge(i))ge(i).value='';});
+  if(ge('pjSVOCReq')){ge('pjSVOCReq').checked=false;delete ge('pjSVOCReq').dataset.touched;}
   if(ge('pjLaudo'))ge('pjLaudo').value='Não';
   if(ge('pjTipoCobranca'))ge('pjTipoCobranca').value='Por exame';
   togglePacoteFields();
@@ -5641,6 +6339,14 @@ window.openProjModal = function(id){
     if(ge('pjCEUAData'))ge('pjCEUAData').value=p.DataCEUA||'';
     if(ge('pjCapp'))ge('pjCapp').value=p.CAPPesqParecer||'';
     if(ge('pjCappData'))ge('pjCappData').value=p.CAPPesqData||'';
+    if(ge('pjSVOC'))ge('pjSVOC').value=p.SVOCParecer||'';
+    if(ge('pjSVOCData'))ge('pjSVOCData').value=p.DataSVOC||'';
+    if(ge('pjSVOCUrl'))ge('pjSVOCUrl').value=p.SVOCArquivoURL||'';
+    if(ge('pjSVOCReq')){ge('pjSVOCReq').checked=String(p.RequerSVOC||'').toUpperCase()==='SIM';ge('pjSVOCReq').dataset.touched='1';}
+    if(ge('pjSacadoNome'))ge('pjSacadoNome').value=p.SacadoNome||'';
+    if(ge('pjSacadoCNPJ'))ge('pjSacadoCNPJ').value=p.SacadoCNPJCPF||'';
+    if(ge('pjSacadoInscEst'))ge('pjSacadoInscEst').value=p.SacadoInscEst||'';
+    if(ge('pjSacadoEndereco'))ge('pjSacadoEndereco').value=p.SacadoEndereco||'';
     String(p.Amostras||p.TipoAmostraProjeto||'').split(';').map(x=>x.trim()).forEach(a=>qsa('#cgPjSj .chip').forEach(c=>{if(c.textContent.trim()===a)c.classList.add('sel');}));
     try{const mods=JSON.parse(p.Modalidades||'[]');const nums=JSON.parse(p.NumExamesPorModalidade||'{}');const cust=JSON.parse(p.CustoPorModalidade||'{}');if(mods.length){mods.forEach(m=>addPjMod(m,nums[m]||'',cust[m]||''));}else addPjMod();}catch(e){addPjMod();}
   } else addPjMod();
@@ -5656,12 +6362,14 @@ window.saveProj = async function(){
   const isHumano=amStr.includes('humano')||amStr.includes('volunt');
   if(isAnimal && (!v('pjCEUA').trim()||!v('pjCEUAData'))){toast('Projeto com animal exige Nº do CEUA e data do CEUA.','warn');return;}
   if(isHumano && (!v('pjCapp').trim()||!v('pjCappData'))){toast('Projeto humano/voluntário exige parecer CAPPesq e data do parecer.','warn');return;}
+  const requerSVOC=!!(ge('pjSVOCReq')&&ge('pjSVOCReq').checked);
+  if(requerSVOC && (!v('pjSVOC').trim()||!v('pjSVOCData'))){toast('Projeto com peças anatômicas/post-mortem exige anuência do SVOC (parecer e data).','warn');return;}
   const id=ge('projEditId').value;
   const slots=ge('pjModSlots').querySelectorAll('div[style]');
   const modalidades=[],numExames={},custos={};
   slots.forEach(sl=>{const mod=sl.querySelector('.pjm-mod')?.value;const num=parseFloat(sl.querySelector('.pjm-num')?.value)||0;const custo=parseFloat(sl.querySelector('.pjm-custo')?.value)||0;if(mod){modalidades.push(mod);numExames[mod]=num;custos[mod]=custo;}});
   const medicosLaudadores=Array.from(qsa('.pjMedLaudCk')).filter(ck=>ck.checked).map(ck=>ck.value);
-  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
+  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),requerSVOC,svocParecer:v('pjSVOC'),dataSVOC:v('pjSVOCData'),svocArquivoURL:v('pjSVOCUrl'),sacadoNome:v('pjSacadoNome'),sacadoCNPJCPF:v('pjSacadoCNPJ'),sacadoInscEst:v('pjSacadoInscEst'),sacadoEndereco:v('pjSacadoEndereco'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
   const res=await api(id?'editProj':'novoProj',id?{id,fields:data}:data);
   if(!res.ok){toast(res.msg,'err');return;}
   toast('Salvando...'); LOADED.projetos=false;LOADED.financeiro=false; await loadSectionData('projetos'); ovlClose('ovlProj');renderProj();renderFin();populateDDs();toast(`✓ Projeto "${nm}" ${id?'atualizado':'cadastrado'}.`);
@@ -5731,6 +6439,7 @@ window.renderProj = function(){
       <div class="proj-hdr" onclick="togProj(this)"><div><div style="font-size:14px;font-weight:700;color:var(--navy);">${apel?apel+' — ':''}${nm}</div><div style="font-size:11.5px;color:var(--tx3);margin-top:2px;">${cod?cod+' · ':''}Coord.: ${p['CoordenadorProjeto']||p['PI']||'—'} · Exec.: ${p['PesquisadorExecutante']||'—'} · Reserva: ${formatDurMin_(Number(p['DuracaoAgendaMin']||p['ReservaAgendaMinutos']||0)||getReservaMinForSol_({Projeto:p['Nome']||p['Titulo'],CodigoProjeto:p['Codigo']},''))} · <span class="pill ${inst==='INRAD'?'p-p':'p-t'}">${inst}</span></div></div><div class="fc"><span class="sts ${bloqueio?'sc2':status==='Ativo'?'sd':'sw'}">${bloqueio?'Bloqueio ético':status}</span><span class="proj-chev">▶</span></div></div>
       <div class="proj-body"><div class="fr c3 mt" style="margin-top:12px;"><div><div class="sl">Orçamento</div><div style="font-family:var(--m);font-size:14px;color:var(--grd);">R$ ${orc.toLocaleString('pt-BR')}</div></div><div><div class="sl">Exames Concl.</div><div style="font-family:var(--m);font-size:14px;color:var(--navy);">${exs}</div></div><div><div class="sl">Reserva agenda</div><div style="font-size:12px;color:var(--tx2);">${durAg}${p['AgendaObs']?' · '+p['AgendaObs']:''}</div></div></div>
       <div class="fr c2 mt"><div><div class="sl">CEUA</div><div style="font-size:12px;">${p['CEUA']||'—'} ${p['CEUAValidade']?'· vence '+p['CEUAValidade']:''}</div></div><div><div class="sl">CAPPesq</div><div style="font-size:12px;">${p['CAPPesqParecer']||'—'} ${p['CAPPesqValidade']?'· vence '+p['CAPPesqValidade']:''}</div></div></div>
+      ${String(p['RequerSVOC']||'').toUpperCase()==='SIM'?`<div class="fr c2 mt"><div><div class="sl">Anuência SVOC</div><div style="font-size:12px;">${p['SVOCParecer']||'—'} ${p['SVOCValidade']?'· vence '+p['SVOCValidade']:''}</div></div><div></div></div>`:''}
       ${modInfo?`<div style="margin-top:12px;"><div style="font-family:var(--m);font-size:9.5px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Modalidades</div>${modInfo}</div>`:''}${p['Descricao']?`<div style="margin-top:10px;font-size:12.5px;color:var(--tx2);">${p['Descricao']}</div>`:''}<div class="fc mt" style="margin-top:12px;"><button class="btn bo btn-sm" onclick="openProjModal('${id}')">✏️ Editar</button><button class="btn br btn-sm" onclick="delProj('${id}')">🗑 Inativar</button></div></div></div>`;
   }).join('');
 };
@@ -5773,6 +6482,7 @@ window.renderMasks = function(){
     const amostras = (typeof mulChip==='function' ? mulChip('cgPjSj') : []).join(' ').toLowerCase();
     const isAnimal = amostras.includes('animal');
     const isHumano = amostras.includes('humano') || amostras.includes('volunt');
+    const isPostMortem = amostras.includes('post mortem') || amostras.includes('peça anatômica') || amostras.includes('peca anatomica');
     const laudo = (safeGe('pjLaudo')?.value || 'Não') === 'Sim';
     const ceua = safeGe('pjCEUABox'), capp = safeGe('pjCAPPBox'), med = safeGe('pjMedLaudBox');
     if(ceua) ceua.style.display = isAnimal ? 'grid' : 'none';
@@ -5781,6 +6491,13 @@ window.renderMasks = function(){
     if(!isAnimal){ if(safeGe('pjCEUA')) safeGe('pjCEUA').value=''; if(safeGe('pjCEUAData')) safeGe('pjCEUAData').value=''; }
     if(!isHumano){ if(safeGe('pjCapp')) safeGe('pjCapp').value=''; if(safeGe('pjCappData')) safeGe('pjCappData').value=''; }
     if(!laudo) qsa('.pjMedLaudCk').forEach(ck=>ck.checked=false);
+    // SVOC: sugere marcar automaticamente ao detectar Post Mortem/Peça Anatômica, mas não trava — usuário pode desmarcar.
+    const svocCk = safeGe('pjSVOCReq'), svoc = safeGe('pjSVOCBox'), svocUrl = safeGe('pjSVOCUrlWrap');
+    if(svocCk && !svocCk.dataset.touched && isPostMortem) svocCk.checked = true;
+    const svocOn = !!(svocCk && svocCk.checked);
+    if(svoc) svoc.style.display = svocOn ? 'grid' : 'none';
+    if(svocUrl) svocUrl.style.display = svocOn ? 'block' : 'none';
+    if(!svocOn){ if(safeGe('pjSVOC')) safeGe('pjSVOC').value=''; if(safeGe('pjSVOCData')) safeGe('pjSVOCData').value=''; }
   };
 
   const oldMchip = window.mchip;
@@ -5899,10 +6616,15 @@ async function loadLabConfigUI(){
   if(ge('cfgReservaPadrao'))ge('cfgReservaPadrao').value=c.DEFAULT_RESERVA_AGENDA_MIN||60;
   if(ge('cfgLembreteDias'))ge('cfgLembreteDias').value=c.LEMBRETE_DIAS_PADRAO||2;
   if(ge('cfgRespTec'))ge('cfgRespTec').value=c.RESPONSAVEL_TECNICO||'';
+  if(ge('cfgInradSheetUrl'))ge('cfgInradSheetUrl').value=c.INRAD_FORM_SHEET_URL||'';
+  if(ge('cfgInradSheetAba'))ge('cfgInradSheetAba').value=c.INRAD_FORM_SHEET_ABA||'';
+  if(ge('cfgNfTemplateId'))ge('cfgNfTemplateId').value=c.NF_TEMPLATE_DOC_ID||'';
+  if(ge('cfgAreaRequisitante'))ge('cfgAreaRequisitante').value=c.AREA_REQUISITANTE||'';
+  if(ge('cfgLocalEntregaNF'))ge('cfgLocalEntregaNF').value=c.LOCAL_ENTREGA_NF||'';
   if(ge('cfgLabOut')){ge('cfgLabOut').style.display='flex';ge('cfgLabOut').textContent='Configurações carregadas. Agendas: '+((res.calendars||[]).map(x=>x.label).join(', ')||'—');}
 }
 async function saveLabConfigUI(){
-  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec')};
+  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF')};
   const res=await api('saveLabConfig',data);
   if(!res.ok){toast(res.msg||'Erro ao salvar.','err');return;}
   toast('✓ Configurações do laboratório salvas.');
@@ -6110,14 +6832,29 @@ async function loadLabConfigUI(){
   if(ge('cfgReservaPadrao'))ge('cfgReservaPadrao').value=c.DEFAULT_RESERVA_AGENDA_MIN||60;
   if(ge('cfgLembreteDias'))ge('cfgLembreteDias').value=c.LEMBRETE_DIAS_PADRAO||2;
   if(ge('cfgRespTec'))ge('cfgRespTec').value=c.RESPONSAVEL_TECNICO||'';
+  if(ge('cfgInradSheetUrl'))ge('cfgInradSheetUrl').value=c.INRAD_FORM_SHEET_URL||'';
+  if(ge('cfgInradSheetAba'))ge('cfgInradSheetAba').value=c.INRAD_FORM_SHEET_ABA||'';
+  if(ge('cfgNfTemplateId'))ge('cfgNfTemplateId').value=c.NF_TEMPLATE_DOC_ID||'';
+  if(ge('cfgAreaRequisitante'))ge('cfgAreaRequisitante').value=c.AREA_REQUISITANTE||'';
+  if(ge('cfgLocalEntregaNF'))ge('cfgLocalEntregaNF').value=c.LOCAL_ENTREGA_NF||'';
   if(ge('cfgLabOut')){ge('cfgLabOut').style.display='flex';ge('cfgLabOut').textContent='Configurações carregadas. Agendas: '+((res.calendars||[]).map(x=>x.label).join(', ')||'—');}
 }
 async function saveLabConfigUI(){
-  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec')};
+  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF')};
   const res=await api('saveLabConfig',data);
   if(!res.ok){toast(res.msg||'Erro ao salvar.','err');return;}
   toast('✓ Configurações do laboratório salvas.');
   loadLabConfigUI();
+}
+async function testarInradSyncUI(){
+  const out=ge('cfgInradSyncOut'); if(out){out.style.display='';out.textContent='⏳ Testando conexão...';}
+  await saveLabConfigUI();
+  const r=await api('testarInradFormSheet',{});
+  if(!out) return;
+  if(!r.ok){ out.className='al a-d mt'; out.textContent='❌ '+(r.msg||'Falha ao conectar.'); return; }
+  out.className='al a-ok mt';
+  const faltando=(r.naoEncontrados||[]).length ? ` | Não reconhecidos (ok, apenas informativo): ${r.naoEncontrados.join(', ')}` : '';
+  out.textContent=`✓ Conectado a "${r.planilha}" (aba "${r.aba}") — ${r.totalLinhas} linha(s), ${r.camposReconhecidos}/${r.totalCampos} campos reconhecidos${faltando}`;
 }
 async function loadProtocolosTempoUI(){
   const res=await api('getProtocolosTempo',{}, {silent:true});
