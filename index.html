@@ -1603,11 +1603,31 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           </div>
         </div>
 
+        <!-- Importação Automática do Export do MV (Estágio 1) — pasta do Drive → planilha fixa -->
+        <div class="card mb" id="mvExportCard">
+          <div class="ct mb"><div class="cti">📂</div>Importação Automática do Export do MV</div>
+          <div class="al a-n mb" style="font-size:12px;">O MV exporta automaticamente um arquivo (CSV/XLSX) para uma pasta do Google Drive. Aqui o PISApp lê o arquivo <strong>mais recente</strong> dessa pasta e <strong>acrescenta somente as linhas novas</strong> na planilha fixa "Banco de Dados NÃO MEXER" (deduplica por ACC; se faltar, por CD_ATENDIMENTO) — ninguém precisa copiar/colar. Nunca duplica, sobrescreve ou apaga linhas. O arquivo processado é renomeado com o prefixo "[Importado ...]" e não é lido de novo. Roda sozinho todo dia às 05h; a Sincronização Automática abaixo lê a planilha depois. Configure a pasta em Configurações do Laboratório.</div>
+          <div class="fe mb">
+            <button class="btn bt" id="btnMvExportAgora" onclick="importarExportMvUI()">📥 Importar arquivo mais recente agora</button>
+          </div>
+          <div id="mvExportResultado" style="display:none;" class="mb">
+            <div class="g4 mb">
+              <div class="sc"><div class="sl">Linhas lidas</div><div class="sv" id="mvExportLidas" style="font-size:18px;">0</div></div>
+              <div class="sc sc-g"><div class="sl">Novas adicionadas</div><div class="sv" id="mvExportNovas" style="font-size:18px;">0</div></div>
+              <div class="sc"><div class="sl">Já existiam</div><div class="sv" id="mvExportDup" style="font-size:18px;">0</div></div>
+              <div class="sc sc-y"><div class="sl">Sem ACC/CD_ATENDIMENTO</div><div class="sv" id="mvExportSemChave" style="font-size:18px;">0</div></div>
+            </div>
+            <div id="mvExportMsg" class="al a-i" style="font-size:12px;"></div>
+          </div>
+          <div class="ct mb mt" style="font-size:13px;">Histórico de arquivos processados</div>
+          <div class="tw"><table><thead><tr><th>Arquivo</th><th>Processado em</th><th>Por</th><th>Lidas</th><th>Novas</th><th>Duplicadas</th><th>Sem chave</th></tr></thead><tbody id="tbMvExportCtrl"><tr class="tr-e"><td colspan="7">Nenhum arquivo processado ainda.</td></tr></tbody></table></div>
+        </div>
+
         <!-- Sincronização Automática — planilha fixa alimentada manualmente pela equipe -->
         <div class="card mb" id="mvAutoCard">
           <div class="ct mb"><div class="cti">🔁</div>Sincronização Automática (planilha fixa)</div>
           <div id="mvAutoModoAlert" class="al a-w mb">🧪 Modo atual: <strong>Simulação</strong> — nada é gravado até você ativar em Configurações do Laboratório, após validar os resultados abaixo.</div>
-          <div class="al a-n mb" style="font-size:12px;">Lê a planilha configurada em Configurações do Laboratório (nunca escreve nela). RM não encontrado no PISApp vira <strong>RM 1,5T/INRAD</strong>; TC não encontrado vira <strong>TC/INRAD</strong>. Se já existir, só confirma — não altera nada.</div>
+          <div class="al a-n mb" style="font-size:12px;">Lê a planilha configurada em Configurações do Laboratório (nunca escreve nela) e processa <strong>todas as modalidades</strong> (RM, TC, RX, US, Mamografia, Densitometria, Medicina Nuclear...). Se o exame já existe no PISApp, só confirma — não altera nada; se não existe, é criado como exame do <strong>INRAD</strong> na modalidade informada. <strong>Exceção — RM:</strong> a planilha não informa a potência do magneto (e o PISA só tem RM 7T via Worklist), então RM não encontrado vira <strong>RM 1,5T/INRAD</strong>.</div>
           <div class="fe mb">
             <button class="btn bo" onclick="rodarMvAutoSyncUI(true)">🧪 Simular agora (dry-run)</button>
             <button class="btn br" id="btnMvAutoAtivo" onclick="rodarMvAutoSyncUI(false)">▶️ Rodar de verdade</button>
@@ -1616,7 +1636,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             <div class="g4 mb">
               <div class="sc sc-g"><div class="sl">Confirmados</div><div class="sv" id="mvAutoConfirmados" style="font-size:18px;">0</div></div>
               <div class="sc sc-t"><div class="sl">Criados</div><div class="sv" id="mvAutoCriados" style="font-size:18px;">0</div></div>
-              <div class="sc sc-y"><div class="sl">Sem projeto/Ambíguos</div><div class="sv" id="mvAutoPendencias" style="font-size:18px;">0</div></div>
+              <div class="sc sc-y"><div class="sl">Sem projeto/Ambíguos/Sem modalidade</div><div class="sv" id="mvAutoPendencias" style="font-size:18px;">0</div></div>
               <div class="sc"><div class="sl">Já processados antes</div><div class="sv" id="mvAutoPulados" style="font-size:18px;">0</div></div>
             </div>
             <div id="mvAutoProjSugWrap" style="display:none;" class="mb">
@@ -1829,12 +1849,21 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="fg"><label class="fl">Local de entrega da NF-e/RPS (padrão)</label><input class="fi" id="cfgLocalEntregaNF" placeholder="Prédio, Andar, Sala e Telefone"></div>
         </div>
 
+        <div class="card mt" id="cardMvExport">
+          <div class="ct mb"><div class="cti">📂</div>Importação Automática do Export do MV — Pasta do Drive</div>
+          <div class="al a-n">Cole o link (ou o ID) da pasta do Google Drive onde o MV exporta os arquivos. A conta que executa o script precisa ter acesso de edição à pasta (o arquivo é renomeado após a importação) e à planilha fixa.</div>
+          <div class="fg mt"><label class="fl">URL ou ID da pasta do export do MV</label><input class="fi" id="cfgMvExportFolder" placeholder="https://drive.google.com/drive/folders/..."></div>
+          <div class="al a-w mt" style="font-size:12px;">📎 <strong>CSV</strong> funciona sempre, sem configuração extra. Para ler <strong>XLSX</strong> é preciso habilitar o serviço avançado <strong>"Drive API"</strong> no projeto do Apps Script (Editor → Serviços → + → Drive API).</div>
+          <div class="fe mt"><button class="btn bo" onclick="testarMvExportFolderUI()">🧪 Testar pasta</button></div>
+          <div id="cfgMvExportOut" class="al a-n mt" style="display:none;"></div>
+        </div>
+
         <div class="card mt" id="cardMvAutoSync">
           <div class="ct mb"><div class="cti">🔁</div>Sincronização Automática — Planilha Fixa do MV</div>
-          <div class="al a-n">Lê (nunca escreve) uma planilha mantida manualmente pela equipe e cadastra no PISApp os exames de RM/TC que ainda não existem — como se tivessem sido finalizados no Worklist. RM não encontrado vira "RM 1,5T"/INRAD; TC não encontrado vira "TC"/INRAD. Quando o exame já existe, apenas confirma, sem alterar nada.</div>
+          <div class="al a-n">Lê (nunca escreve) a planilha fixa do MV e cadastra no PISApp os exames de <strong>todas as modalidades</strong> que ainda não existem, como exames do INRAD — como se tivessem sido finalizados no Worklist. Quando o exame já existe, apenas confirma, sem alterar nada. <strong>Exceção — RM:</strong> como a planilha não informa a potência do magneto (e o PISA só tem RM 7T), RM não encontrado vira "RM 1,5T"/INRAD.</div>
           <div class="fr c2">
             <div class="fg"><label class="fl">URL da planilha fixa</label><input class="fi" id="cfgMvAutoUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
-            <div class="fg"><label class="fl">Nome da aba</label><input class="fi" id="cfgMvAutoAba" placeholder="banco de dados NÃO MEXER"></div>
+            <div class="fg"><label class="fl">Nome da aba</label><input class="fi" id="cfgMvAutoAba" placeholder="Banco de Dados NÃO MEXER"></div>
           </div>
           <div class="fg"><label class="fl">Projeto/DRO padrão (usado quando a planilha não tiver coluna de projeto)</label><input class="fi" id="cfgMvAutoProjeto" placeholder="Código ou nome do projeto"></div>
           <div class="fg">
@@ -2232,7 +2261,7 @@ function downloadTextFile(filename, text, mime){
 
 
 /* ── STATE ── */
-let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[],qc:[],medicos:[],equipLog:[],dash:null,importMV:[],conferencia:[],concMV:[],mvAutoCtrl:[]};
+let DB={sol:[],suj:[],ex:[],proj:[],fin:[],equip:[],log:[],artigos:[],masks:[],qc:[],medicos:[],equipLog:[],dash:null,importMV:[],conferencia:[],concMV:[],mvAutoCtrl:[],mvExportCtrl:[]};
 let LOADED={dashboard:false,worklist:false,agenda:false,solicitacoes:false,sujeitos:false,exames:false,projetos:false,financeiro:false,equipamentos:false,academico:false,mascaras:false,qualidade:false,admin:false,importmv:false,conferencia:false};
 let LAST_LOAD={};
 let calEvents=[], calDate=new Date(), calView='day';
@@ -2637,6 +2666,7 @@ async function loadSectionData(id, opts){
       const r2=await api('getConciliacoesMV',{}, {silent:true}); if(!_isStale() && r2.ok){DB.concMV=r2.data||[];renderConcMVHistorico();}
       const r3=await api('getMVAutoControleLog',{}, {silent:true}); if(!_isStale() && r3.ok){DB.mvAutoCtrl=r3.data||[];renderMvAutoCtrlHistorico();}
       const r4=await api('getLabConfig',{}, {silent:true}); if(!_isStale() && r4.ok){updateMvAutoModoAlert_(r4.config&&r4.config.MV_AUTO_SYNC_MODO);}
+      const r5=await api('getExportMVControleLog',{}, {silent:true}); if(!_isStale() && r5.ok){DB.mvExportCtrl=r5.data||[];renderMvExportCtrlHistorico();}
     }
     if(id==='conferencia'){
       r=await api('getFilaConferenciaWorklist',{}, {silent:true}); if(_isStale()) return; if(r.ok){DB.conferencia=r.itens||[];markLoaded_(id);}
@@ -3045,6 +3075,68 @@ function renderMvAutoCtrlHistorico(){
     </tr>`).join('') : '<tr class="tr-e"><td colspan="5">Nenhum item processado ainda.</td></tr>';
 }
 
+/* ═══════════════════════════════════════
+   IMPORTAÇÃO AUTOMÁTICA DO EXPORT DO MV (Estágio 1) — pasta do Drive → planilha fixa
+   ═══════════════════════════════════════ */
+function renderMvExportCtrlHistorico(){
+  const rows=(DB.mvExportCtrl||[]); // já vem do servidor com os mais recentes primeiro
+  const tb=ge('tbMvExportCtrl'); if(!tb) return;
+  tb.innerHTML = rows.length ? rows.slice(0,100).map(r=>`
+    <tr>
+      <td style="font-size:12px;">${mvEsc_(r.ArquivoNome||'')}</td>
+      <td>${mvEsc_(r.DataProcessamento||'')}</td>
+      <td>${mvEsc_(r.Usuario||'')}</td>
+      <td>${mvEsc_(r.LinhasLidas||0)}</td>
+      <td style="font-weight:700;">${mvEsc_(r.LinhasNovas||0)}</td>
+      <td>${mvEsc_(r.LinhasDuplicadas||0)}</td>
+      <td>${mvEsc_(r.LinhasSemChave||0)}</td>
+    </tr>`).join('') : '<tr class="tr-e"><td colspan="7">Nenhum arquivo processado ainda.</td></tr>';
+}
+
+async function importarExportMvUI(){
+  if(!confirm('Isto vai ACRESCENTAR as linhas novas do arquivo mais recente da pasta na planilha fixa "Banco de Dados NÃO MEXER" (nada existente é alterado ou apagado). Continuar?')) return;
+  const btn=ge('btnMvExportAgora'); if(btn){btn.disabled=true;}
+  toast('⏳ Importando arquivo mais recente...');
+  let r;
+  try{ r=await api('sincronizarExportMV',{}); } finally { if(btn){btn.disabled=false;} }
+  const wrap=ge('mvExportResultado');
+  if(!r||!r.ok){
+    toast('Erro: '+((r&&r.msg)||'falha na importação'),'err');
+    if(wrap&&r&&r.msg){ wrap.style.display=''; const m0=ge('mvExportMsg'); if(m0){m0.className='al a-d';m0.textContent='❌ '+r.msg;} }
+    return;
+  }
+  if(wrap) wrap.style.display='';
+  if(ge('mvExportLidas'))ge('mvExportLidas').textContent=r.lidas||0;
+  if(ge('mvExportNovas'))ge('mvExportNovas').textContent=r.novas||0;
+  if(ge('mvExportDup'))ge('mvExportDup').textContent=r.duplicadas||0;
+  if(ge('mvExportSemChave'))ge('mvExportSemChave').textContent=r.semChave||0;
+  const m=ge('mvExportMsg');
+  if(m){
+    let html=mvEsc_(r.msg||'');
+    if((r.colunasVazias||[]).length) html+='<br>Colunas da planilha fixa sem correspondente no arquivo (ficaram em branco): '+r.colunasVazias.map(mvEsc_).join(', ')+'.';
+    if((r.colunasIgnoradas||[]).length) html+='<br>Colunas do arquivo que não existem na planilha fixa (ignoradas): '+r.colunasIgnoradas.map(mvEsc_).join(', ')+'.';
+    if(r.avisoRenomear) html+='<br>⚠️ '+mvEsc_(r.avisoRenomear);
+    if((r.novas||0)>0) html+='<br>Próximo passo: rode a Sincronização Automática abaixo para criar/confirmar os exames no PISApp.';
+    m.className = (r.semArquivo||r.aguardando) ? 'al a-w' : 'al a-ok';
+    m.innerHTML=html;
+  }
+  toast((r.semArquivo||r.aguardando) ? ('ℹ️ '+(r.msg||'Nada para importar.')) : `✓ Importação concluída: ${r.novas||0} linha(s) nova(s), ${r.duplicadas||0} já existiam.`);
+  const r2=await api('getExportMVControleLog',{}, {silent:true}); if(r2.ok){DB.mvExportCtrl=r2.data||[];renderMvExportCtrlHistorico();}
+}
+
+async function testarMvExportFolderUI(){
+  const out=ge('cfgMvExportOut'); if(out){out.className='al a-n mt';out.style.display='';out.textContent='⏳ Testando pasta...';}
+  await saveLabConfigUI();
+  const r=await api('testarMVExportFolder',{});
+  if(!out) return;
+  if(!r.ok){ out.className='al a-d mt'; out.textContent='❌ '+(r.msg||'Falha ao acessar a pasta.'); return; }
+  out.className='al a-ok mt';
+  const arq = r.arquivoMaisRecente ? `arquivo mais recente pendente: "${r.arquivoMaisRecente}" (${r.tipo}, modificado em ${r.modificadoEm})` : 'nenhum arquivo CSV/XLSX pendente';
+  const xl = (r.tipo==='XLSX/Excel' && !r.driveApiHabilitada) ? ' ⚠️ Este arquivo é XLSX e o serviço Drive API não está habilitado — habilite-o no Apps Script ou exporte em CSV.' : '';
+  const dest = r.destinoAcessivel ? ` Planilha destino: ${r.planilhaDestino}.` : ' ⚠️ Planilha fixa de destino não acessível (confira a URL/aba abaixo).';
+  out.textContent=`✓ Pasta "${r.pasta}" acessível — ${arq}.${dest}${xl}`;
+}
+
 async function rodarMvAutoSyncUI(dryRun){
   if(!dryRun){
     if(!confirm('Isso vai GRAVAR exames de verdade no PISApp com base na planilha fixa. Tem certeza que já validou o modo simulação e ativou "Ativo" em Configurações?')) return;
@@ -3053,17 +3145,18 @@ async function rodarMvAutoSyncUI(dryRun){
   const r=await api('sincronizarMVAuto',{dryRun});
   if(!r.ok){ toast('Erro: '+(r.msg||'falha na sincronização'),'err'); return; }
   const wrap=ge('mvAutoResultado'); if(wrap) wrap.style.display='';
-  const pendencias=(r.semProjeto||[]).length+(r.ambiguas||[]).length+(r.tipoDesconhecido||[]).length;
+  const pendencias=(r.semProjeto||[]).length+(r.ambiguas||[]).length+(r.semModalidade||[]).length;
   if(ge('mvAutoConfirmados'))ge('mvAutoConfirmados').textContent=r.confirmadas||0;
   if(ge('mvAutoCriados'))ge('mvAutoCriados').textContent=(r.criadas||[]).length;
   if(ge('mvAutoPendencias'))ge('mvAutoPendencias').textContent=pendencias;
   if(ge('mvAutoPulados'))ge('mvAutoPulados').textContent=r.puladasJaProcessadas||0;
 
   const linhas=[];
+  if(r.interrompida) linhas.push('<div class="al a-w" style="margin-bottom:6px;">⏱️ A rodada foi interrompida por limite de tempo antes de terminar a planilha. O que já foi criado está registrado — clique em sincronizar de novo para continuar de onde parou.</div>');
   (r.criadas||[]).slice(0,50).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);">${r.dryRun?'🧪 Simularia criar':'✅ Criado'}: ${mvEsc_(it.nome)} — ${mvEsc_(it.modalidade)} — ${mvEsc_(it.dataExame)} — ${mvEsc_(it.projeto)}${it.exameCod?(' — '+mvEsc_(it.exameCod)):''}</div>`));
   (r.semProjeto||[]).slice(0,30).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--red);">⚠️ Sem projeto: ${mvEsc_(it.nome)} — ${mvEsc_(it.modalidade)} — ${mvEsc_(it.dataExame)}${it.projetoTxt?(' (planilha: "'+mvEsc_(it.projetoTxt)+'")'):''}</div>`));
   (r.ambiguas||[]).slice(0,30).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--ye);">⚠️ Ambíguo (${(it.candidatos||[]).join(', ')}): ${mvEsc_(it.nome)} — ${mvEsc_(it.modalidade)} — ${mvEsc_(it.dataExame)}</div>`));
-  (r.tipoDesconhecido||[]).slice(0,20).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--tx3);">— Tipo não reconhecido (nem RM nem TC): ${mvEsc_(it.nome)} — "${mvEsc_(it.modalidade)}"</div>`));
+  (r.semModalidade||[]).slice(0,20).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--tx3);">— Sem modalidade informada na planilha: ${mvEsc_(it.nome)} — ${mvEsc_(it.dataExame)}</div>`));
   if((r.medicosNovos||[]).length) linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--gr);">👨‍⚕️ Médico(s) laudador(es) identificado(s) e cadastrado(s): ${r.medicosNovos.map(mvEsc_).join(', ')}</div>`);
   const det=ge('mvAutoDetalhes'); if(det) det.innerHTML = linhas.length ? linhas.join('') : '<div class="al a-i">Nada para revisar — tudo confirmado ou já processado antes.</div>';
 
@@ -6798,10 +6891,11 @@ async function loadLabConfigUI(){
   if(ge('cfgMvAutoAba'))ge('cfgMvAutoAba').value=c.MV_AUTO_SHEET_ABA||'';
   if(ge('cfgMvAutoProjeto'))ge('cfgMvAutoProjeto').value=c.MV_AUTO_PROJETO_PADRAO||'';
   if(ge('cfgMvAutoModo'))ge('cfgMvAutoModo').value=c.MV_AUTO_SYNC_MODO||'dryrun';
+  if(ge('cfgMvExportFolder'))ge('cfgMvExportFolder').value=c.MV_EXPORT_FOLDER_ID||'';
   if(ge('cfgLabOut')){ge('cfgLabOut').style.display='flex';ge('cfgLabOut').textContent='Configurações carregadas. Agendas: '+((res.calendars||[]).map(x=>x.label).join(', ')||'—');}
 }
 async function saveLabConfigUI(){
-  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF'),MV_AUTO_SHEET_URL:v('cfgMvAutoUrl'),MV_AUTO_SHEET_ABA:v('cfgMvAutoAba'),MV_AUTO_PROJETO_PADRAO:v('cfgMvAutoProjeto'),MV_AUTO_SYNC_MODO:v('cfgMvAutoModo')};
+  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF'),MV_AUTO_SHEET_URL:v('cfgMvAutoUrl'),MV_AUTO_SHEET_ABA:v('cfgMvAutoAba'),MV_AUTO_PROJETO_PADRAO:v('cfgMvAutoProjeto'),MV_AUTO_SYNC_MODO:v('cfgMvAutoModo'),MV_EXPORT_FOLDER_ID:v('cfgMvExportFolder')};
   const res=await api('saveLabConfig',data);
   if(!res.ok){toast(res.msg||'Erro ao salvar.','err');return;}
   toast('✓ Configurações do laboratório salvas.');
@@ -7018,10 +7112,11 @@ async function loadLabConfigUI(){
   if(ge('cfgMvAutoAba'))ge('cfgMvAutoAba').value=c.MV_AUTO_SHEET_ABA||'';
   if(ge('cfgMvAutoProjeto'))ge('cfgMvAutoProjeto').value=c.MV_AUTO_PROJETO_PADRAO||'';
   if(ge('cfgMvAutoModo'))ge('cfgMvAutoModo').value=c.MV_AUTO_SYNC_MODO||'dryrun';
+  if(ge('cfgMvExportFolder'))ge('cfgMvExportFolder').value=c.MV_EXPORT_FOLDER_ID||'';
   if(ge('cfgLabOut')){ge('cfgLabOut').style.display='flex';ge('cfgLabOut').textContent='Configurações carregadas. Agendas: '+((res.calendars||[]).map(x=>x.label).join(', ')||'—');}
 }
 async function saveLabConfigUI(){
-  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF'),MV_AUTO_SHEET_URL:v('cfgMvAutoUrl'),MV_AUTO_SHEET_ABA:v('cfgMvAutoAba'),MV_AUTO_PROJETO_PADRAO:v('cfgMvAutoProjeto'),MV_AUTO_SYNC_MODO:v('cfgMvAutoModo')};
+  const data={usuario:curUser,CALENDAR_ID:v('cfgCalDefault'),CALENDAR_IDS:v('cfgCalendarIds'),EMAIL_ALERTA:v('cfgEmailAlerta'),DEFAULT_RESERVA_AGENDA_MIN:v('cfgReservaPadrao'),LEMBRETE_DIAS_PADRAO:v('cfgLembreteDias'),RESPONSAVEL_TECNICO:v('cfgRespTec'),INRAD_FORM_SHEET_URL:v('cfgInradSheetUrl'),INRAD_FORM_SHEET_ABA:v('cfgInradSheetAba'),NF_TEMPLATE_DOC_ID:v('cfgNfTemplateId'),AREA_REQUISITANTE:v('cfgAreaRequisitante'),LOCAL_ENTREGA_NF:v('cfgLocalEntregaNF'),MV_AUTO_SHEET_URL:v('cfgMvAutoUrl'),MV_AUTO_SHEET_ABA:v('cfgMvAutoAba'),MV_AUTO_PROJETO_PADRAO:v('cfgMvAutoProjeto'),MV_AUTO_SYNC_MODO:v('cfgMvAutoModo'),MV_EXPORT_FOLDER_ID:v('cfgMvExportFolder')};
   const res=await api('saveLabConfig',data);
   if(!res.ok){toast(res.msg||'Erro ao salvar.','err');return;}
   toast('✓ Configurações do laboratório salvas.');
