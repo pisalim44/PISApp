@@ -1234,6 +1234,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 
       <!-- DASHBOARD -->
       <div class="sec" id="sec-dashboard">
+        <div id="dashAcoesRapidas" class="fc mb" style="gap:8px;flex-wrap:wrap;"></div>
         <div class="g4 mb">
           <div class="sc sc-t"><div class="sl">Exames Hoje</div><div class="sv" id="ds1">0</div><div class="ss" id="ds1s">—</div></div>
           <div class="sc sc-n"><div class="sl">Solicitações Pendentes</div><div class="sv" id="ds2">0</div></div>
@@ -1241,6 +1242,17 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="sc sc-y"><div class="sl">Manutenções 30 dias</div><div class="sv" id="ds4">0</div><div class="ss" id="ds4s">Equipamentos</div></div>
         </div>
         <div id="maintDashBox" class="al a-w mb" style="display:none;"></div>
+        <div id="dashFinResumo" class="g4 mb" style="display:none;">
+          <div class="sc"><div class="sl">Orçamento Total</div><div class="sv" id="dsf1" style="font-size:19px;">R$ 0</div></div>
+          <div class="sc"><div class="sl">Custo Realizado</div><div class="sv" id="dsf2" style="font-size:19px;">R$ 0</div></div>
+          <div class="sc sc-y"><div class="sl">A Receber</div><div class="sv" id="dsf3" style="font-size:19px;">R$ 0</div></div>
+          <div class="sc sc-g"><div class="sl">Recebido</div><div class="sv" id="dsf4" style="font-size:19px;">R$ 0</div></div>
+        </div>
+        <div class="g2 mb">
+          <div class="card"><div class="ch"><div class="ct"><div class="cti">🩺</div>Médico com mais laudos (90 dias)</div></div><div id="dashTopMedico" class="al a-i" style="font-size:12.5px;">Carregando...</div></div>
+          <div class="card"><div class="ch"><div class="ct"><div class="cti">📂</div>Última importação automática do MV</div></div><div id="dashUltimaMV" class="al a-i" style="font-size:12.5px;">Carregando...</div></div>
+        </div>
+        <div class="card mb"><div class="ch"><div class="ct"><div class="cti">📅</div>Exames nos últimos 14 dias</div></div><div style="height:160px;"><canvas id="cSemana"></canvas></div></div>
         <div class="g2 mb">
           <div class="card"><div class="ch"><div class="ct"><div class="cti">📈</div>Exames por Modalidade</div></div><div style="height:180px;"><canvas id="cMod"></canvas></div></div>
           <div class="card"><div class="ch"><div class="ct"><div class="cti">📊</div>Status dos Exames</div></div><div style="height:180px;"><canvas id="cSts"></canvas></div></div>
@@ -1461,6 +1473,22 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
               <th><input type="checkbox" id="afaturarSelAll" onclick="toggleSelAllAFaturar(this)"></th>
               <th>Cód. / Apelido</th><th>Data</th><th>Projeto</th><th>Modalidade</th><th>Sujeito</th><th>Custo(R$)</th><th>Concluído em</th><th>Alterar status</th>
             </tr></thead><tbody id="tbAFaturar"><tr class="tr-e"><td colspan="9">Carregando...</td></tr></tbody></table></div>
+            <div class="card mt" id="cardCorrigirModalidade" style="border:1px dashed var(--bd);">
+              <div class="ct mb" style="cursor:pointer;" onclick="toggleCorrigirModalidadeBox()"><div class="cti">🔧</div>Corrigir modalidade em lote <span style="font-size:11px;color:var(--tx3);font-weight:400;">(ex.: exames criados como "RM 1,5T" que deveriam ser "RM 3T")</span></div>
+              <div id="corrigirModalidadeBox" style="display:none;">
+                <div class="al a-i mb" style="font-size:12px;">Corrige a modalidade de exames já criados, dentro de UM projeto. Por segurança, só altera exames com status financeiro <strong>"A faturar"</strong> — exames já faturados, recebidos ou isentos nunca são tocados. Sempre faça a pré-visualização antes de aplicar.</div>
+                <div class="fr c3 mb">
+                  <div class="fg"><label class="fl">Projeto</label><select class="fs" id="cmProjeto" onchange="cmInvalidarPreview_()"></select></div>
+                  <div class="fg"><label class="fl">Modalidade atual (errada)</label><input class="fi" id="cmModalidadeAtual" placeholder='Ex: RM 1,5T' oninput="cmInvalidarPreview_()"></div>
+                  <div class="fg"><label class="fl">Nova modalidade (correta)</label><input class="fi" id="cmModalidadeNova" placeholder='Ex: RM 3T' oninput="cmInvalidarPreview_()"></div>
+                </div>
+                <div class="fe mb">
+                  <button class="btn bo" onclick="corrigirModalidadeUI(true)">🔍 Pré-visualizar</button>
+                  <button class="btn br" id="btnCmAplicar" onclick="corrigirModalidadeUI(false)" disabled>✅ Aplicar correção</button>
+                </div>
+                <div id="cmResultado" style="display:none;"></div>
+              </div>
+            </div>
             <div id="afaturarPager" class="pager"></div>
             <div class="fe mt" style="justify-content:space-between;align-items:center;">
               <div id="afaturarSel" style="font-size:12px;color:var(--tx3);">0 exames selecionados</div>
@@ -1807,9 +1835,18 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="tw"><table><thead><tr><th>Nome</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbMedicos"><tr class="tr-e"><td colspan="4">Nenhum médico cadastrado.</td></tr></tbody></table></div>
         </div>
         <div class="card mt">
-          <div class="fb mb"><div class="ct" style="font-size:14px;"><div class="cti">📊</div>Produtividade por Médico Laudador</div><button class="btn bo btn-sm" onclick="loadProdutividadeLaudadoresUI()">🔄 Atualizar</button></div>
-          <div class="al a-n mb" style="font-size:11.5px;">Total de laudos registrados por médico (inclui laudos lançados manualmente e os identificados automaticamente na sincronização MV).</div>
-          <div class="tw"><table><thead><tr><th>Médico</th><th>Total de laudos</th><th>Últimos meses</th></tr></thead><tbody id="tbProdutividadeLaudadores"><tr class="tr-e"><td colspan="3">Carregando...</td></tr></tbody></table></div>
+          <div class="fb mb"><div class="ct" style="font-size:14px;"><div class="cti">📊</div>Dashboard de Produtividade por Médico Laudador</div><button class="btn bo btn-sm" onclick="loadProdutividadeLaudadoresUI()">🔄 Atualizar</button></div>
+          <div class="al a-n mb" style="font-size:11.5px;">Ranking por total de laudos (inclui laudos lançados manualmente e os identificados automaticamente na sincronização MV).</div>
+          <div class="fc mb" style="gap:6px;flex-wrap:wrap;">
+            <button class="btn bo btn-xs pmd-per-btn" data-per="1" onclick="setPmdPeriodo(1)">Este mês</button>
+            <button class="btn bo btn-xs pmd-per-btn" data-per="3" onclick="setPmdPeriodo(3)">Últimos 3 meses</button>
+            <button class="btn bo btn-xs pmd-per-btn" data-per="6" onclick="setPmdPeriodo(6)">Últimos 6 meses</button>
+            <button class="btn bo btn-xs pmd-per-btn" data-per="0" onclick="setPmdPeriodo(0)">Todo o período</button>
+          </div>
+          <div id="pmdLeaderboard" class="g3 mb"></div>
+          <div style="position:relative;height:280px;width:100%;" class="mb"><canvas id="cProdutividadeMedicos"></canvas></div>
+          <div class="ct mb" style="font-size:13px;">Tabela completa</div>
+          <div class="tw"><table><thead><tr><th>#</th><th>Médico</th><th>Laudos no período</th><th>Últimos meses</th></tr></thead><tbody id="tbProdutividadeLaudadores"><tr class="tr-e"><td colspan="4">Carregando...</td></tr></tbody></table></div>
         </div>
       </div>
 
@@ -2129,15 +2166,19 @@ function api(action,data={},opts={}){
   const promise = new Promise((res, rej) => { _resolve = res; _reject = rej; });
   _apiInflight[reqKey] = promise;
   function cleanup() { delete _apiInflight[reqKey]; }
-  // Respostas HTML intermitentes do Google (partida a frio, instabilidade, excesso de chamadas): repete até 2x,
-  // mas SOMENTE ações que não gravam nada — gravações nunca são repetidas (evita duplicar exame/fatura/etc.).
+  // Respostas HTML intermitentes do Google (o redirecionamento interno do Content Service falha e devolve uma
+  // página genérica em vez do JSON — instabilidade do lado do Google, não do PISApp): repete algumas vezes com
+  // espera crescente, mas SOMENTE ações que não gravam nada — gravações nunca são repetidas (evita duplicar
+  // exame/fatura/etc.). Backoff: 1s, 2.5s, 4.5s, 7s — cobre picos de instabilidade mais longos que antes.
   const RETRY_SEGURO = /^(login|ping|authDebugPing|getVersion|securityStatus|listUsuarios|get[A-Z]\w*|buscar\w*|testar\w*|previewDescricaoFatura)$/;
+  const RETRY_MAX = 4, RETRY_DELAYS = [1000, 1500, 2000, 2500]; // acumulado: 1s, 2.5s, 4.5s, 7s
   const _tentar=(n)=>fetch(SCRIPT_URL,{method:'POST',body:payload,redirect:'follow'})
     .then(r=>r.text())
     .then(txt=>{
       const parsed=parseApiResponseText(txt);
-      if(parsed && parsed.invalidApi && n<2 && RETRY_SEGURO.test(action)){
-        return new Promise(res=>setTimeout(res,900*(n+1))).then(()=>_tentar(n+1));
+      if(parsed && parsed.invalidApi && n<RETRY_MAX && RETRY_SEGURO.test(action)){
+        if(!(opts && opts.silent) && n===1) toast('⏳ O Google está instável no momento — tentando de novo...','warn');
+        return new Promise(res=>setTimeout(res,RETRY_DELAYS[n])).then(()=>_tentar(n+1));
       }
       return parsed;
     });
@@ -3200,8 +3241,8 @@ async function rodarMvAutoSyncUI(dryRun){
   // Chama em orçamentos curtos (progresso real): cada chamada volta rápido e diz quanto já
   // processou desta vez — como a planilha é varrida sempre do início e o já-processado é
   // pulado rapidamente, a posição onde ela para reflete o avanço real na planilha.
-  const acc={confirmadas:0, criadasTotal:0, semProjetoTotal:0, semModalidadeTotal:0, ambiguasTotal:0, puladasJaProcessadas:0,
-             criadas:[], semProjeto:[], ambiguas:[], semModalidade:[], medicosNovos:[], projetosSugeridos:[]};
+  const acc={confirmadas:0, criadasTotal:0, semProjetoTotal:0, semModalidadeTotal:0, ambiguasTotal:0, puladasJaProcessadas:0, rmParaRevisarTotal:0,
+             criadas:[], semProjeto:[], ambiguas:[], semModalidade:[], rmParaRevisar:[], medicosNovos:[], projetosSugeridos:[]};
   let r=null, voltas=0, offset=0;
   const runId='r'+Date.now()+'_'+Math.random().toString(36).slice(2); // estável durante toda esta execução — permite ao backend reaproveitar o índice de exames entre as fatias
   try{
@@ -3211,11 +3252,12 @@ async function rodarMvAutoSyncUI(dryRun){
       if(!r.ok){ toast('Erro: '+(r.msg||'falha na sincronização'),'err'); return; }
       offset = r.proximaLinha||0;
       acc.confirmadas+=r.confirmadas||0; acc.criadasTotal+=r.criadasTotal||0; acc.semProjetoTotal+=r.semProjetoTotal||0;
-      acc.semModalidadeTotal+=r.semModalidadeTotal||0; acc.ambiguasTotal+=r.ambiguasTotal||0; acc.puladasJaProcessadas+=r.puladasJaProcessadas||0;
+      acc.semModalidadeTotal+=r.semModalidadeTotal||0; acc.ambiguasTotal+=r.ambiguasTotal||0; acc.puladasJaProcessadas+=r.puladasJaProcessadas||0; acc.rmParaRevisarTotal+=r.rmParaRevisarTotal||0;
       if(acc.criadas.length<300) acc.criadas=acc.criadas.concat(r.criadas||[]).slice(0,300);
       if(acc.semProjeto.length<300) acc.semProjeto=acc.semProjeto.concat(r.semProjeto||[]).slice(0,300);
       if(acc.ambiguas.length<300) acc.ambiguas=acc.ambiguas.concat(r.ambiguas||[]).slice(0,300);
       if(acc.semModalidade.length<300) acc.semModalidade=acc.semModalidade.concat(r.semModalidade||[]).slice(0,300);
+      if(acc.rmParaRevisar.length<300) acc.rmParaRevisar=acc.rmParaRevisar.concat(r.rmParaRevisar||[]).slice(0,300);
       (r.medicosNovos||[]).forEach(m=>{ if(acc.medicosNovos.indexOf(m)<0) acc.medicosNovos.push(m); });
       (r.projetosSugeridos||[]).forEach(p=>{ if(!acc.projetosSugeridos.find(x=>x.projetoTxt===p.projetoTxt)) acc.projetosSugeridos.push(p); });
 
@@ -3237,8 +3279,8 @@ async function rodarMvAutoSyncUI(dryRun){
   if(pFill) pFill.style.width='100%'; if(pPct) pPct.textContent='100%'; if(pTxt) pTxt.textContent='Concluído.';
 
   const wrap=ge('mvAutoResultado'); if(wrap) wrap.style.display='';
-  const nCri=acc.criadasTotal, nSemProj=acc.semProjetoTotal, nAmb=acc.ambiguasTotal, nSemMod=acc.semModalidadeTotal;
-  const pendencias=nSemProj+nAmb+nSemMod;
+  const nCri=acc.criadasTotal, nSemProj=acc.semProjetoTotal, nAmb=acc.ambiguasTotal, nSemMod=acc.semModalidadeTotal, nRmRev=acc.rmParaRevisarTotal;
+  const pendencias=nSemProj+nAmb+nSemMod+nRmRev;
   if(ge('mvAutoConfirmados'))ge('mvAutoConfirmados').textContent=acc.confirmadas;
   if(ge('mvAutoCriados'))ge('mvAutoCriados').textContent=nCri;
   if(ge('mvAutoPendencias'))ge('mvAutoPendencias').textContent=pendencias;
@@ -3251,6 +3293,8 @@ async function rodarMvAutoSyncUI(dryRun){
   acc.semProjeto.slice(0,30).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--red);">⚠️ Sem projeto: ${mvEsc_(it.nome)} — ${mvEsc_(it.modalidade)} — ${mvEsc_(it.dataExame)}${it.projetoTxt?(' (planilha: "'+mvEsc_(it.projetoTxt)+'")'):''}</div>`));
   acc.ambiguas.slice(0,30).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--ye);">⚠️ Ambíguo (${(it.candidatos||[]).join(', ')}): ${mvEsc_(it.nome)} — ${mvEsc_(it.modalidade)} — ${mvEsc_(it.dataExame)}</div>`));
   acc.semModalidade.slice(0,20).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--tx3);">— Sem modalidade informada na planilha: ${mvEsc_(it.nome)} — ${mvEsc_(it.dataExame)}</div>`));
+  if(nRmRev>0) linhas.push(`<div class="al a-w" style="margin-top:8px;margin-bottom:6px;">🧲 ${nRmRev} RM não encontrada em projeto(s) configurado(s) para revisão manual — nada foi criado automaticamente, confira abaixo e crie/ajuste manualmente.</div>`);
+  acc.rmParaRevisar.slice(0,30).forEach(it=>linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--amber,#b45309);">🧲 Para revisar: ${mvEsc_(it.nome)} — ${mvEsc_(it.dataExame)} — projeto ${mvEsc_(it.projeto)} (RM sem correspondência; projeto configurado para não criar automaticamente)</div>`));
   if(acc.medicosNovos.length) linhas.push(`<div style="padding:4px 0;border-bottom:1px solid var(--bd);color:var(--gr);">👨‍⚕️ Médico(s) laudador(es) identificado(s) e cadastrado(s): ${acc.medicosNovos.map(mvEsc_).join(', ')}</div>`);
   const det=ge('mvAutoDetalhes'); if(det) det.innerHTML = linhas.length ? linhas.join('') : '<div class="al a-i">Nada para revisar — tudo confirmado ou já processado antes.</div>';
 
@@ -3601,8 +3645,76 @@ function renderQCSummary(){
 function drawQCCharts(){ renderQCSummary(); }
 
 /* ── DASHBOARD ── */
+const DASH_ACOES_RAPIDAS_ = {
+  solicitacoes: {lbl:'📝 Nova Solicitação', run:()=>{navTo('solicitacoes'); setTimeout(()=>{ if(typeof openSolModal==='function') openSolModal(); },150);}},
+  agenda:       {lbl:'📅 Agenda', run:()=>navTo('agenda')},
+  financeiro:   {lbl:'💰 Financeiro', run:()=>navTo('financeiro')},
+  importmv:     {lbl:'📂 Importar MV', run:()=>navTo('importmv')},
+};
+function dashAcaoRapida_(id){ const a=DASH_ACOES_RAPIDAS_[id]; if(a) a.run(); }
+function dashAcoesRapidas_(){
+  const box=ge('dashAcoesRapidas'); if(!box) return;
+  const nav=(ROLES[curRole]||{nav:[]}).nav||[];
+  const disponiveis = Object.keys(DASH_ACOES_RAPIDAS_).filter(id=>nav.includes(id));
+  box.innerHTML = disponiveis.map((id,i)=>`<button class="btn ${i===0?'bt':'bo'} btn-sm" onclick="dashAcaoRapida_('${id}')">${DASH_ACOES_RAPIDAS_[id].lbl}</button>`).join('');
+}
+
+function dashRenderTopMedico_(d){
+  const el=ge('dashTopMedico'); if(!el) return;
+  if(d && d.topMedico){
+    el.innerHTML = `<strong>${mvEsc_(d.topMedico)}</strong> — ${d.topMedicoTotal||0} laudo${(d.topMedicoTotal||0)===1?'':'s'} nos últimos 90 dias. <a href="#" onclick="navTo('medicos');return false;" style="color:var(--teal);">Ver ranking completo</a>`;
+  } else {
+    el.textContent = 'Nenhum laudo registrado nos últimos 90 dias.';
+  }
+}
+function dashRenderUltimaMV_(d){
+  const el=ge('dashUltimaMV'); if(!el) return;
+  const u=d&&d.ultimaImportMV;
+  if(u && u.data){
+    el.innerHTML = `"${mvEsc_(u.arquivo||'—')}" processado em ${mvEsc_(u.data)} — <strong>${u.novas||0}</strong> linha(s) nova(s). <a href="#" onclick="navTo('importmv');return false;" style="color:var(--teal);">Ver histórico</a>`;
+  } else {
+    el.textContent = 'Nenhuma importação automática do MV registrada ainda.';
+  }
+}
+function dashDrawSemana_(d){
+  const el=ge('cSemana'); if(!el || typeof Chart==='undefined' || !d || !d.semanaLabels) return;
+  if(charts['cSemana']) charts['cSemana'].destroy();
+  const labels=(d.semanaLabels||[]).map(k=>{ const p=k.split('-'); return p.length===3?(p[2]+'/'+p[1]):k; });
+  charts['cSemana']=new Chart(el,{type:'line',data:{labels,datasets:[{label:'Exames',data:d.semanaData||[],borderColor:'#2DBFAD',backgroundColor:'rgba(45,191,173,.15)',fill:true,tension:.3,pointRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
+}
+
+// Resumo financeiro do Dashboard: carregado em segundo plano (não atrasa o login), só para quem tem acesso ao Financeiro.
+let DASH_FIN_LOADED = false;
+async function dashCarregarResumoFinanceiro_(){
+  const nav=(ROLES[curRole]||{nav:[]}).nav||[];
+  const box=ge('dashFinResumo');
+  if(!box || !nav.includes('financeiro')) return;
+  const r = await api('getFinanceiroData', {}, {silent:true});
+  if(!r || !r.ok || CURRENT_SEC!=='dashboard') return;
+  let totOr=0, totCu=0, totAR=0, totPg=0;
+  (r.proj||[]).forEach(p=>{
+    const nm=p['Nome']||'';
+    totOr+=parseFloat(p['OrcamentoTotal']||0);
+    (r.ex||[]).filter(e=>(e['Projeto']||'')===nm&&(e['Status']||'')==='Concluído').forEach(e=>{ totCu+=custoPorExame_(p,e['Modalidade']||''); });
+    (r.ex||[]).filter(e=>(e['Projeto']||'')===nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')).forEach(e=>{ totAR+=custoPorExame_(p,e['Modalidade']||''); });
+  });
+  (r.pay||[]).filter(p=>p['Status']==='Confirmado').forEach(p=>totPg+=parseFloat(p['Valor']||0));
+  if(ge('dsf1'))ge('dsf1').textContent=fmtMoney(totOr);
+  if(ge('dsf2'))ge('dsf2').textContent=fmtMoney(totCu);
+  if(ge('dsf3'))ge('dsf3').textContent=fmtMoney(totAR);
+  if(ge('dsf4'))ge('dsf4').textContent=fmtMoney(totPg);
+  box.style.display='';
+  DASH_FIN_LOADED = true;
+}
+
 function renderDash(){
   const d=DB.dash||null;
+  dashAcoesRapidas_();
+  dashRenderTopMedico_(d);
+  dashRenderUltimaMV_(d);
+  dashDrawSemana_(d);
+  if(!DASH_FIN_LOADED) dashCarregarResumoFinanceiro_();
   if(d){
     ge('ds1').textContent=d.hojeCount||0;
     ge('ds1s').textContent=(d.modalidadesHoje||[]).join(', ')||'—';
@@ -5062,7 +5174,7 @@ async function saveProj(){
     const custo=parseFloat(sl.querySelector('.pjm-custo')?.value)||0;
     if(mod){modalidades.push(mod);numExames[mod]=num;custos[mod]=custo;}
   });
-  const data={nome:nm,codigo:v('pjCd'),pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras:mulChip('cgPjSj'),inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
+  const data={nome:nm,codigo:v('pjCd'),pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras:mulChip('cgPjSj'),inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
   const res=await api(id?'editProj':'novoProj',id?{id,fields:data}:data);
   if(!res.ok){toast(res.msg,'err');return;}
   toast('⏳ Salvando...');
@@ -5425,6 +5537,43 @@ function afatInfo_(e){
   const pj=DB.proj.find(x=>(x['Nome']||'')==proj)||{};
   return {proj:proj, valor:custoPorExame_(pj,e['Modalidade']||'')};
 }
+function cmInvalidarPreview_(){ const b=ge('btnCmAplicar'); if(b) b.disabled=true; }
+function toggleCorrigirModalidadeBox(){
+  const box=ge('corrigirModalidadeBox'); if(!box) return;
+  const abrindo = box.style.display==='none';
+  box.style.display = abrindo?'':'none';
+  if(abrindo){
+    const sel=ge('cmProjeto');
+    if(sel) sel.innerHTML = '<option value="">Selecione...</option>' + (DB.proj||[]).map(p=>`<option value="${mvEsc_(p.Nome||'')}">${mvEsc_(p.Nome||'')}</option>`).join('');
+  }
+}
+
+async function corrigirModalidadeUI(dryRun){
+  const projeto=v('cmProjeto'), modalidadeAtual=v('cmModalidadeAtual').trim(), modalidadeNova=v('cmModalidadeNova').trim();
+  if(!projeto||!modalidadeAtual||!modalidadeNova){ toast('Preencha projeto, modalidade atual e nova modalidade.','warn'); return; }
+  if(!dryRun && !confirm(`Confirma corrigir TODOS os exames de "${projeto}" com modalidade "${modalidadeAtual}" (ainda não faturados) para "${modalidadeNova}"? Esta ação não pode ser desfeita automaticamente.`)) return;
+  const out=ge('cmResultado'); if(out){ out.style.display=''; out.className='al a-n'; out.textContent='⏳ '+(dryRun?'Consultando...':'Aplicando...'); }
+  const r=await api('corrigirModalidadeEmLote',{projeto,modalidadeAtual,modalidadeNova,dryRun});
+  const btnAplicar=ge('btnCmAplicar');
+  if(!r.ok){ if(out){out.className='al a-d';out.textContent='❌ '+(r.msg||'Erro.');} if(btnAplicar)btnAplicar.disabled=true; return; }
+  if(out){
+    out.className = r.total>0 ? 'al a-ok' : 'al a-i';
+    let html = mvEsc_(r.msg||'');
+    if((r.exemplos||[]).length){
+      html += '<div style="margin-top:6px;max-height:150px;overflow:auto;font-size:11.5px;">' +
+        r.exemplos.map(e=>`<div style="padding:2px 0;border-bottom:1px solid var(--bd);">${mvEsc_(e.cod)} — ${mvEsc_(e.sujeito)} — ${mvEsc_(e.data)}</div>`).join('') +
+        (r.total>r.exemplos.length ? `<div style="padding:2px 0;color:var(--tx3);">… e mais ${(r.total-r.exemplos.length).toLocaleString('pt-BR')}</div>` : '') + '</div>';
+    }
+    out.innerHTML=html;
+  }
+  if(dryRun){ if(btnAplicar) btnAplicar.disabled = !(r.total>0); }
+  else{
+    if(btnAplicar) btnAplicar.disabled=true;
+    if(r.total>0){ LOADED.exames=false; LOADED.financeiro=false; await loadSectionData('financeiro'); renderAFaturar(); }
+    toast(r.total>0 ? `✓ ${r.total} exame(s) corrigido(s).` : 'Nada para corrigir.');
+  }
+}
+
 function toggleAfatCk_(ck){
   if(ck.checked) AFAT_SEL[ck.value]={proj:ck.dataset.proj, valor:parseFloat(ck.dataset.valor)||0};
   else delete AFAT_SEL[ck.value];
@@ -6836,7 +6985,7 @@ window.saveProj = async function(){
   const modalidades=[],numExames={},custos={};
   slots.forEach(sl=>{const mod=sl.querySelector('.pjm-mod')?.value;const num=parseFloat(sl.querySelector('.pjm-num')?.value)||0;const custo=parseFloat(sl.querySelector('.pjm-custo')?.value)||0;if(mod){modalidades.push(mod);numExames[mod]=num;custos[mod]=custo;}});
   const medicosLaudadores=Array.from(qsa('.pjMedLaudCk')).filter(ck=>ck.checked).map(ck=>ck.value);
-  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),requerSVOC,svocParecer:v('pjSVOC'),dataSVOC:v('pjSVOCData'),svocArquivoURL:v('pjSVOCUrl'),sacadoNome:v('pjSacadoNome'),sacadoCNPJCPF:v('pjSacadoCNPJ'),sacadoInscEst:v('pjSacadoInscEst'),sacadoEndereco:v('pjSacadoEndereco'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
+  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),requerSVOC,svocParecer:v('pjSVOC'),dataSVOC:v('pjSVOCData'),svocArquivoURL:v('pjSVOCUrl'),sacadoNome:v('pjSacadoNome'),sacadoCNPJCPF:v('pjSacadoCNPJ'),sacadoInscEst:v('pjSacadoInscEst'),sacadoEndereco:v('pjSacadoEndereco'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
   const res=await api(id?'editProj':'novoProj',id?{id,fields:data}:data);
   if(!res.ok){toast(res.msg,'err');return;}
   toast('Salvando...'); LOADED.projetos=false;LOADED.financeiro=false; await loadSectionData('projetos'); ovlClose('ovlProj');renderProj();renderFin();populateDDs();toast(`✓ Projeto "${nm}" ${id?'atualizado':'cadastrado'}.`);
@@ -7032,17 +7181,89 @@ window.renderMasks = function(){
     LOADED.projetos=false; await loadSectionData('projetos'); populateDDs(); renderMedicos(); toast('✓ Médico inativado.');
   };
 
-  window.loadProdutividadeLaudadoresUI = async function(){
-    const tb = safeGe('tbProdutividadeLaudadores'); if(!tb) return;
-    tb.innerHTML = '<tr class="tr-e"><td colspan="3">Carregando...</td></tr>';
-    const r = await api('getProdutividadeLaudadores',{}, {silent:true});
-    if(!r.ok){ tb.innerHTML = '<tr class="tr-e"><td colspan="3">'+(r.msg||'Erro ao carregar.')+'</td></tr>'; return; }
-    if(!(r.medicos||[]).length){ tb.innerHTML = '<tr class="tr-e"><td colspan="3">Nenhum laudo registrado ainda.</td></tr>'; return; }
-    tb.innerHTML = r.medicos.map(m=>{
+  // ── Dashboard de Produtividade por Médico Laudador ──
+  let PMD_DADOS = null, PMD_PERIODO = 0, PMD_CHART = null;
+
+  function pmd_mesesJanela(nMeses){
+    // nMeses<=0 → sem filtro (todo o período)
+    if(!nMeses || nMeses<=0) return null;
+    const set=new Set(); const d=new Date(); d.setDate(1);
+    for(let i=0;i<nMeses;i++){ set.add(d.toISOString().slice(0,7)); d.setMonth(d.getMonth()-1); }
+    return set;
+  }
+  function pmd_totalNoPeriodo(m, janela){
+    if(!janela) return m.total||0;
+    return Object.keys(m.porMes||{}).filter(mm=>janela.has(mm)).reduce((a,mm)=>a+m.porMes[mm],0);
+  }
+
+  window.setPmdPeriodo = function(nMeses){
+    PMD_PERIODO = nMeses;
+    Array.from(qsa('.pmd-per-btn')).forEach(b=>b.classList.toggle('pg-cur', String(b.dataset.per)===String(nMeses)));
+    pmd_render();
+  };
+
+  function pmd_render(){
+    const tb = safeGe('tbProdutividadeLaudadores'), lb = safeGe('pmdLeaderboard'), cEl = safeGe('cProdutividadeMedicos');
+    if(!PMD_DADOS || !tb) return;
+    const janela = pmd_mesesJanela(PMD_PERIODO);
+    const ranked = PMD_DADOS.medicos
+      .map(m=>({medico:m.medico, total:pmd_totalNoPeriodo(m, janela), porMes:m.porMes||{}}))
+      .filter(m=>m.total>0)
+      .sort((a,b)=>b.total-a.total);
+
+    if(!ranked.length){
+      tb.innerHTML = '<tr class="tr-e"><td colspan="4">Nenhum laudo registrado neste período.</td></tr>';
+      if(lb) lb.innerHTML='';
+      if(PMD_CHART){ try{PMD_CHART.destroy();}catch(e){} PMD_CHART=null; }
+      return;
+    }
+
+    // Pódio (top 3)
+    if(lb){
+      const medalhas=['🥇','🥈','🥉'];
+      lb.innerHTML = ranked.slice(0,3).map((m,i)=>`
+        <div class="sc" style="text-align:center;">
+          <div style="font-size:26px;">${medalhas[i]}</div>
+          <div style="font-weight:700;font-size:13.5px;margin-top:2px;">${mvEsc_(m.medico)}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--teal);margin-top:2px;">${m.total}</div>
+          <div class="sl">laudo${m.total===1?'':'s'}</div>
+        </div>`).join('');
+    }
+
+    // Gráfico de barras horizontal — todos os médicos do ranking, ordenados
+    if(cEl && window.Chart){
+      if(PMD_CHART){ try{PMD_CHART.destroy();}catch(e){} }
+      const cores=['#6366f1','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#14b8a6','#f97316','#ec4899','#64748b'];
+      PMD_CHART = new Chart(cEl, {type:'bar', data:{
+        labels: ranked.map(m=>m.medico),
+        datasets: [{data: ranked.map(m=>m.total), backgroundColor: ranked.map((_,i)=>cores[i%cores.length]), borderRadius:6, borderSkipped:false}]
+      }, options:{
+        indexAxis:'y', plugins:{legend:{display:false}},
+        scales:{x:{ticks:{stepSize:1,precision:0},grid:{color:'rgba(0,0,0,.06)'}}, y:{grid:{display:false},ticks:{font:{size:11}}}},
+        responsive:true, maintainAspectRatio:false
+      }});
+    }
+
+    // Tabela completa
+    tb.innerHTML = ranked.map((m,i)=>{
       const meses = Object.keys(m.porMes||{}).sort().slice(-4);
       const mesesTxt = meses.map(mm=>`${mm}: ${m.porMes[mm]}`).join(' · ');
-      return `<tr><td><strong>${m.medico||''}</strong></td><td>${m.total||0}</td><td style="font-size:11.5px;color:var(--tx3);">${mesesTxt||'—'}</td></tr>`;
+      return `<tr><td>${i+1}º</td><td><strong>${mvEsc_(m.medico)}</strong></td><td>${m.total}</td><td style="font-size:11.5px;color:var(--tx3);">${mesesTxt||'—'}</td></tr>`;
     }).join('');
+  }
+
+  window.loadProdutividadeLaudadoresUI = async function(){
+    const tb = safeGe('tbProdutividadeLaudadores'); if(!tb) return;
+    tb.innerHTML = '<tr class="tr-e"><td colspan="4">Carregando...</td></tr>';
+    const r = await api('getProdutividadeLaudadores',{}, {silent:true});
+    if(!r.ok){ tb.innerHTML = '<tr class="tr-e"><td colspan="4">'+(r.msg||'Erro ao carregar.')+'</td></tr>'; return; }
+    PMD_DADOS = r;
+    if(!(r.medicos||[]).length){ tb.innerHTML = '<tr class="tr-e"><td colspan="4">Nenhum laudo registrado ainda.</td></tr>'; const lb=safeGe('pmdLeaderboard'); if(lb)lb.innerHTML=''; return; }
+    const pmdBtns=Array.from(qsa('.pmd-per-btn'));
+    if(!pmdBtns.some(b=>b.classList.contains('pg-cur'))){
+      const def=pmdBtns.find(b=>String(b.dataset.per)==='3'); if(def) def.classList.add('pg-cur');
+    }
+    pmd_render();
   };
 
   const oldRefreshSec = window.refreshSec;
