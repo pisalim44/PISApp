@@ -679,7 +679,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
 
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Modalidade *</label>
-        <select class="fs" id="vincMod" onchange="populateDDs()"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
+        <select class="fs" id="vincMod" onchange="populateDDs()"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Densitometria Óssea</option><option>Mamografia</option></select>
       </div>
       <div class="fg"><label class="fl">Equipamento</label><select class="fs" id="vincEquip"><option value="">Selecione</option></select></div>
     </div>
@@ -1182,7 +1182,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
       <div class="fg"><label class="fl">DRO do Projeto *</label><select class="fs" id="mkDRO"><option value="">Selecione a DRO/projeto</option></select></div>
     </div>
     <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="mkModalidade"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
+      <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="mkModalidade"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Densitometria Óssea</option><option>Mamografia</option></select></div>
       <div class="fg"><label class="fl">Prioridade</label><select class="fs" id="mkPri"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div>
     </div>
     <div class="fr c2 mb">
@@ -1353,7 +1353,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="ct mb"><div class="cti">🔬</div>Histórico de Exames</div>
           <div class="search-bar">
             <input class="search-inp" placeholder="🔍 Código, sujeito, pesquisador, PACS..." oninput="filterTb('tbEx',this.value)">
-            <select class="filter-sel" onchange="filterCol('tbEx',7,this.value)"><option value="">Todas modalidades</option><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom</option><option>Virtangio</option><option>Medicina Nuclear</option></select>
+            <select class="filter-sel" onchange="filterCol('tbEx',7,this.value)"><option value="">Todas modalidades</option><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Densitometria Óssea</option><option>Mamografia</option></select>
             <select class="filter-sel" onchange="filterCol('tbEx',9,this.value)"><option value="">Todos institutos</option><option>PISA</option><option>INRAD</option></select>
             <select class="filter-sel" onchange="filterCol('tbEx',11,this.value)"><option value="">Todos os status</option><option>Agendado</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option></select>
           </div>
@@ -4833,7 +4833,18 @@ function normalizeAgdModOption_(mod){
   if(n==='rx'||n.includes('raio'))return 'RX';
   if(n.includes('virtangio'))return 'Virtangio';
   if(n.includes('medicina nuclear'))return 'Medicina Nuclear';
+  if(n.includes('densitometria'))return 'Densitometria Óssea';
+  if(n.includes('mamografia')||n==='mamo')return 'Mamografia';
   return raw;
+}
+// Densitometria e Mamografia só existem no INRAD: ao escolhê-las, marca o instituto INRAD no slot.
+function agdAutoInst_(sel){
+  try{
+    if(!/densitometria|mamografia/i.test(sel.value||''))return;
+    const sl=sel.closest('.agd-slot');
+    const chip=[...sl.querySelectorAll('.agd-inst .chip')].find(c=>c.textContent.includes('INRAD'));
+    if(chip)schipGrp(chip,'INRAD');
+  }catch(e){}
 }
 function modalidadesFromSolForAgd_(sol){
   const raw=String((sol&&(sol.Modalidades||sol.modalidades||sol.Modalidade||sol.modalidade))||'').trim();
@@ -4888,7 +4899,7 @@ function addAgdSlot(initialMod){
   div.style.cssText='border:1.5px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:9px;background:var(--sf2);';
   div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-weight:600;font-size:13px;color:var(--navy);">Agendamento ${idx+1}</div>${idx>0?`<button class="btn br btn-xs" onclick="this.closest('.agd-slot').remove()">✕</button>`:''}</div>
     <div class="fr c2">
-      <div class="fg"><label class="fl">Modalidade</label><select class="fs agd-mod" onchange="const sl=this.closest('.agd-slot');const inp=sl.querySelector('.agd-dur');if(inp)inp.value='';updateAgdSlotReserva(sl)"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option></select></div>
+      <div class="fg"><label class="fl">Modalidade</label><select class="fs agd-mod" onchange="agdAutoInst_(this);const sl=this.closest('.agd-slot');const inp=sl.querySelector('.agd-dur');if(inp)inp.value='';updateAgdSlotReserva(sl)"><option>RM 7T</option><option>TC</option><option>RM 1,5T</option><option>RM 3T</option><option>RX</option><option>Ultrassom (US)</option><option>Virtangio</option><option>Medicina Nuclear</option><option>Densitometria Óssea</option><option>Mamografia</option></select></div>
       <div class="fg"><label class="fl">Equipamento</label><select class="fs agd-equip"><option value="">Selecione</option>${DB.equip.map(eq=>`<option value="${eq['Nome']||''}">${eq['Nome']||''} (${eq['Instituto']||'PISA'})</option>`).join('')}</select></div>
     </div>
     <div class="fr c2">
@@ -4909,6 +4920,7 @@ function addAgdSlot(initialMod){
     if(sel){
       const opt=[...sel.options].find(o=>normTextAgenda_(o.value)===normTextAgenda_(wanted)||normTextAgenda_(o.textContent)===normTextAgenda_(wanted));
       if(opt) sel.value=opt.value;
+      agdAutoInst_(sel);
     }
   }
   updateAgdSlotReserva(div);
@@ -7383,7 +7395,7 @@ async function checkAgdPreflightUI(agendamentos){
       const conflitos=(c.conflitos||[]).map(x=>`${x.title} (${x.start}–${x.end})`).join('<br>');
       const rotaMsg = c.msg || (c.route && c.route.msg) || '';
       const msg=[`Agenda: <strong>${(c.calendario&&c.calendario.label)||'—'}</strong>${c.calendarKey?` (${c.calendarKey})`:''}`, `Reserva: ${c.inicio}–${c.fim}`, rotaMsg?`Roteamento: ${rotaMsg}`:'', c.bloqueio&&c.bloqueio.blocked?`Bloqueio: ${c.bloqueio.msg}`:'', conflitos?`Conflito: ${conflitos}`:'', c.manutencao?`Manutenção: ${c.manutencao}`:''].filter(Boolean).join('<br>');
-      return `<div class="al ${c.ok?'a-ok':'a-d'}">${c.ok?'✅':'❌'} Slot ${i+1}<br>${msg}</div>`;
+      return `<div class="al ${c.ok?(c.semEvento?'a-n':'a-ok'):'a-d'}">${c.ok?(c.semEvento?'ℹ️':'✅'):'❌'} Slot ${i+1}<br>${msg}</div>`;
     }).join('');
   }
   return res;
@@ -7411,7 +7423,10 @@ window.confirmAgd = async function(){
   ovlClose('ovlAgd');
   if(agendamentos[0] && agendamentos[0].data){ calDate=new Date(agendamentos[0].data+'T00:00:00'); wlSelectedDate=agendamentos[0].data; }
   renderSol();renderCal();await loadWL();
-  toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
+  if(res.avisoAgenda){ toast('✓ '+(isReag?'Reagendado':'Agendado')+' no PISApp. Códigos: '+(res.codigos||[]).join(', '));
+    setTimeout(function(){ toast('⚠️ '+res.avisoAgenda,'warn'); },600); }
+  else toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
+  if(res.avisoInrad) setTimeout(function(){ toast('⚠️ '+res.avisoInrad,'warn'); },600);
 };
 function openEventForSol(solIdx){
   const s=(DB.sol||[])[solIdx]; if(!s)return;
@@ -7565,7 +7580,7 @@ async function testarInradSyncUI(){
   if(!r.ok){ out.className='al a-d mt'; out.textContent='❌ '+(r.msg||'Falha ao conectar.'); return; }
   out.className='al a-ok mt';
   const faltando=(r.naoEncontrados||[]).length ? ` | Não reconhecidos (ok, apenas informativo): ${r.naoEncontrados.join(', ')}` : '';
-  out.textContent=`✓ Conectado a "${r.planilha}" (aba "${r.aba}") — ${r.totalLinhas} linha(s), ${r.camposReconhecidos}/${r.totalCampos} campos reconhecidos${faltando}`;
+  out.textContent=`✓ Conectado a "${r.planilha}" (aba "${r.aba}"${r.abaPadrao?" — primeira aba, campo Aba vazio":""}) — ${r.totalLinhas} linha(s), ${r.camposReconhecidos}/${r.totalCampos} campos reconhecidos${faltando}`;
 }
 async function testarMvAutoSyncUI(){
   const out=ge('cfgMvAutoOut'); if(out){out.style.display='';out.textContent='⏳ Testando conexão...';}
@@ -7624,7 +7639,7 @@ async function checkAgdPreflightUI(agendamentos){
       const conflitos=(c.conflitos||[]).map(x=>`${x.title} (${x.start}–${x.end})`).join('<br>');
       const rotaMsg = c.msg || (c.route && c.route.msg) || '';
       const msg=[`Agenda: <strong>${(c.calendario&&c.calendario.label)||'—'}</strong>${c.calendarKey?` (${c.calendarKey})`:''}`, `Reserva: ${c.inicio}–${c.fim}`, rotaMsg?`Roteamento: ${rotaMsg}`:'', c.bloqueio&&c.bloqueio.blocked?`Bloqueio: ${c.bloqueio.msg}`:'', conflitos?`Conflito: ${conflitos}`:'', c.manutencao?`Manutenção: ${c.manutencao}`:''].filter(Boolean).join('<br>');
-      return `<div class="al ${c.ok?'a-ok':'a-d'}">${c.ok?'✅':'❌'} Slot ${i+1}<br>${msg}</div>`;
+      return `<div class="al ${c.ok?(c.semEvento?'a-n':'a-ok'):'a-d'}">${c.ok?(c.semEvento?'ℹ️':'✅'):'❌'} Slot ${i+1}<br>${msg}</div>`;
     }).join('');
   }
   return res;
@@ -7652,7 +7667,10 @@ window.confirmAgd = async function(){
   ovlClose('ovlAgd');
   if(agendamentos[0] && agendamentos[0].data){ calDate=new Date(agendamentos[0].data+'T00:00:00'); wlSelectedDate=agendamentos[0].data; }
   renderSol();renderCal();await loadWL();
-  toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
+  if(res.avisoAgenda){ toast('✓ '+(isReag?'Reagendado':'Agendado')+' no PISApp. Códigos: '+(res.codigos||[]).join(', '));
+    setTimeout(function(){ toast('⚠️ '+res.avisoAgenda,'warn'); },600); }
+  else toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
+  if(res.avisoInrad) setTimeout(function(){ toast('⚠️ '+res.avisoInrad,'warn'); },600);
 };
 function openEventForSol(solIdx){
   const s=(DB.sol||[])[solIdx]; if(!s)return;
