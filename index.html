@@ -1379,6 +1379,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             <button class="btn bt btn-sm" onclick="openPagCompletoModal()">💳 Registrar Pagamento</button>
             <button class="btn bt btn-sm" onclick="openPayModal()">+ Pagamento simples</button>
             <button class="btn bt btn-sm" onclick="openNFModal()">+ Nota Fiscal manual</button>
+            <button class="btn bt btn-sm" onclick="reconciliarStatusFin()" title="Reavalia exames que ficaram como Faturado/Pago por causa de pagamentos ou NFs já cancelados">🔧 Corrigir exames de cancelados</button>
             <button class="btn bo btn-sm" id="btnForceSyncFin" onclick="forceSyncAll()" title="Força sincronização completa com o backend" style="font-size:11px;">🔄 Sincronizar</button>
           </div>
         </div>
@@ -4893,6 +4894,12 @@ function openAgdModal(solIdx, mode){
   }catch(e){toast('Erro ao abrir agendamento: '+(e&&e.message?e.message:e),'err');console.error(e);}
 }
 
+// Instituto padrão do slot = instituto da SOLICITAÇÃO (não o do usuário logado). Antes, um usuário PISA
+// agendando uma solicitação INRAD gerava o slot como PISA e a planilha do Forms INRAD nunca era acionada.
+function agdInstDefault_(){
+  const s=String((curAgdSol&&(curAgdSol['Instituto']||curAgdSol.instituto))||curInst||'PISA').toUpperCase();
+  return s.indexOf('INRAD')>=0?'INRAD':'PISA';
+}
 function addAgdSlot(initialMod){
   const div=ce('div');
   const idx=ge('agdSlots').children.length;
@@ -4911,7 +4918,7 @@ function addAgdSlot(initialMod){
       <div class="fg"><label class="fl">Resumo da reserva</label><div class="al a-n agd-dur-hint" style="margin:0;min-height:39px;align-items:center;">Reserva: —</div></div>
     </div>
     <div class="fg"><label class="fl">Apelido/Código Externo <span style="color:var(--tx3);font-weight:400;">(ex: ELSA-123456 ou iniciais)</span></label><input class="fi agd-codigo-externo" placeholder="Ex: ELSA-123456, JM, etc." style="max-width:320px;"></div>
-    <div class="fg"><label class="fl">Instituto</label><div class="cg agd-inst"><div class="chip ${curInst==='PISA'?'sel':''}" onclick="schipGrp(this,'PISA')">PISA/LIM44</div><div class="chip ${curInst==='INRAD'?'sel':''}" onclick="schipGrp(this,'INRAD')">INRAD</div></div></div>`;
+    <div class="fg"><label class="fl">Instituto</label><div class="cg agd-inst"><div class="chip ${agdInstDefault_()==='PISA'?'sel':''}" onclick="schipGrp(this,'PISA')">PISA/LIM44</div><div class="chip ${agdInstDefault_()==='INRAD'?'sel':''}" onclick="schipGrp(this,'INRAD')">INRAD</div></div></div>`;
   div.classList.add('agd-slot');
   ge('agdSlots').appendChild(div);
   if(initialMod){
@@ -4937,7 +4944,7 @@ function collectAgdSlots(showWarn){
     const equip=sl.querySelector('.agd-equip').value;
     const date=sl.querySelector('.agd-date').value;
     const hora=sl.querySelector('.agd-hora').value;
-    const inst=sl.querySelector('.chip.sel')?.textContent?.includes('INRAD')?'INRAD':'PISA';
+    const inst=sl.querySelector('.agd-inst .chip.sel')?.textContent?.includes('INRAD')?'INRAD':'PISA';
     const durMin=Number(sl.querySelector('.agd-dur')?.value||getReservaMinForSol_(curAgdSol,mod));
     if(!date||!hora||!durMin){valid=false;return;}
     agendamentos.push({modalidade:mod,equipamento:equip,data:date,hora,instituto:inst,durMin,reservaMinutos:durMin,codigoExterno:sl.querySelector('.agd-codigo-externo')?.value?.trim()||'',tipoReserva:(ge('agdTipoReserva')?ge('agdTipoReserva').value:'Exame'),obs:(ge('agdObs')?ge('agdObs').value:''),motivo:(ge('agdMotivo')?ge('agdMotivo').value:'')});
@@ -6095,13 +6102,23 @@ window.savePay = async function(){
   }}:data);
   if(!res.ok){toast(res.msg||'Erro.','err');return;}
   toast('⏳ Salvando...'); LOADED.financeiro=false; await loadSectionData('financeiro');
-  ovlClose('ovlPay'); renderFin(); renderPagamentos(); toast('✓ Pagamento salvo.');
+  ovlClose('ovlPay'); renderFin(); renderPagamentos(); toast('✓ Pagamento salvo.'+(res.msgExames?' '+res.msgExames:''));
+};
+window.reconciliarStatusFin = async function(){
+  const prev=await api('reconciliarStatusFinanceiro',{dryRun:true});
+  if(!prev.ok){toast(prev.msg||'Erro.','err');return;}
+  if(!prev.total){toast('Nenhum exame preso: todos os exames de pagamentos/NFs cancelados já estão corretos.');return;}
+  if(!confirm(prev.total+' exame(s) estão como Faturado/Pago por causa de pagamentos ou NFs cancelados.\n\n'+prev.msg+'\n\nCorrigir agora?'))return;
+  const res=await api('reconciliarStatusFinanceiro',{dryRun:false});
+  if(!res.ok){toast(res.msg||'Erro.','err');return;}
+  LOADED.financeiro=false; await loadSectionData('financeiro'); renderFin(); renderPagamentos(); renderNotasFiscais();
+  toast('✓ '+res.total+' exame(s) corrigidos. '+(res.msg||''));
 };
 window.delPayConfirm = async function(id){
   if(!id||!confirm('Cancelar este pagamento?'))return;
   const res=await api('delPagamento',{id});
   if(!res.ok){toast(res.msg||'Erro.','err');return;}
-  LOADED.financeiro=false; await loadSectionData('financeiro'); renderFin(); renderPagamentos(); toast('✓ Pagamento cancelado.');
+  LOADED.financeiro=false; await loadSectionData('financeiro'); renderFin(); renderPagamentos(); toast('✓ Pagamento cancelado.'+(res.msgExames?' '+res.msgExames:''));
 };
 
 // ── Modals: NF ──
@@ -6129,13 +6146,13 @@ window.saveNF = async function(){
   const res=await api(id?'editNotaFiscal':'novaNotaFiscal',id?{id,fields:{NumeroNF:data.numeroNF,DataEmissao:data.dataEmissao,DataVencimento:data.dataVencimento,Valor:data.valor,Descricao:data.descricao,Prestador:data.prestador,Status:data.status,URLArquivo:data.urlArquivo,Obs:data.obs}}:data);
   if(!res.ok){toast(res.msg||'Erro.','err');return;}
   toast('⏳ Salvando...'); LOADED.financeiro=false; await loadSectionData('financeiro');
-  ovlClose('ovlNF'); renderFin(); renderNotasFiscais(); toast('✓ Nota Fiscal salva.');
+  ovlClose('ovlNF'); renderFin(); renderNotasFiscais(); toast('✓ Nota Fiscal salva.'+(res.msgExames?' '+res.msgExames:''));
 };
 window.delNFConfirm = async function(id){
   if(!id||!confirm('Cancelar esta Nota Fiscal?'))return;
   const res=await api('delNotaFiscal',{id});
   if(!res.ok){toast(res.msg||'Erro.','err');return;}
-  LOADED.financeiro=false; await loadSectionData('financeiro'); renderFin(); renderNotasFiscais(); toast('✓ NF cancelada.');
+  LOADED.financeiro=false; await loadSectionData('financeiro'); renderFin(); renderNotasFiscais(); toast('✓ NF cancelada.'+(res.msgExames?' '+res.msgExames:''));
 };
 
 // ── Laudo por exame ──
@@ -7427,6 +7444,7 @@ window.confirmAgd = async function(){
     setTimeout(function(){ toast('⚠️ '+res.avisoAgenda,'warn'); },600); }
   else toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
   if(res.avisoInrad) setTimeout(function(){ toast('⚠️ '+res.avisoInrad,'warn'); },600);
+  else if(res.infoInrad) setTimeout(function(){ toast('📄 '+res.infoInrad); },600);
 };
 function openEventForSol(solIdx){
   const s=(DB.sol||[])[solIdx]; if(!s)return;
@@ -7671,6 +7689,7 @@ window.confirmAgd = async function(){
     setTimeout(function(){ toast('⚠️ '+res.avisoAgenda,'warn'); },600); }
   else toast(isReag?'✓ Reagendado no PISApp e Google Agenda.':'✓ Agendado no PISApp e Google Agenda. Códigos: '+(res.codigos||[]).join(', '));
   if(res.avisoInrad) setTimeout(function(){ toast('⚠️ '+res.avisoInrad,'warn'); },600);
+  else if(res.infoInrad) setTimeout(function(){ toast('📄 '+res.infoInrad); },600);
 };
 function openEventForSol(solIdx){
   const s=(DB.sol||[])[solIdx]; if(!s)return;
