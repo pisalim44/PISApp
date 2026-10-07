@@ -1441,6 +1441,12 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             </div>
           </div>
           <div class="card mb">
+            <div class="ct mb"><div class="cti">🏛️</div>Receita por instituto — PISA × INRAD</div>
+            <div id="recInstKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;"></div>
+            <div style="position:relative;height:240px;width:100%;"><canvas id="cRecInst"></canvas></div>
+            <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos com status "Confirmado", atribuídos ao instituto do projeto. Respeita o filtro de período acima.</div>
+          </div>
+          <div class="card mb">
             <div class="ct mb"><div class="cti">📊</div>Receita por projeto — Custo realizado vs Recebido</div>
             <div style="position:relative;height:220px;width:100%;"><canvas id="cBarras"></canvas></div>
           </div>
@@ -1869,6 +1875,17 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           </div>
           <div class="fe mt"><button class="btn bo" onclick="installAutoTriggers()">⚙️ Instalar gatilhos</button><button class="btn bt" onclick="runEmailRemindersNow()">✉️ Rodar lembretes agora</button><button class="btn bk" onclick="exportBackendCSV('produtividade')">📊 Exportar produtividade CSV</button></div>
           <div id="relOut" class="al a-ok mt" style="display:none;"></div>
+        </div>
+
+        <div class="card mt" id="cardSaude">
+          <div class="ct mb"><div class="cti">🩺</div>Saúde do sistema</div>
+          <div class="al a-n">Mostra erros recentes, o estado do backup diário da planilha e se há algo que precisa de atenção. A pasta de backups contém dados de pacientes: não a compartilhe.</div>
+          <div class="fe mt">
+            <button class="btn bo" onclick="carregarSaude()">🔄 Atualizar</button>
+            <button class="btn bt" onclick="backupAgoraUI()">💾 Fazer backup agora</button>
+            <button class="btn bo" onclick="instalarBackupUI()">⏰ Ativar backup diário</button>
+          </div>
+          <div id="saudeOut" class="mt" style="font-size:12.5px;"></div>
         </div>
 
         <div class="card mt" id="cardLabConfig">
@@ -2310,6 +2327,37 @@ async function checkMaintenanceAlertsOnLoad(){
   if(DB.dash && DB.dash.manutencoes){renderMaintenanceAlerts(DB.dash.manutencoes||[], true);return;}
   const r=await api('getMaintenanceAlerts',{dias:30},{silent:true});
   if(r.ok) renderMaintenanceAlerts(r.items||[], true);
+}
+function saudeEsc_(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function carregarSaude(){
+  const out=document.getElementById('saudeOut'); if(!out) return;
+  out.innerHTML='<div class="al a-n">Carregando…</div>';
+  const r=await api('getSaudeSistema',{});
+  if(!r||!r.ok){out.innerHTML='<div class="al a-d">'+saudeEsc_((r&&r.msg)||'Erro ao carregar.')+'</div>';return;}
+  const cls={ok:'a-ok',atencao:'a-w',critico:'a-d'}[r.nivel]||'a-n';
+  const tit={ok:'✅ Tudo em ordem',atencao:'⚠️ Atenção',critico:'🚨 Crítico'}[r.nivel]||'';
+  let html='<div class="al '+cls+'"><strong>'+tit+'</strong>'+(r.problemas.length?'<ul style="margin:6px 0 0 18px;">'+r.problemas.map(p=>'<li>'+saudeEsc_(p)+'</li>').join('')+'</ul>':'')+'</div>';
+  const b=r.backup||{};
+  html+='<div class="mt"><strong>Backup:</strong> '+(b.gatilhoAtivo?'diário ativo':'diário inativo')+' · último OK: '+saudeEsc_(b.ultimoOk?new Date(b.ultimoOk).toLocaleString('pt-BR'):'—')+' · '+(b.total||0)+' cópia(s) guardada(s)'+(b.pastaUrl?' · <a href="'+saudeEsc_(b.pastaUrl)+'" target="_blank" rel="noopener">abrir pasta</a>':'')+'</div>';
+  if((b.ultimos||[]).length) html+='<div style="color:var(--tx3);">'+b.ultimos.map(x=>saudeEsc_(x.nome)+' ('+saudeEsc_(x.data)+')').join(' · ')+'</div>';
+  html+='<div class="mt"><strong>Erros:</strong> '+r.erros24h+' nas últimas 24h · '+r.erros7d+' nos últimos 7 dias · alerta por e-mail '+(r.emailAlerta?'configurado':'NÃO configurado')+'</div>';
+  if((r.topErros||[]).length){
+    html+='<div class="tw mt"><table><thead><tr><th>Qtd</th><th>Módulo</th><th>Função</th><th>Mensagem</th><th>Último</th></tr></thead><tbody>'+
+      r.topErros.map(e=>'<tr><td>'+e.qtd+'</td><td>'+saudeEsc_(e.modulo)+'</td><td>'+saudeEsc_(e.funcao)+'</td><td>'+saudeEsc_(e.msg)+'</td><td>'+saudeEsc_(e.ultimo)+'</td></tr>').join('')+'</tbody></table></div>';
+  }
+  html+='<div style="color:var(--tx3);" class="mt">Versão do backend: '+saudeEsc_(r.versao)+' · '+saudeEsc_(r.agora)+'</div>';
+  out.innerHTML=html;
+}
+async function backupAgoraUI(){
+  toast('Criando backup… pode levar alguns segundos.');
+  const r=await api('backupAgora',{});
+  toast(r.msg||(r.ok?'Backup criado.':'Falha no backup.'), r.ok?'ok':'err');
+  carregarSaude();
+}
+async function instalarBackupUI(){
+  const r=await api('instalarBackupDiario',{});
+  toast(r.msg||'Backup diário ativado.', r.ok?'ok':'err');
+  carregarSaude();
 }
 async function installAutoTriggers(){
   const r=await api('instalarGatilhosAutomaticos',{});
@@ -5379,6 +5427,32 @@ function renderFinDash(){
       datasets:[{data:projs.map(p=>parseFloat(p['OrcamentoTotal']||0)),backgroundColor:['#6366f1','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#14b8a6','#f97316','#ec4899','#64748b'],borderWidth:2}]},
       options:{plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14}}},responsive:true,maintainAspectRatio:false}});
   }
+  // Receita por instituto
+  _destroyChart('recInst');
+  (function(){
+    const kEl=ge('recInstKpis'), cEl=ge('cRecInst');
+    if(!cEl) return;
+    const instDe={};(DB.proj||[]).forEach(p=>{instDe[p['Nome']||'']=(p['Instituto']||'').toString().trim().toUpperCase();});
+    const instOf=pg=>{const i=instDe[pg['Projeto']||'']||'';return (i==='PISA'||i==='INRAD')?i:'SEM INSTITUTO';};
+    const ok=pays.filter(pg=>pg['Status']==='Confirmado'&&_finPeriodFilter(pg['DataPagamento']||''));
+    const tot={PISA:0,INRAD:0,'SEM INSTITUTO':0};
+    ok.forEach(pg=>{tot[instOf(pg)]+=parseFloat(pg['Valor']||0)||0;});
+    const brl=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const geral=tot.PISA+tot.INRAD+tot['SEM INSTITUTO'];
+    if(kEl){
+      const kp=(t,v,c)=>'<div style="border:1px solid var(--bd,#e5e7eb);border-left:4px solid '+c+';border-radius:8px;padding:8px 10px;"><div style="font-size:11px;color:var(--tx3);">'+t+'</div><div style="font-size:16px;font-weight:700;">'+brl(v)+'</div><div style="font-size:11px;color:var(--tx3);">'+(geral?(v/geral*100).toFixed(1):'0.0')+'% do total</div></div>';
+      kEl.innerHTML=kp('PISA',tot.PISA,'#6366f1')+kp('INRAD',tot.INRAD,'#22c55e')+(tot['SEM INSTITUTO']>0?kp('Sem instituto',tot['SEM INSTITUTO'],'#94a3b8'):'')+kp('Total',geral,'#0ea5e9');
+    }
+    const period=parseInt((ge('dashFinPeriod')||{}).value||'all');
+    const nMeses=isNaN(period)?12:Math.max(period,1);
+    const meses=[];
+    for(let i=nMeses-1;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);meses.push(d.toISOString().slice(0,7));}
+    const serie=inst=>meses.map(m=>ok.filter(pg=>(pg['DataPagamento']||'').slice(0,7)===m&&instOf(pg)===inst).reduce((a,pg)=>a+(parseFloat(pg['Valor']||0)||0),0));
+    const ds=[{label:'PISA',data:serie('PISA'),backgroundColor:'#6366f1',borderRadius:4},{label:'INRAD',data:serie('INRAD'),backgroundColor:'#22c55e',borderRadius:4}];
+    if(tot['SEM INSTITUTO']>0) ds.push({label:'Sem instituto',data:serie('SEM INSTITUTO'),backgroundColor:'#94a3b8',borderRadius:4});
+    _finCharts['recInst']=new Chart(cEl,{type:'bar',data:{labels:meses.map(m=>{const[y,mo]=m.split('-');return mo+'/'+y.slice(2);}),datasets:ds},
+      options:{plugins:{legend:{position:'top',labels:{font:{size:11}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.parsed.y)}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,.05)'}}},responsive:true,maintainAspectRatio:false}});
+  })();
   // Barras
   _destroyChart('barras');
   const cbEl=ge('cBarras');
