@@ -1444,7 +1444,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             <div class="ct mb"><div class="cti">🏛️</div>Receita por instituto — PISA × INRAD</div>
             <div id="recInstKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;"></div>
             <div style="position:relative;height:240px;width:100%;"><canvas id="cRecInst"></canvas></div>
-            <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos "Confirmados", atribuídos ao instituto do projeto; projetos "Ambos" ou sem instituto são divididos pelo VALOR dos exames do pagamento (ou do projeto), segundo o preço por modalidade cadastrado no projeto. Respeita o filtro de período acima.</div>
+            <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos "Confirmados". O instituto é deduzido automaticamente pelo cadastro de Equipamentos (modalidade/equipamento de cada instituto); sem isso, pelas regras do agendamento; nas modalidades dos dois institutos vale o equipamento do exame ou o instituto do projeto. Pagamentos com exames de ambos os institutos são divididos pelo valor. Respeita o filtro de período acima.</div>
           </div>
           <div class="card mb">
             <div class="ct mb"><div class="cti">📊</div>Receita por projeto — Custo realizado vs Recebido</div>
@@ -5434,33 +5434,70 @@ function renderFinDash(){
     if(!cEl) return;
     const nz=x=>String(x==null?'':x).trim().toUpperCase();
     const instNorm=x=>{const v=nz(x);if(!v||v==='AMBOS')return '';const a=v.indexOf('PISA')>=0||v.indexOf('LIM')>=0,b=v.indexOf('INRAD')>=0;return a&&!b?'PISA':(b&&!a?'INRAD':'');};
+    // Mesma lógica do agendamento: o EQUIPAMENTO define o instituto. RM 3T, RM 1,5T, Mamografia e Densitometria só existem
+    // no INRAD; RM 7T só no PISA. Modalidades que existem nos dois (TC, US, RX, MN) caem para o instituto do projeto/exame.
+    const norm=x=>String(x==null?'':x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+    // CATÁLOGO AUTOMÁTICO: lê o cadastro de Equipamentos (Nome, Modalidade, Instituto). Modalidade que só existe em um
+    // instituto define o instituto sozinha; o nome do equipamento do exame resolve as que existem nos dois (ex.: TC).
+    const equipPorNome={}, modInst={};
+    (DB.equip||[]).forEach(q=>{
+      const i=instNorm(q['Instituto']); if(!i) return;
+      const n=norm(q['Nome']); if(n) equipPorNome[n]=i;
+      const m=norm(q['Modalidade']); if(m)(modInst[m]=modInst[m]||{})[i]=1;
+    });
+    const modUnica={}; Object.keys(modInst).forEach(m=>{const k=Object.keys(modInst[m]);if(k.length===1)modUnica[m]=k[0];});
+    const instDoCatalogo=(modalidade,equipamento)=>{
+      const en=norm(equipamento); if(en&&equipPorNome[en]) return equipPorNome[en];
+      const mn=norm(modalidade); if(mn&&modUnica[mn]) return modUnica[mn];
+      return '';
+    };
+    // Regras fixas (reserva, quando o cadastro de equipamentos estiver incompleto) — iguais às do agendamento
+    const instPorRegra=txt=>{
+      const h=' '+norm(txt)+' ', c=h.replace(/\s+/g,'');
+      if(/ (rm )?7 ?t( |esla)|7 tesla/.test(h)||c.indexOf('rm7t')>=0) return 'PISA';
+      if(/ (rm )?3 ?t( |esla)|3 tesla/.test(h)||c.indexOf('rm3t')>=0) return 'INRAD';
+      if(/ (rm )?1 ?5 ?t( |esla)|1 5 tesla/.test(h)||c.indexOf('rm15t')>=0) return 'INRAD';
+      if(/mamograf|densitometr/.test(h)) return 'INRAD';
+      return '';
+    };
+    // Texto livre (Descrição/Obs): regras fixas e nomes de modalidade exclusivos de um instituto
+    const instDeModalidade=txt=>{
+      const r=instPorRegra(txt); if(r) return r;
+      const h=' '+norm(txt)+' ';
+      for(const m in modUnica){ if(m.length>=3&&h.indexOf(' '+m+' ')>=0) return modUnica[m]; }
+      return '';
+    };
     const projPor={};(DB.proj||[]).forEach(p=>{['Nome','Codigo','ID'].forEach(k=>{const c=nz(p[k]);if(c)projPor[c]=p;});});
-    const exCod={},exProj={};
-    // peso do exame = preço da modalidade no projeto (custoPorExame_); se não houver preço, conta 1 (por quantidade)
+    const projUnico=nome=>{const p=projPor[nz(nome)];return p?instNorm(p['Instituto']):'';};
     const pesoEx=e=>{const pr=projPor[nz(e['Projeto'])];return pr?custoPorExame_(pr,e['Modalidade']||''):0;};
-    (DB.ex||[]).forEach(e=>{const i=instNorm(e['Instituto']);if(!i)return;const w=pesoEx(e);const c=nz(e['Cod']);if(c)exCod[c]={i,w};const pr=nz(e['Projeto']);if(pr){const q=(exProj[pr]=exProj[pr]||{PISA:0,INRAD:0,nPISA:0,nINRAD:0});q[i]+=w;q['n'+i]++;}});
+    // instituto do exame: 1) cadastro de equipamentos (automático); 1b) regras fixas por modalidade; 2) instituto único do projeto; 3) campo Instituto do exame
+    const instEx=e=>instDoCatalogo(e['Modalidade'],e['Equipamento'])||instPorRegra((e['Modalidade']||'')+' '+(e['Equipamento']||''))||projUnico(e['Projeto'])||instNorm(e['Instituto']);
+    const exCod={},exProj={};
+    (DB.ex||[]).forEach(e=>{const i=instEx(e);if(!i)return;const w=pesoEx(e);const c=nz(e['Cod']);if(c)exCod[c]={i,w};const pr=nz(e['Projeto']);if(pr)(exProj[pr]=exProj[pr]||[]).push({i,w});});
     const codsDe=v=>{try{const a=JSON.parse(v);if(Array.isArray(a))return a.map(nz);}catch(e){}return String(v||'').split(',').map(nz).filter(Boolean);};
-    // Retorna {PISA:fração, INRAD:fração}. 1) instituto do projeto; 2) exames do pagamento, por VALOR; 3) exames do projeto, por valor; 4) sem instituto.
-    // Sem preço cadastrado nas modalidades, a divisão cai para contagem de exames.
+    const dividir=lista=>{ // lista de {i,w}: por valor se TODOS têm preço; senão por quantidade
+      const porValor=lista.length>0&&lista.every(x=>x.w>0);
+      const t={PISA:0,INRAD:0};lista.forEach(x=>{t[x.i]+=porValor?x.w:1;});
+      const s=t.PISA+t.INRAD;return s?{PISA:t.PISA/s,INRAD:t.INRAD/s}:null;};
+    // Ordem: 1) exames vinculados ao pagamento; 2) texto do pagamento (descrição/obs) com modalidade;
+    // 3) instituto único do projeto; 4) exames do projeto; 5) sem instituto.
     const partilha=pg=>{
-      const proj=projPor[nz(pg['Projeto'])];
-      const direto=proj?instNorm(proj['Instituto']):'';
-      if(direto) return {[direto]:1};
-      const c={PISA:0,INRAD:0},n={PISA:0,INRAD:0};
-      codsDe(pg['ExameCods']).forEach(k=>{const x=exCod[k];if(x){c[x.i]+=x.w;n[x.i]++;}});
-      if(!n.PISA&&!n.INRAD){const q=exProj[nz(pg['Projeto'])];if(q){c.PISA=q.PISA;c.INRAD=q.INRAD;n.PISA=q.nPISA;n.INRAD=q.nINRAD;}}
-      const tv=c.PISA+c.INRAD,tn=n.PISA+n.INRAD;
-      if(tv>0) return {PISA:c.PISA/tv,INRAD:c.INRAD/tv};
-      return tn?{PISA:n.PISA/tn,INRAD:n.INRAD/tn}:{'SEM INSTITUTO':1};
+      const vinc=codsDe(pg['ExameCods']).map(k=>exCod[k]).filter(Boolean);
+      let r=dividir(vinc); if(r) return r;
+      const t=instDeModalidade((pg['Descricao']||'')+' '+(pg['Obs']||'')); if(t) return {[t]:1};
+      const u=projUnico(pg['Projeto']); if(u) return {[u]:1};
+      r=dividir(exProj[nz(pg['Projeto'])]||[]); if(r) return r;
+      return {'SEM INSTITUTO':1};
     };
     const ok=pays.filter(pg=>pg['Status']==='Confirmado'&&_finPeriodFilter(pg['DataPagamento']||''));
     const tot={PISA:0,INRAD:0,'SEM INSTITUTO':0};
     const partes=ok.map(pg=>{const v=parseFloat(pg['Valor']||0)||0,pt=partilha(pg);Object.keys(pt).forEach(k=>{tot[k]+=v*pt[k];});return {pg,v,pt};});
+    const semInst=partes.filter(x=>x.pt['SEM INSTITUTO']&&x.v>0);
     const brl=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const geral=tot.PISA+tot.INRAD+tot['SEM INSTITUTO'];
     if(kEl){
       const kp=(t,v,c)=>'<div style="border:1px solid var(--bd,#e5e7eb);border-left:4px solid '+c+';border-radius:8px;padding:8px 10px;"><div style="font-size:11px;color:var(--tx3);">'+t+'</div><div style="font-size:16px;font-weight:700;">'+brl(v)+'</div><div style="font-size:11px;color:var(--tx3);">'+(geral?(v/geral*100).toFixed(1):'0.0')+'% do total</div></div>';
-      kEl.innerHTML=kp('PISA',tot.PISA,'#6366f1')+kp('INRAD',tot.INRAD,'#22c55e')+(tot['SEM INSTITUTO']>0?kp('Sem instituto',tot['SEM INSTITUTO'],'#94a3b8'):'')+kp('Total',geral,'#0ea5e9');
+      kEl.innerHTML=kp('PISA',tot.PISA,'#6366f1')+kp('INRAD',tot.INRAD,'#22c55e')+(tot['SEM INSTITUTO']>0?kp('Sem instituto',tot['SEM INSTITUTO'],'#94a3b8'):'')+kp('Total',geral,'#0ea5e9')+(semInst.length?'<div style="grid-column:1/-1;font-size:11px;color:var(--tx3);">Sem instituto: '+semInst.slice(0,5).map(x=>(x.pg['Projeto']||'(sem projeto)')+' — '+brl(x.v)).join('; ')+(semInst.length>5?' …':'')+'</div>':'');
     }
     const period=parseInt((ge('dashFinPeriod')||{}).value||'all');
     const nMeses=isNaN(period)?12:Math.max(period,1);
