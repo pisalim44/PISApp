@@ -1444,7 +1444,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
             <div class="ct mb"><div class="cti">🏛️</div>Receita por instituto — PISA × INRAD</div>
             <div id="recInstKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;"></div>
             <div style="position:relative;height:240px;width:100%;"><canvas id="cRecInst"></canvas></div>
-            <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos com status "Confirmado", atribuídos ao instituto do projeto. Respeita o filtro de período acima.</div>
+            <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos "Confirmados", atribuídos ao instituto do projeto; projetos "Ambos" ou sem instituto são divididos pelo VALOR dos exames do pagamento (ou do projeto), segundo o preço por modalidade cadastrado no projeto. Respeita o filtro de período acima.</div>
           </div>
           <div class="card mb">
             <div class="ct mb"><div class="cti">📊</div>Receita por projeto — Custo realizado vs Recebido</div>
@@ -5432,11 +5432,30 @@ function renderFinDash(){
   (function(){
     const kEl=ge('recInstKpis'), cEl=ge('cRecInst');
     if(!cEl) return;
-    const instDe={};(DB.proj||[]).forEach(p=>{instDe[p['Nome']||'']=(p['Instituto']||'').toString().trim().toUpperCase();});
-    const instOf=pg=>{const i=instDe[pg['Projeto']||'']||'';return (i==='PISA'||i==='INRAD')?i:'SEM INSTITUTO';};
+    const nz=x=>String(x==null?'':x).trim().toUpperCase();
+    const instNorm=x=>{const v=nz(x);if(!v||v==='AMBOS')return '';const a=v.indexOf('PISA')>=0||v.indexOf('LIM')>=0,b=v.indexOf('INRAD')>=0;return a&&!b?'PISA':(b&&!a?'INRAD':'');};
+    const projPor={};(DB.proj||[]).forEach(p=>{['Nome','Codigo','ID'].forEach(k=>{const c=nz(p[k]);if(c)projPor[c]=p;});});
+    const exCod={},exProj={};
+    // peso do exame = preço da modalidade no projeto (custoPorExame_); se não houver preço, conta 1 (por quantidade)
+    const pesoEx=e=>{const pr=projPor[nz(e['Projeto'])];return pr?custoPorExame_(pr,e['Modalidade']||''):0;};
+    (DB.ex||[]).forEach(e=>{const i=instNorm(e['Instituto']);if(!i)return;const w=pesoEx(e);const c=nz(e['Cod']);if(c)exCod[c]={i,w};const pr=nz(e['Projeto']);if(pr){const q=(exProj[pr]=exProj[pr]||{PISA:0,INRAD:0,nPISA:0,nINRAD:0});q[i]+=w;q['n'+i]++;}});
+    const codsDe=v=>{try{const a=JSON.parse(v);if(Array.isArray(a))return a.map(nz);}catch(e){}return String(v||'').split(',').map(nz).filter(Boolean);};
+    // Retorna {PISA:fração, INRAD:fração}. 1) instituto do projeto; 2) exames do pagamento, por VALOR; 3) exames do projeto, por valor; 4) sem instituto.
+    // Sem preço cadastrado nas modalidades, a divisão cai para contagem de exames.
+    const partilha=pg=>{
+      const proj=projPor[nz(pg['Projeto'])];
+      const direto=proj?instNorm(proj['Instituto']):'';
+      if(direto) return {[direto]:1};
+      const c={PISA:0,INRAD:0},n={PISA:0,INRAD:0};
+      codsDe(pg['ExameCods']).forEach(k=>{const x=exCod[k];if(x){c[x.i]+=x.w;n[x.i]++;}});
+      if(!n.PISA&&!n.INRAD){const q=exProj[nz(pg['Projeto'])];if(q){c.PISA=q.PISA;c.INRAD=q.INRAD;n.PISA=q.nPISA;n.INRAD=q.nINRAD;}}
+      const tv=c.PISA+c.INRAD,tn=n.PISA+n.INRAD;
+      if(tv>0) return {PISA:c.PISA/tv,INRAD:c.INRAD/tv};
+      return tn?{PISA:n.PISA/tn,INRAD:n.INRAD/tn}:{'SEM INSTITUTO':1};
+    };
     const ok=pays.filter(pg=>pg['Status']==='Confirmado'&&_finPeriodFilter(pg['DataPagamento']||''));
     const tot={PISA:0,INRAD:0,'SEM INSTITUTO':0};
-    ok.forEach(pg=>{tot[instOf(pg)]+=parseFloat(pg['Valor']||0)||0;});
+    const partes=ok.map(pg=>{const v=parseFloat(pg['Valor']||0)||0,pt=partilha(pg);Object.keys(pt).forEach(k=>{tot[k]+=v*pt[k];});return {pg,v,pt};});
     const brl=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const geral=tot.PISA+tot.INRAD+tot['SEM INSTITUTO'];
     if(kEl){
@@ -5447,7 +5466,7 @@ function renderFinDash(){
     const nMeses=isNaN(period)?12:Math.max(period,1);
     const meses=[];
     for(let i=nMeses-1;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);meses.push(d.toISOString().slice(0,7));}
-    const serie=inst=>meses.map(m=>ok.filter(pg=>(pg['DataPagamento']||'').slice(0,7)===m&&instOf(pg)===inst).reduce((a,pg)=>a+(parseFloat(pg['Valor']||0)||0),0));
+    const serie=inst=>meses.map(m=>partes.filter(x=>(x.pg['DataPagamento']||'').slice(0,7)===m).reduce((a,x)=>a+x.v*(x.pt[inst]||0),0));
     const ds=[{label:'PISA',data:serie('PISA'),backgroundColor:'#6366f1',borderRadius:4},{label:'INRAD',data:serie('INRAD'),backgroundColor:'#22c55e',borderRadius:4}];
     if(tot['SEM INSTITUTO']>0) ds.push({label:'Sem instituto',data:serie('SEM INSTITUTO'),backgroundColor:'#94a3b8',borderRadius:4});
     _finCharts['recInst']=new Chart(cEl,{type:'bar',data:{labels:meses.map(m=>{const[y,mo]=m.split('-');return mo+'/'+y.slice(2);}),datasets:ds},
