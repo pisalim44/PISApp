@@ -926,8 +926,12 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
       <div class="fg"><label class="fl">Grant/Processo</label><input class="fi" id="pjGr" placeholder="2023/12345-6"></div>
     </div>
     <div class="fr c2 mb">
-      <div class="fg"><label class="fl">Orçamento Total (R$)</label><input class="fi" id="pjOr" type="number" placeholder="0"></div>
+      <div class="fg"><label class="fl">Número do CAAE *</label><input class="fi" id="pjCAAE" placeholder="Ex: 12345678.9.0000.0068"></div>
+      <div class="fg"><label class="fl">Versão do Projeto *</label><input class="fi" id="pjVersao" placeholder="Ex: 1.0 / V3"></div>
+    </div>
+    <div class="fr c2 mb">
       <div class="fg"><label class="fl">Tempo padrão de reserva na agenda (min)</label><input class="fi" id="pjReservaMin" type="number" min="15" step="15" placeholder="Ex: 90 para 1h30"></div>
+      <div class="fg"></div>
     </div>
     <div class="fr c2 mb">
       <div class="fg"><label class="fl">Valor Pós-processamento (R$) <span style="color:var(--tx3);font-weight:400;">(opcional)</span></label><input class="fi" id="pjValorPos" type="number" min="0" step="0.01" placeholder="0,00"></div>
@@ -953,15 +957,21 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
     <div class="al a-i">⏱️ Esse tempo será usado automaticamente ao agendar exames do projeto no Google Agenda. Ex.: DRO_0182_2018 = 90 min; INPD = 60 min.</div>
     <div class="fg mb"><label class="fl">Observação padrão no Google Agenda</label><input class="fi" id="pjAgendaObs" placeholder="Ex: reservar sala, preparo, contraste, phantom..."></div>
     <div class="dvd"></div>
-    <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:10px;">Modalidades, Nº de Exames e Custo por Exame</div>
+    <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:10px;">Exames do projeto e valor por exame</div>
+    <div class="al a-i mb" style="font-size:12px;">Escolha a <strong>modalidade</strong> (ex.: TC, RM 1,5T, RM 7T) e, no campo ao lado, o <strong>exame específico</strong> dela (ex.: TC CRANIO). Informe o valor e clique em Adicionar. A modalidade continua sendo usada no agendamento e no financeiro.</div>
+    <div class="pj-add">
+      <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="pjAddMod"><option value="">Selecione…</option></select></div>
+      <div class="fg"><label class="fl">Exame</label><select class="fs" id="pjExamePick"><option value="">Escolha a modalidade primeiro</option></select></div>
+      <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="pjAddValor" type="number" min="0" step="0.01" placeholder="0,00"></div>
+      <div class="fg"><label class="fl">&nbsp;</label><button type="button" class="btn bt" onclick="pjAddExame()">+ Adicionar</button></div>
+    </div>
     <div id="pjModSlots"></div>
-    <button class="btn bo btn-sm mb" onclick="addPjMod()">+ Adicionar Modalidade</button>
     <div class="fg mb"><label class="fl">Tipos de Amostra</label>
       <div class="cg" id="cgPjSj"><div class="chip" onclick="mchip('cgPjSj',this)">Voluntário Humano</div><div class="chip" onclick="mchip('cgPjSj',this)">Animal In Vivo</div><div class="chip" onclick="mchip('cgPjSj',this)">Post Mortem</div><div class="chip" onclick="mchip('cgPjSj',this)">Peça Anatômica</div><div class="chip" onclick="mchip('cgPjSj',this)">In Situ</div><div class="chip" onclick="mchip('cgPjSj',this)">Ex Situ</div></div>
     </div>
     <div class="card" style="background:var(--sf2);box-shadow:none;margin-bottom:12px;">
       <div class="ct"><div class="cti">🛡️</div> Validações Éticas</div>
-      <div class="al a-w">Projetos com animais exigem CEUA válido por 1 ano. Projetos com humano/voluntário humano exigem parecer CAPPesq válido por 1 ano. Projetos com peças anatômicas/post-mortem exigem anuência do SVOC válida por 1 ano. Após expirar ou faltar, o sistema bloqueia novas solicitações até renovação.</div>
+      <div class="al a-w">Projetos com animais exigem CEUA válido por 1 ano. Projetos com humano/voluntário humano exigem parecer CAPPesq válido por 1 ano. Projetos com peças anatômicas/post-mortem exigem anuência do SVOC válida por 1 ano. O vencimento é apenas informativo: não há mais bloqueio automático do projeto.</div>
       <div class="fr c2 mb" id="pjCEUABox" style="display:none;">
         <div class="fg"><label class="fl">Nº CEUA</label><input class="fi" id="pjCEUA" placeholder="Obrigatório para animal"></div>
         <div class="fg"><label class="fl">Data CEUA</label><input class="fi" id="pjCEUAData" type="date"></div>
@@ -1242,8 +1252,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <div class="sc sc-y"><div class="sl">Manutenções 30 dias</div><div class="sv" id="ds4">0</div><div class="ss" id="ds4s">Equipamentos</div></div>
         </div>
         <div id="maintDashBox" class="al a-w mb" style="display:none;"></div>
-        <div id="dashFinResumo" class="g4 mb" style="display:none;">
-          <div class="sc"><div class="sl">Orçamento Total</div><div class="sv" id="dsf1" style="font-size:19px;">R$ 0</div></div>
+        <div id="dashFinResumo" class="g3 mb" style="display:none;">
           <div class="sc"><div class="sl">Custo Realizado</div><div class="sv" id="dsf2" style="font-size:19px;">R$ 0</div></div>
           <div class="sc sc-y"><div class="sl">A Receber</div><div class="sv" id="dsf3" style="font-size:19px;">R$ 0</div></div>
           <div class="sc sc-g"><div class="sl">Recebido</div><div class="sv" id="dsf4" style="font-size:19px;">R$ 0</div></div>
@@ -1259,7 +1268,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
         </div>
         <div class="g2 mb">
           <div class="card"><div class="ch"><div class="ct"><div class="cti">🏛️</div>Por Instituto</div></div><div style="height:160px;"><canvas id="cInst"></canvas></div></div>
-          <div class="card"><div class="ch"><div class="ct"><div class="cti">💰</div>Uso Orçamentário por Projeto</div></div><div style="height:160px;"><canvas id="cFin"></canvas></div></div>
+          <div class="card"><div class="ch"><div class="ct"><div class="cti">💰</div>Exames por Projeto</div></div><div style="height:160px;"><canvas id="cFin"></canvas></div></div>
         </div>
         <div class="card">
           <div class="ch"><div class="ct"><div class="cti">📋</div>Atividade Recente</div></div>
@@ -1384,8 +1393,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           </div>
         </div>
         <!-- KPI cards -->
-        <div class="g4 mb">
-          <div class="sc sc-t"><div class="sl">Orçamento Total</div><div class="sv" id="finOr" style="font-size:18px;">R$ 0</div></div>
+        <div class="g3 mb">
           <div class="sc sc-y"><div class="sl">Custo Realizado</div><div class="sv" id="finCu" style="font-size:18px;">R$ 0</div><div style="font-size:11px;color:var(--tx3);">exames concluídos</div></div>
           <div class="sc" style="background:var(--sf2);"><div class="sl" style="color:var(--ored);">A receber</div><div class="sv" id="finAR" style="font-size:18px;color:var(--ored);">R$ 0</div><div style="font-size:11px;color:var(--tx3);">a faturar + faturado</div></div>
           <div class="sc sc-g"><div class="sl">Recebido</div><div class="sv" id="finPg" style="font-size:18px;">R$ 0</div><div style="font-size:11px;color:var(--tx3);">pagamentos confirmados</div></div>
@@ -1409,6 +1417,17 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           </div>
           <div id="finQuickInfo" style="font-size:11.5px;color:var(--tx3);"></div>
         </div>
+        <!-- v7.12: filtro por modalidade + relatório mensal -->
+        <div class="fb mb" style="align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="font-weight:700;font-size:12.5px;color:var(--navy);">🔬 Modalidade:</div>
+          <select class="fs" id="finModFilt" style="max-width:200px;" onchange="finSetMod_(this.value)"><option value="">Todas as modalidades</option></select>
+          <div style="width:1px;height:22px;background:var(--bd);margin:0 6px;"></div>
+          <div style="font-weight:700;font-size:12.5px;color:var(--navy);">📥 Relatório mensal:</div>
+          <input type="month" class="fi" id="finRelMes" style="max-width:160px;">
+          <select class="fs" id="finRelProj" style="max-width:220px;"><option value="">Todos os projetos</option></select>
+          <button class="btn bt btn-sm" onclick="exportRelatorioMensal()">📥 Exportar planilha mensal</button>
+          <div style="font-size:11px;color:var(--tx3);flex-basis:100%;">O filtro de modalidade vale para custo realizado, a receber, A faturar, Exames × pagamentos e para o relatório. "Recebido" não é separado por modalidade.</div>
+        </div>
         <!-- Sub-abas -->
         <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--bd);padding-bottom:0;flex-wrap:wrap;">
           <button class="btn bt btn-sm fin-tab sel" id="ftab-dash"     onclick="switchFinTab('dash')">📈 Dashboard</button>
@@ -1430,20 +1449,17 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
               <option value="1">Mês atual</option>
             </select>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px;">
             <div class="card">
               <div class="ct mb"><div class="cti">🔁</div>Funil financeiro</div>
               <div style="position:relative;height:240px;width:100%;"><canvas id="cFunil"></canvas></div>
-            </div>
-            <div class="card">
-              <div class="ct mb"><div class="cti">🥧</div>Orçamento por projeto</div>
-              <div style="position:relative;height:240px;width:100%;"><canvas id="cPizza"></canvas></div>
             </div>
           </div>
           <div class="card mb">
             <div class="ct mb"><div class="cti">🏛️</div>Receita por instituto — PISA × INRAD</div>
             <div id="recInstKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;"></div>
             <div style="position:relative;height:240px;width:100%;"><canvas id="cRecInst"></canvas></div>
+            <details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:var(--tx2);">🔍 Ver como cada pagamento foi atribuído</summary><div id="recInstDet" style="margin-top:6px;overflow-x:auto;"></div></details>
             <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Receita = pagamentos "Confirmados". O instituto é deduzido automaticamente pelo cadastro de Equipamentos (modalidade/equipamento de cada instituto); sem isso, pelas regras do agendamento; nas modalidades dos dois institutos vale o equipamento do exame ou o instituto do projeto. Pagamentos com exames de ambos os institutos são divididos pelo valor. Respeita o filtro de período acima.</div>
           </div>
           <div class="card mb">
@@ -1508,7 +1524,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
         <div id="fpane-resumo">
           <div class="card">
             <div class="ct mb"><div class="cti">💰</div>Controle por Projeto</div>
-            <div class="tw"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Financiamento</th><th>Grant</th><th>PI</th><th>Instituto</th><th>Orçamento(R$)</th><th>Custo realizado(R$)</th><th>A receber(R$)</th><th>Recebido(R$)</th><th>Saldo(R$)</th><th>% Uso</th><th>Início</th><th>Término</th></tr></thead><tbody id="tbFin"><tr class="tr-e"><td colspan="14">Carregando...</td></tr></tbody></table></div>
+            <div class="tw"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Financiamento</th><th>Grant</th><th>PI</th><th>Instituto</th><th>Custo realizado(R$)</th><th>A receber(R$)</th><th>Recebido(R$)</th><th>Início</th><th>Término</th></tr></thead><tbody id="tbFin"><tr class="tr-e"><td colspan="11">Carregando...</td></tr></tbody></table></div>
           </div>
         </div>
         <!-- ABA: Exames realizados × pagos -->
@@ -2791,7 +2807,7 @@ async function loadSectionData(id, opts){
     if(id==='financeiro'){
       r=await api('getFinanceiroData',{}, {silent:true});
       if(_isStale()) return;
-      if(r.ok){DB.fin=r.fin||[];DB.proj=r.proj||DB.proj;DB.ex=r.ex||DB.ex;DB.pay=r.pay||[];DB.nf=r.nf||[];markLoaded_(id);}
+      if(r.ok){DB.fin=r.fin||[];DB.proj=r.proj||DB.proj;DB.ex=r.ex||DB.ex;DB.pay=r.pay||[];DB.nf=r.nf||[];DB.rghc=r.rghc||{};markLoaded_(id);}
     }
     if(id==='equipamentos'){
       if(isFresh_(id,300000)) return;
@@ -2829,14 +2845,14 @@ async function loadSectionData(id, opts){
 /* ── DROPDOWNS DINÂMICOS ── */
 function projectStatusAtivo_(p){
   const st=String((p&& (p['Status']||p.status)) || 'Ativo').trim().toLowerCase();
-  return !st || st==='ativo' || st==='active';
+  return !st || st==='ativo' || st==='active' || st==='bloqueado';
 }
 function projectNome_(p){return (p&& (p['Nome']||p['Titulo']||p['Projeto']||p.nome||p.titulo)) || '';}
 function projectCodigo_(p){return (p&& (p['Codigo']||p['Código']||p['DRO']||p['DROProjeto']||p.codigo||p.dro)) || '';}
 function projectApelido_(p){return (p&& (p['Apelido']||p.apelido)) || '';}
 function projectLabel_(p){
   const apel=projectApelido_(p), cod=projectCodigo_(p), nm=projectNome_(p);
-  return [apel, cod, nm].filter(Boolean).join(' — ') || 'Projeto sem identificação';
+  return cod || apel || nm || 'Projeto sem identificação';
 }
 function fillProjectSelect_(sid, opts){
   const el=ge(sid); if(!el) return;
@@ -2851,6 +2867,7 @@ function fillProjectSelect_(sid, opts){
     op.textContent = projectLabel_(p);
     op.dataset.nome = nm;
     op.dataset.codigo = cod;
+    op.dataset.apelido = projectApelido_(p);
     el.appendChild(op);
   });
   if(cur){
@@ -3037,7 +3054,7 @@ function renderMVMapping(){
   let projOpts='<option value="">Selecione o projeto/DRO</option>';
   (DB.proj||[]).filter(projectStatusAtivo_).forEach(p=>{
     const nm=projectNome_(p); if(!nm) return;
-    projOpts+=`<option value="${mvEsc_(nm)}">${mvEsc_(projectLabel_(p))}</option>`;
+    projOpts+=`<option value="${mvEsc_(nm)}" data-codigo="${mvEsc_(projectCodigo_(p))}" data-nome="${mvEsc_(nm)}" data-apelido="${mvEsc_(projectApelido_(p))}">${mvEsc_(projectLabel_(p))}</option>`;
   });
   ge('mvProjeto').innerHTML=projOpts;
   ge('mvPreviewCount').textContent = MV_RAW_ROWS.length;
@@ -3741,15 +3758,13 @@ async function dashCarregarResumoFinanceiro_(){
   if(!box || !nav.includes('financeiro')) return;
   const r = await api('getFinanceiroData', {}, {silent:true});
   if(!r || !r.ok || CURRENT_SEC!=='dashboard') return;
-  let totOr=0, totCu=0, totAR=0, totPg=0;
+  let totCu=0, totAR=0, totPg=0;
   (r.proj||[]).forEach(p=>{
     const nm=p['Nome']||'';
-    totOr+=parseFloat(p['OrcamentoTotal']||0);
     (r.ex||[]).filter(e=>(e['Projeto']||'')===nm&&(e['Status']||'')==='Concluído').forEach(e=>{ totCu+=custoPorExame_(p,e['Modalidade']||''); });
     (r.ex||[]).filter(e=>(e['Projeto']||'')===nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')).forEach(e=>{ totAR+=custoPorExame_(p,e['Modalidade']||''); });
   });
   (r.pay||[]).filter(p=>p['Status']==='Confirmado').forEach(p=>totPg+=parseFloat(p['Valor']||0));
-  if(ge('dsf1'))ge('dsf1').textContent=fmtMoney(totOr);
   if(ge('dsf2'))ge('dsf2').textContent=fmtMoney(totCu);
   if(ge('dsf3'))ge('dsf3').textContent=fmtMoney(totAR);
   if(ge('dsf4'))ge('dsf4').textContent=fmtMoney(totPg);
@@ -3778,7 +3793,7 @@ function renderDash(){
     ge('ds1').textContent=hoje.length;
     ge('ds1s').textContent=[...new Set(hoje.map(e=>e['Modalidade']||''))].slice(0,3).join(', ')||'—';
     ge('ds2').textContent=DB.sol.filter(s=>(s['Status']||'Pendente')==='Pendente').length;
-    ge('ds3').textContent=DB.proj.filter(p=>(p['Status']||'Ativo')==='Ativo').length;
+    ge('ds3').textContent=DB.proj.filter(p=>['Ativo','Bloqueado'].includes(p['Status']||'Ativo')).length;
   }
   const tb=ge('tbLog');
   if(!DB.log.length){tb.innerHTML='<tr class="tr-e"><td colspan="4">Sem atividade ainda.</td></tr>';return;}
@@ -3808,12 +3823,7 @@ function drawCharts(){
   const sts=['Agendado','Em andamento','Concluído','Cancelado'];
   mk('cSts','doughnut',sts,sts.map(s=>DB.ex.filter(e=>(e['Status']||'')==s).length),[C[0],C[2],C[5],C[4]]);
   mk('cInst','pie',['PISA/LIM44','INRAD'],[DB.ex.filter(e=>(e['Instituto']||'PISA').includes('PISA')).length,DB.ex.filter(e=>(e['Instituto']||'').includes('INRAD')).length],[C[0],C[2]]);
-  const pNms=DB.proj.slice(0,6).map(p=>p['Nome']||'');
-  mk('cFin','bar',pNms,DB.proj.slice(0,6).map(p=>{
-    const orc=parseFloat(p['OrcamentoTotal']||0);
-    const exs=DB.ex.filter(e=>(e['Projeto']||'')===(p['Nome']||'')&&['Em andamento','Concluído'].includes(e['Status']||'')).length;
-    return orc>0?Math.min(100,Number((exs*1000/orc*100).toFixed(2))):0;
-  }),C.slice(0,6),'% Uso');
+  mk('cFin','bar',DB.proj.slice(0,6).map(p=>projDroLabel_(p)),DB.proj.slice(0,6).map(p=>DB.ex.filter(e=>(e['Projeto']||'')===(p['Nome']||'')&&['Em andamento','Concluído'].includes(e['Status']||'')).length),C.slice(0,6),'Exames por projeto');
 }
 
 /* ── WORKLIST / AGENDA LOADING SAFETY ── */
@@ -5214,7 +5224,7 @@ function openProjModal(id){
   ge('projMttl').textContent=id?'✏️ Editar Projeto':'📁 Novo Projeto';
   ge('projEditId').value=id||'';
   ge('pjModSlots').innerHTML='';
-  if(!id){['pjNm','pjCd','pjPI','pjPIe','pjGr','pjOr','pjIn','pjFm','pjDs'].forEach(i=>ge(i).value='');}
+  if(!id){['pjNm','pjCd','pjPI','pjPIe','pjGr','pjCAAE','pjVersao','pjIn','pjFm','pjDs'].forEach(i=>{if(ge(i))ge(i).value='';});}
   addPjMod();ovlOpen('ovlProj');
 }
 
@@ -5241,7 +5251,7 @@ async function saveProj(){
     const custo=parseFloat(sl.querySelector('.pjm-custo')?.value)||0;
     if(mod){modalidades.push(mod);numExames[mod]=num;custos[mod]=custo;}
   });
-  const data={nome:nm,codigo:v('pjCd'),pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras:mulChip('cgPjSj'),inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
+  const data={nome:nm,codigo:v('pjCd'),pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras:mulChip('cgPjSj'),inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
   const res=await api(id?'editProj':'novoProj',id?{id,fields:data}:data);
   if(!res.ok){toast(res.msg,'err');return;}
   toast('⏳ Salvando...');
@@ -5260,12 +5270,11 @@ async function delProj(id){
 }
 
 function renderProj(){
-  ge('projC').textContent=DB.proj.filter(p=>(p['Status']||'Ativo')==='Ativo').length+' projetos';
+  ge('projC').textContent=DB.proj.filter(p=>['Ativo','Bloqueado'].includes(p['Status']||'Ativo')).length+' projetos';
   const el=ge('projAcc');
   if(!DB.proj.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3);">📁 Nenhum projeto. Clique em "+ Novo Projeto".</div>';return;}
   el.innerHTML=DB.proj.map(p=>{
     const nm=p['Nome']||p.nome||'';
-    const orc=parseFloat(p['OrcamentoTotal']||p.orcamento)||0;
     const inst=p['Instituto']||'PISA';
     const fin=p['Financiamento']||p.financiamento||'—';
     const status=p['Status']||'Ativo';
@@ -5290,7 +5299,7 @@ function renderProj(){
       </div>
       <div class="proj-body">
         <div class="fr c3 mt" style="margin-top:12px;">
-          <div><div class="sl">Orçamento</div><div style="font-family:var(--m);font-size:14px;color:var(--grd);">R$ ${orc.toLocaleString('pt-BR')}</div></div>
+          <div><div class="sl">CAAE · Versão</div><div style="font-size:12px;color:var(--tx2);">${p['NumeroCAAE']||'—'} · v${p['VersaoProjeto']||'—'}</div></div>
           <div><div class="sl">Exames Concl.</div><div style="font-family:var(--m);font-size:14px;color:var(--navy);">${exs}</div></div>
           <div><div class="sl">Período</div><div style="font-size:12px;color:var(--tx2);">${p['Inicio']||p.inicio||'—'} → ${p['Fim']||p.fim||'—'}</div></div>
         </div>
@@ -5417,16 +5426,6 @@ function renderFinDash(){
       backgroundColor:['#6366f1','#f59e0b','#3b82f6','#22c55e','#94a3b8'],borderRadius:6,borderSkipped:false}]},
       options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,.06)'}},y:{grid:{display:false}}},responsive:true,maintainAspectRatio:false}});
   }
-  // Pizza
-  _destroyChart('pizza');
-  const cpEl=ge('cPizza');
-  if(cpEl&&DB.proj.length){
-    const projs=DB.proj.filter(p=>parseFloat(p['OrcamentoTotal']||0)>0);
-    _finCharts['pizza']=new Chart(cpEl,{type:'doughnut',data:{
-      labels:projs.map(p=>p['Nome']||''),
-      datasets:[{data:projs.map(p=>parseFloat(p['OrcamentoTotal']||0)),backgroundColor:['#6366f1','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#14b8a6','#f97316','#ec4899','#64748b'],borderWidth:2}]},
-      options:{plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:14}}},responsive:true,maintainAspectRatio:false}});
-  }
   // Receita por instituto
   _destroyChart('recInst');
   (function(){
@@ -5481,23 +5480,37 @@ function renderFinDash(){
       const s=t.PISA+t.INRAD;return s?{PISA:t.PISA/s,INRAD:t.INRAD/s}:null;};
     // Ordem: 1) exames vinculados ao pagamento; 2) texto do pagamento (descrição/obs) com modalidade;
     // 3) instituto único do projeto; 4) exames do projeto; 5) sem instituto.
+    const nfPorId={};(DB.nf||[]).forEach(n=>{const k=nz(n['ID']);if(k)nfPorId[k]=n;});
+    let _why='';
     const partilha=pg=>{
-      const vinc=codsDe(pg['ExameCods']).map(k=>exCod[k]).filter(Boolean);
-      let r=dividir(vinc); if(r) return r;
-      const t=instDeModalidade((pg['Descricao']||'')+' '+(pg['Obs']||'')); if(t) return {[t]:1};
-      const u=projUnico(pg['Projeto']); if(u) return {[u]:1};
-      r=dividir(exProj[nz(pg['Projeto'])]||[]); if(r) return r;
+      let cods=codsDe(pg['ExameCods']), via='';
+      if(!cods.length){ // sem exames no pagamento: usa os exames da NF vinculada
+        const nfId=nz(pg['NFVinculada']||pg['NF']);
+        const nf=nfId&&nfPorId[nfId]; if(nf){cods=codsDe(nf['ExameCods']);if(cods.length)via=' via NF '+(nf['NumeroNF']||nf['ID']||'');}
+      }
+      const vinc=cods.map(k=>exCod[k]).filter(Boolean);
+      let r=dividir(vinc); if(r){_why='exames vinculados'+via+' ('+vinc.length+'/'+cods.length+' c/ instituto: '+vinc.map(x=>x.i+(x.w>0?' R$'+x.w:'')).join(', ')+')';return r;}
+      const t=instDeModalidade((pg['Descricao']||'')+' '+(pg['Obs']||'')); if(t){_why='texto da descrição/obs'+(cods.length?' (exames vinculados sem instituto: '+cods.length+')':'');return {[t]:1};}
+      const u=projUnico(pg['Projeto']); if(u){_why='instituto do projeto'+(cods.length?' (exames vinculados sem instituto: '+cods.length+')':'');return {[u]:1};}
+      r=dividir(exProj[nz(pg['Projeto'])]||[]); if(r){_why='ESTIMATIVA: sem exames no pagamento/NF; proporção dos exames do projeto';return r;}
+      _why=projPor[nz(pg['Projeto'])]?'projeto sem instituto único e sem exames classificáveis':'projeto "'+(pg['Projeto']||'')+'" não encontrado no cadastro';
       return {'SEM INSTITUTO':1};
     };
     const ok=pays.filter(pg=>pg['Status']==='Confirmado'&&_finPeriodFilter(pg['DataPagamento']||''));
     const tot={PISA:0,INRAD:0,'SEM INSTITUTO':0};
-    const partes=ok.map(pg=>{const v=parseFloat(pg['Valor']||0)||0,pt=partilha(pg);Object.keys(pt).forEach(k=>{tot[k]+=v*pt[k];});return {pg,v,pt};});
+    const partes=ok.map(pg=>{const v=parseFloat(pg['Valor']||0)||0,pt=partilha(pg);Object.keys(pt).forEach(k=>{tot[k]+=v*pt[k];});return {pg,v,pt,why:_why};});
     const semInst=partes.filter(x=>x.pt['SEM INSTITUTO']&&x.v>0);
     const brl=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const geral=tot.PISA+tot.INRAD+tot['SEM INSTITUTO'];
     if(kEl){
       const kp=(t,v,c)=>'<div style="border:1px solid var(--bd,#e5e7eb);border-left:4px solid '+c+';border-radius:8px;padding:8px 10px;"><div style="font-size:11px;color:var(--tx3);">'+t+'</div><div style="font-size:16px;font-weight:700;">'+brl(v)+'</div><div style="font-size:11px;color:var(--tx3);">'+(geral?(v/geral*100).toFixed(1):'0.0')+'% do total</div></div>';
       kEl.innerHTML=kp('PISA',tot.PISA,'#6366f1')+kp('INRAD',tot.INRAD,'#22c55e')+(tot['SEM INSTITUTO']>0?kp('Sem instituto',tot['SEM INSTITUTO'],'#94a3b8'):'')+kp('Total',geral,'#0ea5e9')+(semInst.length?'<div style="grid-column:1/-1;font-size:11px;color:var(--tx3);">Sem instituto: '+semInst.slice(0,5).map(x=>(x.pg['Projeto']||'(sem projeto)')+' — '+brl(x.v)).join('; ')+(semInst.length>5?' …':'')+'</div>':'');
+    }
+    const dEl=ge('recInstDet');
+    if(dEl){
+      const esc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      dEl.innerHTML=partes.length?'<table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="text-align:left;color:var(--tx3);"><th>Data</th><th>Projeto</th><th>Descrição</th><th style="text-align:right">Valor</th><th style="text-align:right">PISA</th><th style="text-align:right">INRAD</th><th>Como foi decidido</th></tr></thead><tbody>'+
+        partes.map(x=>'<tr style="border-top:1px solid var(--bd,#e5e7eb);"><td>'+esc((x.pg['DataPagamento']||'').slice(0,10))+'</td><td>'+esc(x.pg['Projeto'])+'</td><td>'+esc(x.pg['Descricao'])+'</td><td style="text-align:right">'+brl(x.v)+'</td><td style="text-align:right">'+brl(x.v*(x.pt.PISA||0))+'</td><td style="text-align:right">'+brl(x.v*(x.pt.INRAD||0))+'</td><td>'+esc(x.why)+'</td></tr>').join('')+'</tbody></table>':'Nenhum pagamento confirmado no período.';
     }
     const period=parseInt((ge('dashFinPeriod')||{}).value||'all');
     const nMeses=isNaN(period)?12:Math.max(period,1);
@@ -5548,12 +5561,6 @@ function renderFinDash(){
     const limite=new Date();limite.setDate(limite.getDate()-30);
     const velhos=(DB.ex||[]).filter(e=>(e['StatusFinanceiro']||'')==='A faturar'&&(e['Status']||'')==='Concluído'&&e['Data']&&new Date(e['Data'])<limite);
     if(velhos.length) alertas.push('<div class="al a-w mb" style="font-size:12px;">⏳ <strong>'+velhos.length+' exame'+(velhos.length>1?'s':'')+'</strong> há mais de 30 dias como "A faturar".</div>');
-    DB.proj.forEach(p=>{
-      const orc=parseFloat(p['OrcamentoTotal']||0);if(!orc)return;
-      let cu=0;(DB.ex||[]).filter(e=>(e['Projeto']||'')==(p['Nome']||'')&&(e['Status']||'')==='Concluído').forEach(e=>{cu+=custoPorExame_(p,e['Modalidade']||'');});
-      const pct=cu/orc*100;
-      if(pct>=90) alertas.push('<div class="al a-'+(pct>=100?'r':'w')+' mb" style="font-size:12px;">'+(pct>=100?'🔴':'🟡')+' <strong>'+(p['Nome']||'')+'</strong> — '+pct.toFixed(0)+'% do orçamento.</div>');
-    });
     alertasEl.innerHTML=alertas.length?alertas.join(''):'<div style="color:var(--tx3);font-size:12px;">✅ Nenhum alerta.</div>';
   }
   // Inadimplência
@@ -5693,7 +5700,7 @@ function toggleCorrigirModalidadeBox(){
   box.style.display = abrindo?'':'none';
   if(abrindo){
     const sel=ge('cmProjeto');
-    if(sel) sel.innerHTML = '<option value="">Selecione...</option>' + (DB.proj||[]).map(p=>`<option value="${mvEsc_(p.Nome||'')}">${mvEsc_(p.Nome||'')}</option>`).join('');
+    if(sel) sel.innerHTML = '<option value="">Selecione...</option>' + projOptsHtml_();
   }
 }
 
@@ -5743,6 +5750,7 @@ function renderAFaturar(){
   );
   if(projFilt) exs=exs.filter(e=>(e['Projeto']||'')==projFilt);
   exs=exs.filter(e=>finDateInRange_(e['Data']));
+  exs=exs.filter(finModOk_);
 
   // Badge na aba
   const badge=ge('ftab-afaturar-badge');
@@ -5753,7 +5761,7 @@ function renderAFaturar(){
   if(filt){
     const cur=filt.value;
     filt.innerHTML='<option value="">Todos os projetos</option>'+
-      DB.proj.map(p=>`<option>${p['Nome']||''}</option>`).join('');
+      projOptsHtml_();
     if(cur) filt.value=cur;
   }
 
@@ -5763,7 +5771,7 @@ function renderAFaturar(){
   Object.keys(AFAT_SEL).forEach(c=>{ if(!pendSet[c]) delete AFAT_SEL[c]; });
   AFAT_CUR=exs;
   if(!exs.length){tb.innerHTML='<tr class="tr-e"><td colspan="9">Nenhum exame pendente de faturamento. 🎉</td></tr>'; pgnRender_('afat','afaturarPager',{total:0},'renderAFaturar'); updateAfaturarSel(); return;}
-  const pg=pgnSlice_('afat', exs, projFilt+'|'+JSON.stringify(FIN_QUICK_RANGE||{}));
+  const pg=pgnSlice_('afat', exs, projFilt+'|'+FIN_MOD+'|'+JSON.stringify(FIN_QUICK_RANGE||{}));
   pgnRender_('afat','afaturarPager',pg,'renderAFaturar');
 
   tb.innerHTML=pg.rows.map(e=>{
@@ -5889,7 +5897,7 @@ window.saveEmitirFatura = async function(){
 // ── Modal: Registrar Pagamento Completo ──
 function openPagCompletoModal(){
   const projSel=ge('pagcProj');
-  projSel.innerHTML='<option value="">Selecione</option>'+DB.proj.map(p=>`<option>${p['Nome']||''}</option>`).join('');
+  projSel.innerHTML='<option value="">Selecione</option>'+projOptsHtml_();
   // Popula NFs emitidas (status Emitida)
   const nfSel=ge('pagcNFVinc');
   const nfsEmitidas=(DB.nf||[]).filter(n=>n['Status']==='Emitida'||n['Status']==='Pendente');
@@ -5940,21 +5948,20 @@ window.savePagCompleto = async function(){
 // ── KPIs e resumo por projeto ──
 function renderFin(){
   const pays=DB.pay||[];
-  let totOr=0, totCu=0, totAR=0, totPg=0;
+  let totCu=0, totAR=0, totPg=0;
   DB.proj.forEach(p=>{
     const nm=p['Nome']||'';
-    totOr+=parseFloat(p['OrcamentoTotal']||0);
-    // Custo realizado: custo da modalidade + pós-processamento por exame
-    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído').forEach(e=>{
+    // Custo realizado: custo da modalidade + pós-processamento por exame (respeita o filtro de modalidade)
+    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&finModOk_(e)).forEach(e=>{
       totCu+=custoPorExame_(p,e['Modalidade']||'');
     });
     // A receber: exames Concluídos com StatusFinanceiro pendente
-    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')).forEach(e=>{
+    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')&&finModOk_(e)).forEach(e=>{
       totAR+=custoPorExame_(p,e['Modalidade']||'');
     });
   });
+  // Recebido = pagamentos (não são separados por modalidade; o filtro não se aplica a este valor)
   pays.filter(p=>p['Status']==='Confirmado').forEach(p=>totPg+=parseFloat(p['Valor']||0));
-  if(ge('finOr')) ge('finOr').textContent=fmtMoney(totOr);
   if(ge('finCu')) ge('finCu').textContent=fmtMoney(totCu);
   if(ge('finAR')) ge('finAR').textContent=fmtMoney(totAR);
   if(ge('finPg')) ge('finPg').textContent=fmtMoney(totPg);
@@ -5967,52 +5974,42 @@ function renderFin(){
   const badge=ge('ftab-afaturar-badge');
   if(badge){badge.textContent=afaturarCount;badge.style.display=afaturarCount?'':'none';}
 
-  // Filtros de projeto nas abas
-  ['finExProjFilt','pagProjFilt','nfProjFilt'].forEach(id=>{
+  // Filtros de projeto nas abas (rótulo = DRO; value = nome)
+  ['finExProjFilt','pagProjFilt','nfProjFilt','finRelProj'].forEach(id=>{
     const el=ge(id); if(!el)return;
     const cur=el.value;
-    el.innerHTML='<option value="">Todos os projetos</option>'+DB.proj.map(p=>`<option>${p['Nome']||''}</option>`).join('');
+    el.innerHTML='<option value="">Todos os projetos</option>'+projOptsHtml_();
     if(cur) el.value=cur;
   });
 
   const tb=ge('tbFin');
-  if(!DB.proj.length){tb.innerHTML='<tr class="tr-e"><td colspan="14">Nenhum projeto.</td></tr>';return;}
+  if(!DB.proj.length){tb.innerHTML='<tr class="tr-e"><td colspan="11">Nenhum projeto.</td></tr>';return;}
   tb.innerHTML=DB.proj.map(p=>{
     const nm=p['Nome']||'';
-    const orc=parseFloat(p['OrcamentoTotal']||0);
     const tipo=p['TipoCobranca']||'Por exame';
     // Custo realizado = exames Concluídos (independente do status financeiro)
-    const exConc=DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído');
+    const exConc=DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&finModOk_(e));
     // Custo realizado: modalidade + pós-processamento por exame
     let custoRealizado=0;
     exConc.forEach(e=>{custoRealizado+=custoPorExame_(p,e['Modalidade']||'');});
-    const posVal=parseFloat(p['ValorPosProcessamento']||0); // para exibição no card
     // A receber = exames Concluídos com StatusFinanceiro pendente
     let aReceber=0;
-    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')).forEach(e=>{
+    DB.ex.filter(e=>(e['Projeto']||'')==nm&&(e['Status']||'')==='Concluído'&&['A faturar','Faturado'].includes(e['StatusFinanceiro']||'')&&finModOk_(e)).forEach(e=>{
       aReceber+=custoPorExame_(p,e['Modalidade']||'');
     });
     // Recebido = pagamentos Confirmados do projeto
     const recebido=pays.filter(pg=>pg['Projeto']===nm&&pg['Status']==='Confirmado').reduce((a,pg)=>a+parseFloat(pg['Valor']||0),0);
-    const saldo=orc-custoRealizado;
-    const pctRaw=orc>0?Math.min(100,(custoRealizado/orc*100)):0;
-    const pctBar=pctRaw>0&&pctRaw<1?1:pctRaw;
-    const pctTxt=pctRaw===0?'0%':(pctRaw<1?pctRaw.toFixed(2).replace('.',',')+'%':pctRaw.toFixed(1).replace('.',',')+'%');
-    const pc=pctRaw>=90?'var(--re)':pctRaw>=70?'var(--ye)':'var(--teal)';
     const tipoPill=tipo==='Pacote'?`<span class="pill p-p">Pacote</span>`:`<span class="pill p-t">Por exame</span>`;
     return `<tr>
-      <td><strong>${nm}</strong></td>
+      <td><strong title="${mvEsc_(nm)}">${mvEsc_(projDroLabel_(p))}</strong></td>
       <td>${tipoPill}</td>
       <td>${p['Financiamento']||'—'}</td>
       <td style="font-family:var(--m);font-size:11px;">${p['Grant']||p.grant||'—'}</td>
       <td>${p['PI']||p.pi||'—'}</td>
       <td><span class="pill ${(p['Instituto']||'PISA')==='INRAD'?'p-p':'p-t'}">${p['Instituto']||'PISA'}</span></td>
-      <td style="font-family:var(--m);">${fmtMoney(orc)}</td>
       <td style="font-family:var(--m);color:var(--yed);">${fmtMoney(custoRealizado)}</td>
       <td style="font-family:var(--m);color:var(--ored);">${aReceber>0?fmtMoney(aReceber):'—'}</td>
       <td style="font-family:var(--m);color:var(--grd);">${fmtMoney(recebido)}</td>
-      <td style="font-family:var(--m);color:${saldo>=0?'var(--grd)':'var(--red)'};">${fmtMoney(saldo)}</td>
-      <td><div style="display:flex;align-items:center;gap:5px;"><div class="pb" style="width:60px;margin:0;"><div class="pbr" style="width:${pctBar}%;background:${pc};"></div></div><span style="font-family:var(--m);font-size:10.5px;">${pctTxt}</span></div></td>
       <td style="font-family:var(--m);font-size:11px;">${p['Inicio']||p.inicio||'—'}</td>
       <td style="font-family:var(--m);font-size:11px;">${p['Fim']||p.fim||'—'}</td>
     </tr>`;
@@ -6033,6 +6030,8 @@ function renderFinExames(){
   }
   exsTabela=exsTabela.filter(e=>finDateInRange_(e['Data']));
   exsKPI=exsKPI.filter(e=>finDateInRange_(e['Data']));
+  exsTabela=exsTabela.filter(finModOk_);
+  exsKPI=exsKPI.filter(finModOk_);
 
   // Monta índice: exameCod → lista de pagamentos confirmados que o incluem
   const paysByCod = {};
@@ -6195,7 +6194,7 @@ function openPayModal(id){
   ge('payMttl').textContent=id?'✏️ Editar Pagamento':'💳 Registrar Pagamento';
   ge('payEditId').value=id||'';
   const projSel=ge('payProj');
-  projSel.innerHTML='<option value="">Selecione</option>'+DB.proj.map(p=>`<option>${p['Nome']||''}</option>`).join('');
+  projSel.innerHTML='<option value="">Selecione</option>'+projOptsHtml_();
   if(!id){
     ['payData','payValor','payNFVinc','payDesc','payResp','payObs','payExameCods'].forEach(x=>{if(ge(x))ge(x).value='';});
     ge('payData').value=today_();ge('payStatus').value='Confirmado';
@@ -6256,7 +6255,7 @@ function openNFModal(id){
   ge('nfMttl').textContent=id?'✏️ Editar Nota Fiscal':'🧾 Registrar Nota Fiscal';
   ge('nfEditId').value=id||'';
   const projSel=ge('nfProj');
-  projSel.innerHTML='<option value="">Selecione</option>'+DB.proj.map(p=>`<option>${p['Nome']||''}</option>`).join('');
+  projSel.innerHTML='<option value="">Selecione</option>'+projOptsHtml_();
   if(!id){['nfNumero','nfValor','nfDesc','nfPrestador','nfObs','nfURL'].forEach(x=>{if(ge(x))ge(x).value='';});ge('nfEmissao').value=today_();ge('nfVenc').value='';ge('nfStatus').value='Pendente';}
   else {
     const r=(DB.nf||[]).find(x=>x['ID']===id)||{};
@@ -6781,11 +6780,12 @@ function expCSV(tipo){
         {label:'ID do Projeto',keys:['ID']},
         {label:'Nome do Projeto',keys:['Nome','Projeto']},
         {label:'Código',keys:['Codigo','Código']},
+        {label:'Nº CAAE',keys:['NumeroCAAE']},
+        {label:'Versão do Projeto',keys:['VersaoProjeto']},
         {label:'PI / Responsável',keys:['PI','Responsavel','Responsável']},
         {label:'Instituto',keys:['Instituto']},
         {label:'Financiamento',keys:['Financiamento']},
         {label:'Grant',keys:['Grant']},
-        {label:'Orçamento Total',keys:['OrcamentoTotal','OrçamentoTotal'],type:'money'},
         {label:'Modalidades',keys:['Modalidades']},
         {label:'Início',keys:['Inicio','Início'],type:'date'},
         {label:'Fim',keys:['Fim'],type:'date'},
@@ -6798,10 +6798,7 @@ function expCSV(tipo){
         {label:'Financiamento',keys:['Financiamento']},
         {label:'Grant',keys:['Grant']},
         {label:'PI / Responsável',keys:['PI','Responsavel','Responsável']},
-        {label:'Orçamento Total',keys:['OrcamentoTotal','OrçamentoTotal'],type:'money'},
-        {label:'Custo Realizado',keys:['CustoRealizado','Realizado'],type:'money'},
-        {label:'Saldo',keys:['Saldo'],type:'money'},
-        {label:'% Uso',keys:['PercentualUso','%Uso','Uso']}
+        {label:'Custo Realizado',keys:['CustoRealizado','Realizado'],type:'money'}
       ]
     },
     equip:{
@@ -6923,11 +6920,11 @@ function toast(msg,type){
     ['sjPj','vincProj','artProj'].forEach(sid=>{
       const el=ge(sid);if(!el)return;
       const cur=el.value;el.innerHTML='<option value="">Selecione</option>';
-      (DB.proj||[]).filter(p=>(p['Status']||'Ativo')==='Ativo').forEach(p=>{
+      (DB.proj||[]).filter(p=>['Ativo','Bloqueado'].includes(p['Status']||'Ativo')).forEach(p=>{
         const nm=p['Nome']||p['Titulo']||p.nome||'';
         const cod=p['Codigo']||p['Código']||'';
         const apel=p['Apelido']||'';
-        const op=ce('option');op.value=cod||nm;op.textContent=(apel?apel+' — ':'')+(cod?cod+' — ':'')+nm;el.appendChild(op);
+        const op=ce('option');op.value=cod||nm;op.textContent=cod||apel||nm;op.dataset.nome=nm;op.dataset.codigo=cod;op.dataset.apelido=apel;el.appendChild(op);
       });
       if(cur)el.value=cur;
     });
@@ -7075,7 +7072,7 @@ window.saveQSeg = async function(){
 window.openProjModal = function(id){
   ge('projMttl').textContent=id?'✏️ Editar Projeto':'📁 Novo Projeto';
   ge('projEditId').value=id||'';ge('pjModSlots').innerHTML='';populateDDs();
-  ['pjNm','pjCd','pjApelido','pjExec','pjCoord','pjPI','pjPIe','pjGr','pjOr','pjReservaMin','pjAgendaObs','pjValorPos','pjValorPacote','pjLimitePacote','pjIn','pjFm','pjDs','pjCEUA','pjCEUAData','pjCapp','pjCappData','pjSVOC','pjSVOCData','pjSVOCUrl','pjSacadoNome','pjSacadoCNPJ','pjSacadoInscEst','pjSacadoEndereco'].forEach(i=>{if(ge(i))ge(i).value='';});
+  ['pjNm','pjCd','pjApelido','pjExec','pjCoord','pjPI','pjPIe','pjGr','pjCAAE','pjVersao','pjReservaMin','pjAgendaObs','pjValorPos','pjValorPacote','pjLimitePacote','pjIn','pjFm','pjDs','pjCEUA','pjCEUAData','pjCapp','pjCappData','pjSVOC','pjSVOCData','pjSVOCUrl','pjSacadoNome','pjSacadoCNPJ','pjSacadoInscEst','pjSacadoEndereco'].forEach(i=>{if(ge(i))ge(i).value='';});
   if(ge('pjSVOCReq')){ge('pjSVOCReq').checked=false;delete ge('pjSVOCReq').dataset.touched;}
   if(ge('pjLaudo'))ge('pjLaudo').value='Não';
   if(ge('pjTipoCobranca'))ge('pjTipoCobranca').value='Por exame';
@@ -7094,7 +7091,8 @@ window.openProjModal = function(id){
     if(ge('pjInst'))ge('pjInst').value=p.Instituto||'PISA';
     if(ge('pjFin'))ge('pjFin').value=p.Financiamento||'FAPESP';
     if(ge('pjGr'))ge('pjGr').value=p.Grant||'';
-    if(ge('pjOr'))ge('pjOr').value=p.OrcamentoTotal||'';
+    if(ge('pjCAAE'))ge('pjCAAE').value=p.NumeroCAAE||'';
+    if(ge('pjVersao'))ge('pjVersao').value=p.VersaoProjeto||'';
     if(ge('pjValorPos'))ge('pjValorPos').value=p.ValorPosProcessamento||'';
     if(ge('pjTipoCobranca'))ge('pjTipoCobranca').value=p.TipoCobranca||'Por exame';
     if(ge('pjValorPacote'))ge('pjValorPacote').value=p.ValorPacote||'';
@@ -7123,8 +7121,8 @@ window.openProjModal = function(id){
     if(ge('pjSacadoInscEst'))ge('pjSacadoInscEst').value=p.SacadoInscEst||'';
     if(ge('pjSacadoEndereco'))ge('pjSacadoEndereco').value=p.SacadoEndereco||'';
     String(p.Amostras||p.TipoAmostraProjeto||'').split(';').map(x=>x.trim()).forEach(a=>qsa('#cgPjSj .chip').forEach(c=>{if(c.textContent.trim()===a)c.classList.add('sel');}));
-    try{const mods=JSON.parse(p.Modalidades||'[]');const nums=JSON.parse(p.NumExamesPorModalidade||'{}');const cust=JSON.parse(p.CustoPorModalidade||'{}');if(mods.length){mods.forEach(m=>addPjMod(m,nums[m]||'',cust[m]||''));}else addPjMod();}catch(e){addPjMod();}
-  } else addPjMod();
+    restaurarExamesProjeto_(p);
+  }
   updateProjetoCamposCondicionais();
   ovlOpen('ovlProj');
 };
@@ -7140,11 +7138,12 @@ window.saveProj = async function(){
   const requerSVOC=!!(ge('pjSVOCReq')&&ge('pjSVOCReq').checked);
   if(requerSVOC && (!v('pjSVOC').trim()||!v('pjSVOCData'))){toast('Projeto com peças anatômicas/post-mortem exige anuência do SVOC (parecer e data).','warn');return;}
   const id=ge('projEditId').value;
-  const slots=ge('pjModSlots').querySelectorAll('div[style]');
-  const modalidades=[],numExames={},custos={};
-  slots.forEach(sl=>{const mod=sl.querySelector('.pjm-mod')?.value;const num=parseFloat(sl.querySelector('.pjm-num')?.value)||0;const custo=parseFloat(sl.querySelector('.pjm-custo')?.value)||0;if(mod){modalidades.push(mod);numExames[mod]=num;custos[mod]=custo;}});
+  if(!v('pjCAAE').trim()){toast('Informe o Número do CAAE do projeto.','warn');return;}
+  if(!v('pjVersao').trim()){toast('Informe a Versão do projeto.','warn');return;}
+  const exColeta=coletarExamesProjeto_();
+  const modalidades=exColeta.modalidades,numExames=exColeta.numExames,custos=exColeta.custos;
   const medicosLaudadores=Array.from(qsa('.pjMedLaudCk')).filter(ck=>ck.checked).map(ck=>ck.value);
-  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),orcamentoTotal:parseFloat(v('pjOr'))||0,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),requerSVOC,svocParecer:v('pjSVOC'),dataSVOC:v('pjSVOCData'),svocArquivoURL:v('pjSVOCUrl'),sacadoNome:v('pjSacadoNome'),sacadoCNPJCPF:v('pjSacadoCNPJ'),sacadoInscEst:v('pjSacadoInscEst'),sacadoEndereco:v('pjSacadoEndereco'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
+  const data={nome:nm,titulo:nm,codigo:v('pjCd'),apelido:v('pjApelido'),pesquisadorExecutante:v('pjExec'),coordenadorProjeto:v('pjCoord'),temLaudo:v('pjLaudo'),medicoLaudador:medicosLaudadores[0]||'',medicosLaudadores,pi:v('pjPI'),emailPI:v('pjPIe'),instituto:v('pjInst'),financiamento:v('pjFin'),grant:v('pjGr'),numeroCAAE:v('pjCAAE').trim(),versaoProjeto:v('pjVersao').trim(),examesProjeto:exColeta.examesProjeto,valorPosProcessamento:parseFloat(v('pjValorPos'))||0,rmFallbackModalidade:v('pjRmFallback'),tipoCobranca:v('pjTipoCobranca')||'Por exame',valorPacote:parseFloat(v('pjValorPacote'))||0,limiteExamesPacote:parseInt(v('pjLimitePacote'))||0,duracaoAgendaMin:parseInt(v('pjReservaMin')||'0',10)||'',agendaObs:v('pjAgendaObs'),modalidades,numExamesPorModalidade:numExames,custoPorModalidade:custos,amostras,inicio:v('pjIn'),fim:v('pjFm'),descricao:v('pjDs'),ceua:v('pjCEUA'),dataCEUA:v('pjCEUAData'),cappesqParecer:v('pjCapp'),cappesqData:v('pjCappData'),requerSVOC,svocParecer:v('pjSVOC'),dataSVOC:v('pjSVOCData'),svocArquivoURL:v('pjSVOCUrl'),sacadoNome:v('pjSacadoNome'),sacadoCNPJCPF:v('pjSacadoCNPJ'),sacadoInscEst:v('pjSacadoInscEst'),sacadoEndereco:v('pjSacadoEndereco'),reservaAgendaMinutos:parseInt(v('pjReservaMin')||'0',10)||''};
   const res=await api(id?'editProj':'novoProj',id?{id,fields:data}:data);
   if(!res.ok){toast(res.msg,'err');return;}
   toast('Salvando...'); LOADED.projetos=false;LOADED.financeiro=false; await loadSectionData('projetos'); ovlClose('ovlProj');renderProj();renderFin();populateDDs();toast(`✓ Projeto "${nm}" ${id?'atualizado':'cadastrado'}.`);
@@ -7200,22 +7199,21 @@ window.saveMaskTask = async function(){
 
 /* v5 — Renderização melhorada para novos campos */
 window.renderProj = function(){
-  ge('projC').textContent=(DB.proj||[]).filter(p=>(p['Status']||'Ativo')==='Ativo').length+' projetos';
+  ge('projC').textContent=(DB.proj||[]).filter(p=>['Ativo','Bloqueado'].includes(p['Status']||'Ativo')).length+' projetos';
   const el=ge('projAcc'); if(!el)return;
   if(!(DB.proj||[]).length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3);">📁 Nenhum projeto. Clique em "+ Novo Projeto".</div>';return;}
   el.innerHTML=(DB.proj||[]).map(p=>{
     const nm=p['Nome']||p['Titulo']||p.nome||''; const cod=p['Codigo']||''; const apel=p['Apelido']||'';
-    const orc=parseFloat(p['OrcamentoTotal']||p.orcamento)||0; const inst=p['Instituto']||'PISA'; const status=p['Status']||'Ativo'; const id=p['ID']||p.id||'';
+    const inst=p['Instituto']||'PISA'; const status=p['Status']||'Ativo'; const id=p['ID']||p.id||'';
     const exs=(DB.ex||[]).filter(e=>(e['Projeto']||'')==nm&&['Em andamento','Concluído'].includes(e['Status']||'')).length;
-    const bloqueio=p['BloqueioEtico']==='Sim'||status==='Bloqueado';
     const durAg=(p['DuracaoAgendaMin']||p['ReservaAgendaMinutos'])?formatDurMin_(p['DuracaoAgendaMin']||p['ReservaAgendaMinutos']):'—';
-    let modInfo='';try{const mods=JSON.parse(p['Modalidades']||'[]');const nums=JSON.parse(p['NumExamesPorModalidade']||'{}');const custs=JSON.parse(p['CustoPorModalidade']||'{}');modInfo=mods.map(m=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);font-size:12px;"><span><strong>${m}</strong></span><span style="color:var(--tx2);">${nums[m]||0} exames · R$ ${(custs[m]||0).toLocaleString('pt-BR')}/exame</span></div>`).join('');}catch(e){}
+    let modInfo=projExamesHtml_(p);
     return `<div class="proj-card">
-      <div class="proj-hdr" onclick="togProj(this)"><div><div style="font-size:14px;font-weight:700;color:var(--navy);">${apel?apel+' — ':''}${nm}</div><div style="font-size:11.5px;color:var(--tx3);margin-top:2px;">${cod?cod+' · ':''}Coord.: ${p['CoordenadorProjeto']||p['PI']||'—'} · Exec.: ${p['PesquisadorExecutante']||'—'} · Reserva: ${formatDurMin_(Number(p['DuracaoAgendaMin']||p['ReservaAgendaMinutos']||0)||getReservaMinForSol_({Projeto:p['Nome']||p['Titulo'],CodigoProjeto:p['Codigo']},''))} · <span class="pill ${inst==='INRAD'?'p-p':'p-t'}">${inst}</span></div></div><div class="fc"><span class="sts ${bloqueio?'sc2':status==='Ativo'?'sd':'sw'}">${bloqueio?'Bloqueio ético':status}</span><span class="proj-chev">▶</span></div></div>
-      <div class="proj-body"><div class="fr c3 mt" style="margin-top:12px;"><div><div class="sl">Orçamento</div><div style="font-family:var(--m);font-size:14px;color:var(--grd);">R$ ${orc.toLocaleString('pt-BR')}</div></div><div><div class="sl">Exames Concl.</div><div style="font-family:var(--m);font-size:14px;color:var(--navy);">${exs}</div></div><div><div class="sl">Reserva agenda</div><div style="font-size:12px;color:var(--tx2);">${durAg}${p['AgendaObs']?' · '+p['AgendaObs']:''}</div></div></div>
+      <div class="proj-hdr" onclick="togProj(this)"><div><div style="font-size:14px;font-weight:700;color:var(--navy);">${apel?apel+' — ':''}${nm}</div><div style="font-size:11.5px;color:var(--tx3);margin-top:2px;">${cod?cod+' · ':''}Coord.: ${p['CoordenadorProjeto']||p['PI']||'—'} · Exec.: ${p['PesquisadorExecutante']||'—'} · Reserva: ${formatDurMin_(Number(p['DuracaoAgendaMin']||p['ReservaAgendaMinutos']||0)||getReservaMinForSol_({Projeto:p['Nome']||p['Titulo'],CodigoProjeto:p['Codigo']},''))} · <span class="pill ${inst==='INRAD'?'p-p':'p-t'}">${inst}</span></div></div><div class="fc"><span class="sts ${(status==='Ativo'||status==='Bloqueado')?'sd':'sc2'}">${status==='Bloqueado'?'Ativo':status}</span><span class="proj-chev">▶</span></div></div>
+      <div class="proj-body"><div class="fr c3 mt" style="margin-top:12px;"><div><div class="sl">CAAE · Versão</div><div style="font-size:12px;color:var(--tx2);">${p['NumeroCAAE']||'—'} · v${p['VersaoProjeto']||'—'}</div></div><div><div class="sl">Exames Concl.</div><div style="font-family:var(--m);font-size:14px;color:var(--navy);">${exs}</div></div><div><div class="sl">Reserva agenda</div><div style="font-size:12px;color:var(--tx2);">${durAg}${p['AgendaObs']?' · '+p['AgendaObs']:''}</div></div></div>
       <div class="fr c2 mt"><div><div class="sl">CEUA</div><div style="font-size:12px;">${p['CEUA']||'—'} ${p['CEUAValidade']?'· vence '+p['CEUAValidade']:''}</div></div><div><div class="sl">CAPPesq</div><div style="font-size:12px;">${p['CAPPesqParecer']||'—'} ${p['CAPPesqValidade']?'· vence '+p['CAPPesqValidade']:''}</div></div></div>
       ${String(p['RequerSVOC']||'').toUpperCase()==='SIM'?`<div class="fr c2 mt"><div><div class="sl">Anuência SVOC</div><div style="font-size:12px;">${p['SVOCParecer']||'—'} ${p['SVOCValidade']?'· vence '+p['SVOCValidade']:''}</div></div><div></div></div>`:''}
-      ${modInfo?`<div style="margin-top:12px;"><div style="font-family:var(--m);font-size:9.5px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Modalidades</div>${modInfo}</div>`:''}${p['Descricao']?`<div style="margin-top:10px;font-size:12.5px;color:var(--tx2);">${p['Descricao']}</div>`:''}<div class="fc mt" style="margin-top:12px;"><button class="btn bo btn-sm" onclick="openProjModal('${id}')">✏️ Editar</button><button class="btn br btn-sm" onclick="delProj('${id}')">🗑 Inativar</button></div></div></div>`;
+      ${modInfo?`<div style="margin-top:12px;"><div style="font-family:var(--m);font-size:9.5px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Exames do projeto</div>${modInfo}</div>`:''}${p['Descricao']?`<div style="margin-top:10px;font-size:12.5px;color:var(--tx2);">${p['Descricao']}</div>`:''}<div class="fc mt" style="margin-top:12px;"><button class="btn bo btn-sm" onclick="openProjModal('${id}')">✏️ Editar</button><button class="btn br btn-sm" onclick="delProj('${id}')">🗑 Inativar</button></div></div></div>`;
   }).join('');
 };
 
@@ -7247,6 +7245,7 @@ window.renderMasks = function(){
 
   function fillModalidadeSelect(sel, inst){
     if(!sel) return;
+    if(sel.closest && sel.closest('.pj-ex-row')) return;   // v7.12: modalidade das linhas de exame é definida pelo exame
     const cur = sel.value;
     const list = inst==='INRAD' ? INRAD_MODALIDADES : PISA_MODALIDADES.concat(INRAD_MODALIDADES.filter(x=>!PISA_MODALIDADES.includes(x)));
     sel.innerHTML = list.map(m=>`<option>${m}</option>`).join('');
@@ -7290,14 +7289,6 @@ window.renderMasks = function(){
       if(safeGe('pjInst')) safeGe('pjInst').onchange = ()=>document.querySelectorAll('.pjm-mod').forEach(sel=>fillModalidadeSelect(sel, safeGe('pjInst').value));
       updateProjetoCamposCondicionais();
     },50);
-  };
-
-  const oldAddPjMod = window.addPjMod;
-  window.addPjMod = function(){
-    if(typeof oldAddPjMod === 'function') oldAddPjMod();
-    const slots = safeGe('pjModSlots');
-    const sel = slots ? slots.querySelector('.pjm-mod:last-of-type') : null;
-    fillModalidadeSelect(sel, safeGe('pjInst')?.value || '');
   };
 
   const oldSaveProj = window.saveProj;
@@ -8034,7 +8025,7 @@ async function showSolLog(solIdx){
   }
   function labelProjHard_(p){
     const a=projApelidoHard_(p), c=projCodHard_(p), n=projNomeHard_(p);
-    return [a,c,n].filter(Boolean).join(' — ') || 'Projeto sem identificação';
+    return c || a || n || 'Projeto sem identificação';
   }
   function fillOneProjectSelectHard_(id, opts){
     const el=document.getElementById(id); if(!el)return;
@@ -8124,7 +8115,7 @@ async function showSolLog(solIdx){
   function _projApelido(p){ return _pick(p,['Apelido','apelido','Sigla','sigla','Nickname']); }
   function _projStatus(p){ return _pick(p,['Status','status','Ativo','ativo']); }
   function _projAtivo(p){ const st=_norm(_projStatus(p)); return !st || !/inativo|cancelado|excluido|excluído|nao|não|false|0/.test(st); }
-  function _labelProj(p){ return [_projApelido(p), _projCod(p), _projNome(p)].filter(Boolean).join(' — ') || 'Projeto sem identificação'; }
+  function _labelProj(p){ return _projCod(p) || _projApelido(p) || _projNome(p) || 'Projeto sem identificação'; }
 
   window.PISAPP_VERSAO_UI = 'v7.4.9_worklist_vincular_fix';
 
@@ -8301,7 +8292,7 @@ async function showSolLog(solIdx){
   function projApelido(p){return pick(p,['Apelido','apelido','Sigla','sigla','Nickname']);}
   function projStatus(p){return pick(p,['Status','status','Ativo','ativo']);}
   function projAtivo(p){const st=norm(projStatus(p)); return !st || !/inativo|cancelado|excluido|excluído|nao|não|false|0/.test(st);}
-  function projLabel(p){return [projApelido(p), projCod(p), projNome(p)].filter(Boolean).join(' — ') || 'Projeto sem identificação';}
+  function projLabel(p){return projCod(p) || projApelido(p) || projNome(p) || 'Projeto sem identificação';}
   function extractRows(r){
     if(!r) return [];
     if(Array.isArray(r)) return r;
@@ -8595,7 +8586,7 @@ async function showSolLog(solIdx){
   function apelido(p){return pick(p,['Apelido','apelido','Sigla','sigla','Nickname']);}
   function status(p){return pick(p,['Status','status','Ativo','ativo']);}
   function ativo(p){const st=norm(status(p)); return !st || !/inativo|cancelado|excluido|excluído|nao|não|false|0/.test(st);}
-  function label(p){return [apelido(p), cod(p), nome(p)].filter(Boolean).join(' — ') || 'Projeto sem identificação';}
+  function label(p){return cod(p) || apelido(p) || nome(p) || 'Projeto sem identificação';}
   function validRows(rows){return Array.isArray(rows) ? rows.filter(p => ativo(p) && (nome(p) || cod(p))) : [];}
   function extractRows(r){
     if(!r) return [];
@@ -8777,7 +8768,7 @@ async function showSolLog(solIdx){
 
 <script>
 (function(){
-  window.PISAPP_FRONTEND_VERSION = '7.5.9.5';
+  window.PISAPP_FRONTEND_VERSION = '7.12.0';
   window.PISAPP_FRONTEND_BUILD = 'filtros-principais-worklist-agenda';
   window.pisappSelfTest = async function(opts={}){
     const out = {ok:true, startedAt:new Date().toISOString(), frontend:{version:window.PISAPP_FRONTEND_VERSION, build:window.PISAPP_FRONTEND_BUILD}, checks:[]};
@@ -8796,6 +8787,304 @@ async function showSolLog(solIdx){
 })();
 </script>
 
+<script>
+/* ═══ PISApp v7.12 — Select pesquisável (melhoria progressiva sobre <select>) ═══
+   - O <select> original continua sendo a fonte da verdade (value, change, options, selectedIndex).
+   - Reage a repovoamento de opções (MutationObserver) e a atribuições .value= / .selectedIndex=.
+   - Pesquisa por texto da opção + data-codigo / data-nome / data-apelido / data-search (sem acento, sem caixa). */
+(function(){
+  if (window.pisappSearchable) return;
+  var css = document.createElement('style');
+  css.textContent =
+    '.ss-wrap{position:relative;width:100%;min-width:150px}' +
+    '.ss-inp{width:100%;cursor:text;padding-right:30px;text-overflow:ellipsis}' +
+    '.ss-wrap:after{content:"\\25BE";position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--tx3,#8FA3B8);pointer-events:none}' +
+    '.ss-list{position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:10050;max-height:260px;overflow-y:auto;background:var(--sf,#fff);border:1.5px solid var(--teal,#2DBFAD);border-radius:8px;box-shadow:0 12px 32px rgba(27,42,74,.18)}' +
+    '.ss-it{padding:8px 12px;font-size:13px;cursor:pointer;color:var(--tx,#1B2A4A);line-height:1.35;border-bottom:1px solid var(--bd,#DDE5EF);word-break:break-word}' +
+    '.ss-it:last-child{border-bottom:none}' +
+    '.ss-it.act,.ss-it:hover{background:var(--tdim,rgba(45,191,173,.10))}' +
+    '.ss-it.sel{font-weight:700}' +
+    '.ss-it.ss-empty{color:var(--tx3,#8FA3B8);font-style:italic}' +
+    '.ss-none,.ss-more{padding:10px 12px;font-size:12.5px;color:var(--tx3,#8FA3B8)}';
+  document.head.appendChild(css);
+
+  var dVal = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  var dIdx = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
+  var LIMIT = 400;
+
+  function norm(s){ return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  function enhance(sel, opts){
+    if (typeof sel === 'string') sel = document.getElementById(sel);
+    if (!sel || sel.tagName !== 'SELECT' || sel.dataset.ssDone) return sel && sel._ss;
+    opts = opts || {};
+    sel.dataset.ssDone = '1';
+
+    var wrap = document.createElement('div'); wrap.className = 'ss-wrap';
+    if (sel.style.maxWidth) wrap.style.maxWidth = sel.style.maxWidth;
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'fi ss-inp';
+    inp.setAttribute('autocomplete', 'off'); inp.setAttribute('spellcheck', 'false');
+    var list = document.createElement('div'); list.className = 'ss-list'; list.style.display = 'none';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(inp); wrap.appendChild(list); wrap.appendChild(sel);
+    sel.style.display = 'none';
+
+    var isOpen = false, shown = [], act = -1;
+
+    function curText(){ var o = sel.options[dIdx.get.call(sel)]; return (o && dVal.get.call(sel) !== '') ? o.text : ''; }
+    function placeholder(){ var o = sel.options[0]; return (o && o.value === '') ? o.text : (opts.placeholder || 'Pesquisar…'); }
+    function refresh(){ if (!isOpen) inp.value = curText(); inp.placeholder = placeholder(); inp.disabled = sel.disabled; }
+    function hay(o){
+      var d = o.dataset || {};
+      return norm(o.text + ' ' + (d.codigo || '') + ' ' + (d.nome || '') + ' ' + (d.apelido || '') + ' ' + (d.search || ''));
+    }
+    function setActive(i){
+      if (act >= 0 && shown[act]) shown[act].classList.remove('act');
+      act = i;
+      if (act >= 0 && shown[act]) { shown[act].classList.add('act'); shown[act].scrollIntoView({block: 'nearest'}); }
+    }
+    function render(q){
+      var tk = norm(q).split(/\s+/).filter(Boolean);
+      list.innerHTML = ''; shown = [];
+      var total = 0, cut = false, selAct = -1;
+      for (var i = 0; i < sel.options.length; i++) {
+        var o = sel.options[i];
+        if (o.value === '' && tk.length) continue;               // opção "vazia" só aparece sem filtro
+        if (tk.length) { var h = hay(o), ok = true; for (var t = 0; t < tk.length; t++) if (h.indexOf(tk[t]) < 0) { ok = false; break; } if (!ok) continue; }
+        if (total >= LIMIT) { cut = true; break; }
+        var d = document.createElement('div');
+        d.className = 'ss-it' + (o.value === '' ? ' ss-empty' : '') + (dIdx.get.call(sel) === i && o.value !== '' ? ' sel' : '');
+        d.textContent = o.text; d.dataset.i = i;
+        d.addEventListener('mousedown', function(ev){ ev.preventDefault(); pickIdx(Number(this.dataset.i)); });
+        list.appendChild(d); shown.push(d);
+        if (d.classList.contains('sel')) selAct = shown.length - 1;
+        total++;
+      }
+      if (!total) { var n = document.createElement('div'); n.className = 'ss-none'; n.textContent = opts.noneText || 'Nenhum resultado encontrado'; list.appendChild(n); }
+      if (cut) { var m = document.createElement('div'); m.className = 'ss-more'; m.textContent = 'Mostrando os primeiros ' + LIMIT + ' — continue digitando para filtrar.'; list.appendChild(m); }
+      setActive(shown.length ? (selAct >= 0 ? selAct : (tk.length ? 0 : -1)) : -1);
+    }
+    function openList(){ if (isOpen) return; isOpen = true; list.style.display = ''; inp.select(); render(''); }
+    function closeList(){ if (!isOpen) return; isOpen = false; list.style.display = 'none'; inp.value = curText(); }
+    function pickIdx(i){
+      dIdx.set.call(sel, i);
+      sel.dispatchEvent(new Event('change', {bubbles: true}));
+      closeList(); refresh();
+    }
+
+    inp.addEventListener('focus', function(){
+      try { sel.dispatchEvent(new Event('focusin', {bubbles: true})); } catch (e) {}   // mantém o carregamento sob demanda do PISApp
+      openList();
+    });
+    inp.addEventListener('click', openList);
+    inp.addEventListener('input', function(){ if (!isOpen) { isOpen = true; list.style.display = ''; } render(inp.value); });
+    inp.addEventListener('keydown', function(ev){
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!isOpen) openList(); else setActive(Math.min(shown.length - 1, act + 1)); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); setActive(Math.max(0, act - 1)); }
+      else if (ev.key === 'Enter') { if (isOpen && act >= 0 && shown[act]) { ev.preventDefault(); pickIdx(Number(shown[act].dataset.i)); } }
+      else if (ev.key === 'Escape') { closeList(); inp.blur(); }
+      else if (ev.key === 'Tab') closeList();
+    });
+    inp.addEventListener('blur', closeList);
+
+    Object.defineProperty(sel, 'value', { configurable: true, get: function(){ return dVal.get.call(sel); }, set: function(v){ dVal.set.call(sel, v); refresh(); } });
+    Object.defineProperty(sel, 'selectedIndex', { configurable: true, get: function(){ return dIdx.get.call(sel); }, set: function(v){ dIdx.set.call(sel, v); refresh(); } });
+    sel.focus = function(){ inp.focus(); };
+    new MutationObserver(function(){ refresh(); if (isOpen) render(inp.value); })
+      .observe(sel, {childList: true, subtree: true, attributes: true, attributeFilter: ['disabled']});
+
+    sel._ss = { input: inp, refresh: refresh };
+    refresh();
+    return sel._ss;
+  }
+
+  function enhanceAll(ids){ (ids || []).forEach(function(id){ try { enhance(id); } catch (e) { console.warn('pisappSearchable:', id, e); } }); }
+  window.pisappSearchable = { enhance: enhance, enhanceAll: enhanceAll };
+})();
+
+window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA- INRAD", "CONSULTA PRE ANESTESICA INRAD", "CONSULTA VASCULAR - INRAD", "COLETA HORMONAL", "EMBOLIZACAO DE PROSTATA CRIEP", "EMBOLIZACAO DE PROSTATA EXTERNO", "DENSITOMETRIA ANTEBRACO - INRAD", "DENSITOMETRIA DE CORPO TOTAL - INRAD", "DENSITOMETRIA OSSEA - INRAD", "ECODOPPLERCARDIOGRAMA COM CONTRASTE INTRACAVITARIO - INRAD", "ECODOPPLERCARDIOGRAMA COM ESTRESSE FARMACOLOGICO - INRAD", "ECODOPPLERCARDIOGRAMA ESTRESSE - INRAD", "ECODOPPLERCARDIOGRAMA ESTRESSE C/ AGENTE REALCE CONTRAS - INRAD", "ECODOPPLERCARDIOGRAMA TRANSESOFAGICO - INRAD", "ECODOPPLERCARDIOGRAMA TRANSESOFAGICO (NO LEITO) - INRAD", "ECODOPPLERCARDIOGRAMA TRANSESOFAGICO TRIDIMENSIONAL - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO (NO LEITO) - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO C/ AGENTE REALCE CONTRAS - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO COM MICROBOLHAS - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO COM STRAIN - INRAD", "ECODOPPLERCARDIOGRAMA TRANSTORACICO TRIDIMENSIONAL - INRAD", "MMG AGULHAMENTO DIR - INRAD", "MMG AGULHAMENTO ESQ - INRAD", "MMG COMPLEMENTO - INRAD", "MMG CORE - INRAD", "MMG MAMOGRAFIA BILATERAL - INRAD", "MMG MAMOTOMIA DIR - INRAD (INCLUSO EXAME DE IMAGEM, 1 CLIPE E ANATOMO (FRASCO DE ANÁTOMO PATOLÓGICO COM MÚLTIPLOS FRAGMENTOS)", "MMG MAMOTOMIA ESQ - INRAD (INCLUSO EXAME DE IMAGEM, 1 CLIPE E ANATOMO (FRASCO DE ANÁTOMO PATOLÓGICO COM MÚLTIPLOS FRAGMENTOS)", "MMG PECA DA MAMA - INRAD", "MMG ROLL - INRAD", "MMG ROLL MAMA DIREITA - INRAD", "MMG ROLL MAMA ESQUERDA - INRAD", "MMG SNOLL - INRAD", "RM ABDOME SUPERIOR COM PRIMOVIST ( incluso o contraste)", "RM ABDOMEN SUPERIOR 3 TESLA - INRAD", "RM ABDOMEN SUPERIOR -INRAD", "RM ABDOMEN TOTAL - INRAD", "RM AGULHAMENTO DE MAMA DIREITA ORIENTADA POR RM - INRAD", "RM AGULHAMENTO DE MAMA ESQUERDA ORIENTADO POR RM - INRAD", "RM ANGIO ABDOME ARTERIA RENAIS - INRAD", "RM ANGIO CAROTIDA CERVICAL - INRAD", "RM ANGIO CRANIO ARTERIAL - INRAD", "RM ANGIO CRANIO VENOSA - INRAD", "RM ANGIO DE ARTERIAS CAROTIDAS E VERTEBRAIS - INRAD", "RM ANGIO DE ARTERIAS CERVICAIS - INRAD", "RM ANGIO MEMBRO INFERIOR DIREITO - INRAD", "RM ANGIO MEMBRO INFERIOR ESQUERDO - INRAD", "RM ANGIO MEMBRO SUPERIOR DIREITO - INRAD", "RM ANGIO MEMBRO SUPERIOR ESQUERDO - INRAD", "RM ANGIO PELVE FEMININA - INRAD", "RM ANGIO PELVE MASCULINA - INRAD", "RM ANGIO TORAX - INRAD", "RM ANTEBRACO DIREITO - INRAD", "RM ANTEBRACO ESQUERDO - INRAD", "RM ANTEPE DIREITO - INRAD", "RM ANTEPE ESQUERDO - INRAD", "RM AORTA TORACICA - INRAD", "RM ARCOS COSTAIS - INRAD", "RM ART COXO FEMORAL DIREITA - INRAD", "RM ART COXO FEMORAL ESQUERDA - INRAD", "RM ARTICULACOES TEMPORO MANDIBULARES - INRAD", "RM ARTRO COTOVELO DIR - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO COTOVELO ESQ - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO JOELHO DIREITO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO JOELHO ESQUERDO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO MAO DIR - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO MAO ESQ - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO OMBRO DIREITO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO OMBRO ESQUERDO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO PUNHO DIREITO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO PUNHO ESQUERDO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO QUADRIL DIREITO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO QUADRIL ESQUERDO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO TORNOZELO DIREITO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM ARTRO TORNOZELO ESQUERDO - INRAD (INCLUSO CONTRASTE, REGIÃO E AGULHA)", "RM BACIA - INRAD", "RM BASE DE CRANIO - INRAD", "RM BRACO DIREITO - INRAD", "RM BRACO ESQUERDO - INRAD", "RM CLAVICULA DIREITA - INRAD", "RM CLAVICULA ESQUERDA - INRAD", "RM COLANGIORRESSONANCIA OU COLANGIOPANCREATOGRAFIA - INRAD", "RM COLUNA CERVICAL - INRAD", "RM COLUNA LOMBAR/LOMBO SACRA - INRAD", "RM COLUNA SACRAL - INRAD", "RM COLUNA TORACICA/DORSAL - INRAD", "RM CORE DE MAMA DIREITA ORIENTADA POR RM - INRAD", "RM CORE DE MAMA ESQUERDA ORIENTADA POR RM - INRAD", "RM CORPO INTEIRO - INRAD (Inclusos: RM crânio, RM tórax, RM abdômen, RM pelve, RM coxa direita, RM coxa esquerda, RM perna direita, RM perna esquerdo).", "RM COTOVELO DIREITO - INRAD", "RM COTOVELO ESQUERDO - INRAD", "RM COXA BILATERAL - INRAD", "RM COXA DIREITA - INRAD", "RM COXA ESQUERDA - INRAD", "RM CRANIO - INRAD", "RM CRANIO COM ESTUDO DE FLUXO LIQUORICO - INRAD", "RM CRANIO COM ESTUDO DE PERFUSAO CEREBRAL - INRAD", "RM CRANIO COM TRACTOGRAFIA - INRAD", "RM DEDO MAO DIREITA - INRAD", "RM DEDO MAO ESQUERDA - INRAD", "RM DEDO PE DIREITO - INRAD", "RM DEDO PE ESQUERDO - INRAD", "RM DEFECO - INRAD", "RM DESFILADEIRO TORACICO - INRAD", "RM DIFUSAO DE CORPO INTEIRO - INRAD", "RM ENCEFALO - INRAD", "RM ENTERO ABDOME + PELVE - INRAD", "RM ESCAPULA DIREITA - INRAD", "RM ESCAPULA ESQUERDA - INRAD", "RM ESPECTROSCOPIA CRANIO - INRAD", "RM ESTERNO - INRAD", "RM FACE - INRAD", "RM FETAL - INRAD", "RM FUNCIONAL - INRAD", "RM HIPOFISE - INRAD", "RM JOELHO DIREITO - INRAD", "RM JOELHO ESQUERDO - INRAD", "RM MAMA BILATERAL - INRAD", "RM MAMA BILATERAL (LESOES) - INRAD", "RM MAMA BILATERAL (PROTESES) - INRAD", "RM MAMA DIREITA - INRAD", "RM MAMA DIREITA (LESOES) - INRAD", "RM MAMA DIREITA (PROTESES) - INRAD", "RM MAMA ESQUERDA - INRAD", "RM MAMA ESQUERDA (LESOES) - INRAD", "RM MAMA ESQUERDA (PROTESES) - INRAD", "RM MAMOTOMIA DE MAMA DIREITA ORIENTADA POR RM - INRAD", "RM MAMOTOMIA DE MAMA ESQUERDA ORIENTADA POR RM - INRAD", "RM MANDIBULA - INRAD", "RM MAO DIREITA - INRAD", "RM MAO ESQUERDA - INRAD", "RM MASTOIDE - INRAD", "RM MEDIASTINO - INRAD", "RM MEDIOPE DIREITO - INRAD", "RM MEDIOPE ESQUERDO - INRAD", "RM OMBRO DIREITO - INRAD", "RM OMBRO ESQUERDO - INRAD", "RM ORBITAS - INRAD", "RM OSSOS REGIAO TEMPORAL - INRAD", "RM OUVIDO OU OSSOS TEMPORAIS - INRAD", "RM PAREDE ABDOMINAL - INRAD", "RM PAREDE TORACICA - INRAD", "RM PARES CRANIANOS - INRAD", "RM PE DIREITO - INRAD", "RM PE ESQUERDO - INRAD", "RM PELVE FEMININA - INRAD", "RM PELVE MASCULINA - INRAD", "RM PERNA DIREITA - INRAD", "RM PERNA ESQUERDA - INRAD", "RM PESCOCO - INRAD", "RM PLEXO BRAQUIAL DIREITO - INRAD", "RM PLEXO BRAQUIAL ESQUERDO - INRAD", "RM PLEXO LOMBOSSACRAL - INRAD", "RM PROSTATA - INRAD", "RM PUNHO DIREITO - INRAD", "RM PUNHO ESQUERDO - INRAD", "RM QUADRIL DIREITO - INRAD", "RM QUADRIL ESQUERDO - INRAD", "RM SACRO - INRAD", "RM SACROILIACA - INRAD", "RM SIALO - INRAD", "RM SINFISE PUBICA - INRAD", "RM TORAX - INRAD", "RM TORNOZELO DIREITO - INRAD", "RM TORNOZELO ESQUERDO - INRAD", "RM TRANSICAO CERVICO DORSAL - INRAD", "RM TRANSICAO CERVICO TORACICA - INRAD", "RM TRANSICAO CRANIO CERVICAL - INRAD", "RM TRANSICAO TORACICA DORSAL - INRAD", "RM TRANSICAO TORACO LOMBAR - INRAD", "RM VIAS URINARIAS OU URO RESSONANCIA - INRAD", "RX ABDOME - INRAD", "RX ANTEBRACO DIR - INRAD", "RX ANTEBRACO ESQ - INRAD", "RX ANTEPE DIR - INRAD", "RX ANTEPE ESQ - INRAD", "RX ARCO ZIGOMATICO - INRAD", "RX ARCOS COSTAIS DIR - INRAD", "RX ARCOS COSTAIS ESQ - INRAD", "RX ARTICULACAO ACROMIOCLAVICULAR DIR - INRAD", "RX ARTICULACAO ACROMIOCLAVICULAR ESQ - INRAD", "RX ARTICULACAO COXOFEMORAL DIR - INRAD", "RX ARTICULACAO COXOFEMORAL ESQ - INRAD", "RX ARTICULACAO ESCAPULOUMERAL DIR - INRAD", "RX ARTICULACAO ESCAPULOUMERAL ESQ - INRAD", "RX ARTICULACAO ESTERNOCLAVICULAR DIR - INRAD", "RX ARTICULACAO ESTERNOCLAVICULAR ESQ - INRAD", "RX ARTICULACAO SACROILIACA - INRAD", "RX ARTICULACAO TIBIOTARSICA DIR - INRAD", "RX ARTICULACAO TIBIOTARSICA ESQ - INRAD", "RX ATM DIR - INRAD", "RX ATM ESQ - INRAD", "RX BACIA - INRAD", "RX BRACO DIR - INRAD", "RX BRACO ESQ - INRAD", "RX CALCANEO DIR - INRAD", "RX CALCANEO ESQ - INRAD", "RX CAVUM - INRAD", "RX CLAVICULA DIR - INRAD", "RX CLAVICULA ESQ - INRAD", "RX COLUNA AEREA - INRAD", "RX COLUNA CERVICAL - INRAD", "RX COLUNA DORSAL - INRAD", "RX COLUNA LOMBAR - INRAD", "RX COLUNA LOMBOSACRA - INRAD", "RX COLUNA PANORAMICA - INRAD", "RX COLUNA PARA ESCOLIOSE DINAMICA - INRAD", "RX COLUNA SACROCOCCIX - INRAD", "RX COLUNA TORACICA - INRAD", "RX COLUNA TOTAL [INRAD]", "RX COTOVELO DIR - INRAD", "RX COTOVELO ESQ - INRAD", "RX COXA DIR - INRAD", "RX COXA ESQ - INRAD", "RX CRANIO - INRAD", "RX CRANIO PA LAT BRETTON OU TOWNER", "RX CRANIO PA LAT OBL BRETTON", "RX DACRIOCISTOGRAFIA COM SEDAÇÃO - INRAD", "RX DACRIOCISTOGRAFIA SEM SEDACAO - INRAD", "RX DE ABDOME PARA TEMPO DE TRANSITO COLONICO - INRAD", "RX DEFECOGRAMA - INRAD", "RX DEGLUTOGRAMA - INRAD", "RX EED CONTRASTADO - INRAD", "RX ENEMA - INRAD", "RX ESCANOMETRIA - INRAD", "RX ESCAPULA DIR - INRAD", "RX ESCAPULA ESQ - INRAD", "RX ESOFAGOGRAMA - INRAD", "RX ESQUELETO - INRAD", "RX ESTERNO - INRAD", "RX FACE - INRAD", "RX FEMUR DIREITO - INRAD", "RX FEMUR ESQUERDO - INRAD", "RX FISTULOGRAFIA - INRAD", "RX FISTULOGRAMA", "RX HISTEROSSALPINGOGRAFIA - INRAD", "RX IDADE OSSEA - INRAD", "RX JOELHO DIR - INRAD", "RX JOELHO ESQ - INRAD", "RX MANDIBULA - INRAD", "RX MAO DIR - INRAD", "RX MAO ESQ - INRAD", "RX MASTOIDE - INRAD", "RX MAXILA - INRAD", "RX MAXILAR INFERIOR", "RX MEMBRO INFERIOR DIREITO", "RX MEMBRO INFERIOR ESQUERDO", "RX NARIZ OU PIRAMIDE NASAL PN", "RX OMBRO DIREITO - INRAD", "RX OMBRO ESQUERDO - INRAD", "RX ORBITAS - INRAD", "RX OSSOS NASAIS - INRAD", "RX PANORAMICA MANDIBULA - INRAD", "RX PANORAMICO DE MEMBROS INFERIORES - INRAD", "RX PATELA DIR - INRAD", "RX PATELA ESQ - INRAD", "RX PE DIR - INRAD", "RX PE ESQ - INRAD", "RX PELVE - INRAD", "RX PERNA DIR - INRAD", "RX PERNA ESQ - INRAD", "RX PESCOCO - INRAD", "RX PIELOGRAFIA", "RX PODODACTILOS DIR - INRAD", "RX PODODACTILOS ESQ - INRAD", "RX PUNHO DIR - INRAD", "RX PUNHO ESQ - INRAD", "RX QUADRIL DIR - INRAD", "RX QUADRIL ESQ - INRAD", "RX QUIRODACTILOS DIR - INRAD", "RX QUIRODACTILOS ESQ - INRAD", "RX SACRO - INRAD", "RX SEIOS FACE - INRAD", "RX SELA TURSICA - INRAD", "RX SIALOGRAFIA - INRAD", "RX TELEPERFIL EM CEFALOSTATO SEM TRACADO - INRAD", "RX TEMPO DE TRANSITO COLONICO - INRAD ( pacote incluso os 3 RX's)", "RX TEMPO ESVAZIAMENTO - INRAD", "RX TEMPO ESVAZIAMENTO GASTRICO", "RX TORAX - INRAD", "RX TORAX PA PERFIL - INRAD", "RX TORNOZELO DIR - INRAD", "RX TORNOZELO ESQ - INRAD", "RX TRANSITO INTEST / MORF DELGADO - INRAD", "RX UMERO DIREITO - INRAD", "RX UMERO ESQUERDO - INRAD", "RX URETROCISTOGRAFIA MICCIONAL - INRAD (Feminino)", "RX URETROCISTOGRAFIA MICCIONAL E RETROGADA - INRAD ( Adulto)", "RX URETROCISTOGRAFIA MICCIONAL E RETROGADA - INRAD ( Criança)", "RX UROGRAFIA EXCRETORA - INRAD", "TC ABDOME SUPERIOR - INRAD", "TC ABDOME TOTAL - INRAD ( TC ABDOME + TC PELVE)", "TC ANGIO ABDOMINAL - INRAD", "TC ANGIO ARTERIAL CERVICAL - INRAD", "TC ANGIO ARTERIAL INTRACRANIANA - INRAD", "TC ANGIO CORONARIAS - INRAD", "TC ANGIO MEMBRO SUP DIR - INRAD", "TC ANGIO MEMBRO SUP ESQ - INRAD", "TC ANGIO MEMBROS INF - INRAD", "TC ANGIO PELVE - INRAD", "TC ANGIO TORAX - INRAD", "TC ANGIO TORAX TEP - INRAD", "TC ANGIO VENOSA INTRACRANIANA - INRAD", "TC ANTEBRACO DIR - INRAD", "TC ANTEBRACO ESQ - INRAD", "TC ARTRO COTOVELO DIR - INRAD", "TC ARTRO COTOVELO ESQ - INRAD", "TC ARTRO JOELHO DIR - INRAD", "TC ARTRO JOELHO ESQ - INRAD", "TC ARTRO OMBRO DIR - INRAD", "TC ARTRO OMBRO ESQ - INRAD", "TC ARTRO PUNHO DIR - INRAD", "TC ARTRO PUNHO ESQ - INRAD", "TC ARTRO QUADRIL DIR - INRAD", "TC ARTRO QUADRIL ESQ - INRAD", "TC ARTRO TORNOZELO DIR - INRAD", "TC ARTRO TORNOZELO ESQ - INRAD", "TC BACIA - INRAD", "TC BASE CRANIO - INRAD", "TC BRACO DIR - INRAD", "TC BRACO ESQ - INRAD", "TC CARDIACA ESCORE CALCIO - INRAD", "TC COLONOSCOPIA VIRTUAL - INRAD", "TC COLUNA CERVICAL - INRAD", "TC COLUNA LOMBAR - INRAD", "TC COLUNA SACRAL - INRAD", "TC COLUNA TORACICA - INRAD", "TC COTOVELO DIR - INRAD", "TC COTOVELO ESQ - INRAD", "TC COXA DIR - INRAD", "TC COXA ESQ - INRAD", "TC CRANIO - INRAD", "TC ENTERO ABDOME - INRAD", "TC ENTERO PELVE - INRAD", "TC ESCANOMETRIA - INRAD", "TC ESTEREOTAXIA - INRAD", "TC FACE - INRAD", "TC JOELHO DIR - INRAD", "TC JOELHO ESQ - INRAD", "TC MANDIBULA - INRAD", "TC MAO DIR - INRAD", "TC MAO ESQ - INRAD", "TC MAXILA - INRAD", "TC OMBRO DIR - INRAD", "TC OMBRO ESQ - INRAD", "TC ORBITAS - INRAD", "TC OSSOS TEMPORAIS - INRAD", "TC PE DIR - INRAD", "TC PE ESQ - INRAD", "TC PERNA DIR - INRAD", "TC PELVE - INRAD", "TC PERNA ESQ - INRAD", "TC PESCOCO - (PARATIREOIDE) 4D - INRAD", "TC PESCOCO - INRAD", "TC PUNHO DIR - INRAD", "TC PUNHO ESQ - INRAD", "TC QUADRIL DIR - INRAD", "TC QUADRIL ESQ - INRAD", "TC SACROILIACA - INRAD", "TC SEIOS FACE - INRAD", "TC SELA TURCICA - INRAD", "TC TEMPOROMANDIBULAR - INRAD", "TC TORAX - INRAD", "TC TORNOZELO DIR - INRAD", "TC TORNOZELO ESQ - INRAD", "USG ABDOME SUPERIOR - INRAD", "USG ABDOME TOTAL - INRAD", "USG ANTEBRACO DIR - INRAD", "USG ANTEBRACO ESQ - INRAD", "USG APARELHO URINARIO - INRAD", "USG AXILA - INRAD", "USG AXILA DIR CEDIM - INRAD", "USG AXILA DIR GERAL - INRAD", "USG AXILA ESQ CEDIM - INRAD", "USG AXILA ESQ GERAL - INRAD", "USG AXILAS CEDIM - INRAD", "USG BIOPSIA AXILAR CEDIM - INRAD", "USG BIOPSIA CORE MAMA DIR - INRAD (INCLUIR ANATOMO)", "USG BIOPSIA CORE MAMA ESQ - INRAD (INCLUIR ANATOMO)", "USG BIOPSIA PAAF MAMA DIR CEDIM - INRAD (COBRAR ANATOMO)", "USG BIOPSIA PAAF MAMA ESQ CEDIM - INRAD (COBRAR ANATOMO)", "USG BIOPSIA PROSTATA TRANSRETAL COM FUSAO", "USG BIOPSIA TRANSRETAL PROSTATA COM BLOQUEIO ANESTESICO - INRAD", "USG BIOPSIA TRANSRETAL PROSTATA COM SEDACAO - INRAD", "USG BRACO DIR - INRAD", "USG BRACO ESQ - INRAD", "USG CERVICAL - INRAD", "USG COTOVELO DIR - INRAD", "USG COTOVELO ESQ - INRAD", "USG COXA DIR - INRAD", "USG COXA ESQ - INRAD", "USG CRANIO - INRAD", "USG DEMARCACAO CLIP MAMA DIR - INRAD", "USG DEMARCACAO CLIP MAMA ESQ - INRAD", "USG DERMATOLOGICO - INRAD", "USG DOPPLER ABDOME - INRAD", "USG DOPPLER ABDOME SUPERIOR - INRAD", "USG DOPPLER ABDOMINAL VENOSO - INRAD", "USG DOPPLER AORTA ILIACAS - INRAD", "USG DOPPLER AORTA RENAIS - INRAD", "USG DOPPLER ARTERIAS CERVICAIS - INRAD", "USG DOPPLER ARTERIAS MEMBRO INF DIR - INRAD", "USG DOPPLER ARTERIAS MEMBRO INF ESQ - INRAD", "USG DOPPLER ARTERIAS MEMBRO SUP DIR - INRAD", "USG DOPPLER ARTERIAS MEMBRO SUP ESQ - INRAD", "USG DOPPLER ARTERIAS VISCERAIS - INRAD", "USG DOPPLER CRANIO - INRAD", "USG DOPPLER DE CAROTIDAS - INRAD", "USG DOPPLER DE MEMBROS INFERIORES - INRAD", "USG DOPPLER DE PARTES MOLES - INRAD", "USG DOPPLER DE VERTEBRAIS - INRAD", "USG DOPPLER DERMATOLOGICO - INRAD", "USG DOPPLER GLOBO OCULAR - INRAD", "USG DOPPLER HEPATICO - INRAD", "USG DOPPLER MAMAS - INRAD", "USG DOPPLER OBSTETRICO - INRAD", "USG DOPPLER PANCREAS TX - INRAD", "USG DOPPLER PELVE - INRAD", "USG DOPPLER PENIANO C/ INDUCAO - INRAD", "USG DOPPLER PENIS - INRAD", "USG DOPPLER RENAL - INRAD", "USG DOPPLER RIM TX - INRAD", "USG DOPPLER TESTICULO - INRAD", "USG DOPPLER TIREOIDE - INRAD", "USG DOPPLER TRANSVAGINAL - INRAD", "USG DOPPLER VEIA CAVA SUP E INF - INRAD", "USG DOPPLER VEIAS CERVICAIS - INRAD", "USG DOPPLER VENOSO MEMBRO INF DIR - INRAD", "USG DOPPLER VENOSO MEMBRO INF ESQ - INRAD", "USG DOPPLER VENOSO MEMBRO SUP DIR - INRAD", "USG DOPPLER VENOSO MEMBRO SUP ESQ - INRAD", "USG ELASTOGRAFIA HEPATICA - INRAD", "USG ELASTOGRAFIA RENAL - INRAD", "USG ESTRUTURAS SUPERFICIAIS COM DOPPLER (CERVICAL) - INRAD", "USG FACE - INRAD", "USG GLANDULAS SALIVARES - INRAD", "USG INGUINAL DIR - INRAD", "USG INGUINAL ESQ - INRAD", "USG JOELHO DIR - INRAD", "USG JOELHO ESQ - INRAD", "USG MAMA - INRAD", "USG MAMA DIR - INRAD", "USG MAMA ESQ - INRAD", "USG MAMA SECOND LOOK - INRAD", "USG MAMOTOMIA DIR (INCLUSO EXAME DE IMAGEM, 1 CLIPE E ANATOMO (FRASCO DE ANÁTOMO PATOLÓGICO COM MÚLTIPLOS FRAGMENTOS)", "USG MAMOTOMIA ESQ (INCLUSO EXAME DE IMAGEM, 1 CLIPE E ANATOMO (FRASCO DE ANÁTOMO PATOLÓGICO COM MÚLTIPLOS FRAGMENTOS)", "USG MAO DIR - INRAD", "USG MAO ESQ - INRAD", "USG MORFOLÓGICO PRIMEIRO TRIMESTRE", "USG MORFOLÓGICO SEGUNDO TRIMESTRE", "USG MORFOLÓGICO TERCEIRO TRIMESTRE", "USG OBSTETRICO - INRAD", "USG OBSTETRICO MORFOLOGICO", "USG OBSTETRICO MORFOLOGICO - INRAD", "USG OBSTÉTRICO MORFOLOGICO 1 TRIMESTRE OU TRANSLUCÊNCIA", "USG OBSTÉTRICO MORFOLOGICO 2 TRIMESTRE OU TRANSLUCÊNCIA", "USG OMBRO DIR - INRAD", "USG OMBRO ESQ - INRAD", "USG PAAF AXILAR (MAMA) - INRAD", "USG PAAF CERVICAL - INRAD", "USG PAAF PAROTIDA - INRAD", "USG PAAF SUPRACLAVICULAR - INRAD", "USG PAAF TIREOIDE - INRAD", "USG PARATIREOIDES - INRAD", "USG PARTES MOLES - INRAD", "USG PE DIR - INRAD", "USG PE ESQ - INRAD", "USG PELVE - INRAD", "USG PELVE FEMININA - INRAD", "USG PELVE MASCULINA - INRAD", "USG PENIS - INRAD", "USG PERNA DIR - INRAD", "USG PERNA ESQ - INRAD", "USG PROSTATA - INRAD", "USG PUNCAO - INRAD", "USG PUNCAO CEDIM - INRAD", "USG PUNCAO CERVICAL - INRAD", "USG PUNCAO MAMA CEDIM - INRAD (COBRAR ANATOMO)", "USG PUNHO DIR - INRAD", "USG PUNHO ESQ - INRAD", "USG QUADRIL DIR - INRAD", "USG QUADRIL ESQ - INRAD", "USG RINS VIAS URINARIAS - INRAD", "USG ROLL MAMA DIR CEDIM - INRAD", "USG ROLL MAMA ESQ CEDIM - INRAD", "USG SNOLL MAMA DIR CEDIM - INRAD", "USG SNOLL MAMA ESQ CEDIM - INRAD", "USG TENDAO AQUILES - INRAD", "USG TESTICULOS - INRAD", "USG TIREOIDE - INRAD", "USG TORAX - INRAD", "USG TORNOZELO DIR - INRAD", "USG TORNOZELO ESQ - INRAD", "USG TRANSRETAL - INRAD", "USG TRANSRETAL PROSTATA - INRAD", "USG TRANSVAGINAL - INRAD", "USG TRANSVAGINAL (OBSTETRÍCIA)", "USG TRANSVAGINAL PARA PESQUISA DE ENDOMETRIOSE - INRAD"];
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   PATCH v7.12
+   1) Projetos: seleção por EXAME ESPECÍFICO (catálogo) + CAAE/Versão
+   2) Dropdowns de projeto: rótulo = só DRO + pesquisa (select pesquisável)
+   3) Financeiro: filtro por modalidade + relatório mensal (xlsx)
+   Observação: modalidades/nº de exames/custo por modalidade continuam sendo gravados (derivados dos exames
+   do projeto), então agendamento, financeiro e demais processos seguem iguais.
+   ═══════════════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CAT = window.PISAPP_EXAMES_CATALOGO || [];
+  const MODS = ['RM 7T','RM 3T','RM 1,5T','TC','RX','Ultrassom (US)','Mamografia','Densitometria Óssea','Medicina Nuclear','Virtangio','Outro'];
+  // Quais exames do catálogo aparecem para cada modalidade (RM: o catálogo não distingue a potência do magneto).
+  const MODCAT = {'RM 7T': /^RM\b/, 'RM 3T': /^RM\b/, 'RM 1,5T': /^RM\b/, 'TC': /^TC\b/, 'RX': /^RX\b/, 'Ultrassom (US)': /^(USG|ECODOPPLER)/,
+    'Mamografia': /^MMG\b/, 'Densitometria Óssea': /^DENSITOMETRIA/, 'Outro': /^(CONSULTA|COLETA|EMBOLIZACAO)/};
+
+  /* ── CSS ── */
+  const st = document.createElement('style');
+  st.textContent =
+    '.pj-add{display:grid;grid-template-columns:170px 1fr 130px auto;gap:10px;align-items:end;margin-bottom:10px;}' +
+    '.pj-ex-mod{font-size:12px;color:var(--tx2);font-family:var(--m);}' +
+    '.pj-ex-row{display:grid;grid-template-columns:1fr 150px 120px 34px;gap:8px;align-items:center;padding:8px 10px;margin-bottom:6px;border:1.5px solid var(--bd);border-radius:8px;background:var(--sf2);}' +
+    '.pj-ex-nm{font-size:12.5px;font-weight:600;color:var(--navy);word-break:break-word;line-height:1.35;}' +
+    '.pj-ex-row .fs,.pj-ex-row .fi{padding:6px 8px;font-size:12.5px;}' +
+    '@media(max-width:640px){.pj-add{grid-template-columns:1fr 1fr;}.pj-ex-row{grid-template-columns:1fr 1fr;}.pj-ex-nm{grid-column:1/-1;}}';
+  document.head.appendChild(st);
+
+  /* ── Projetos: escolher MODALIDADE e, ao lado, o EXAME ESPECÍFICO daquela modalidade, com valor ── */
+  const GERAL = 'Geral (sem exame específico)';
+
+  window.addPjMod = function(exame, mod, custo){
+    const box = $('pjModSlots'); if (!box || !exame || !mod) return false;
+    if ([...box.querySelectorAll('.pj-ex-row')].some(r => r.dataset.exame === exame && r.dataset.mod === mod)) { toast('Esse exame já está no projeto nessa modalidade.', 'warn'); return false; }
+    const div = document.createElement('div'); div.className = 'pj-ex-row'; div.dataset.exame = exame; div.dataset.mod = mod;
+    div.innerHTML =
+      '<div class="pj-ex-nm">' + mvEsc_(exame === mod ? GERAL : exame) + '</div>' +
+      '<div class="pj-ex-mod">' + mvEsc_(mod) + '</div>' +
+      '<input class="fi pjm-custo" type="number" min="0" step="0.01" placeholder="R$/exame" value="' + mvEsc_(custo === undefined ? '' : custo) + '">' +
+      '<button type="button" class="btn br btn-xs" title="Remover" onclick="this.closest(\'.pj-ex-row\').remove()">✕</button>';
+    box.appendChild(div);
+    return true;
+  };
+
+  /* Lista de exames conforme a modalidade escolhida */
+  function fillExamePick(){
+    const sel = $('pjExamePick'), mod = ($('pjAddMod') || {}).value; if (!sel) return;
+    const rx = MODCAT[mod];
+    const nomes = rx ? CAT.filter(n => rx.test(n)) : [];
+    sel.innerHTML = '<option value="">' + (mod ? 'Pesquisar exame de ' + mvEsc_(mod) + '…' : 'Escolha a modalidade primeiro') + '</option>' +
+      (mod ? '<option value="' + mvEsc_(mod) + '">' + GERAL + '</option>' : '') +
+      nomes.map(n => '<option value="' + mvEsc_(n) + '">' + mvEsc_(n) + '</option>').join('');
+    sel.value = '';
+  }
+
+  window.pjAddExame = function(){
+    const mod = ($('pjAddMod') || {}).value, exame = ($('pjExamePick') || {}).value;
+    if (!mod) { toast('Escolha a modalidade.', 'warn'); return; }
+    if (!exame) { toast('Escolha o exame.', 'warn'); return; }
+    const v = $('pjAddValor');
+    if (window.addPjMod(exame, mod, v && v.value !== '' ? v.value : '')) { $('pjExamePick').value = ''; if (v) v.value = ''; }
+  };
+
+  function buildPicker(){
+    const m = $('pjAddMod'); if (!m || m.dataset.built) return; m.dataset.built = '1';
+    m.innerHTML = '<option value="">Selecione…</option>' + MODS.map(x => '<option>' + mvEsc_(x) + '</option>').join('');
+    m.addEventListener('change', fillExamePick);
+    fillExamePick();
+  }
+
+  /* Lê as linhas e DERIVA modalidades / nº por modalidade / custo médio ponderado por modalidade. */
+  window.coletarExamesProjeto_ = function(){
+    const examesProjeto = [], modalidades = [], acc = {};
+    document.querySelectorAll('#pjModSlots .pj-ex-row').forEach(r => {
+      const exame = r.dataset.exame, mod = r.dataset.mod;
+      const custo = parseFloat(r.querySelector('.pjm-custo').value) || 0;
+      examesProjeto.push({exame: exame, modalidade: mod, custo: custo});
+      if (!modalidades.includes(mod)) { modalidades.push(mod); acc[mod] = {n: 0, s: 0}; }
+      acc[mod].n += 1; acc[mod].s += custo;
+    });
+    // Custo por modalidade (usado no financeiro/agendamento atuais) = média simples dos valores dos exames da modalidade.
+    const custos = {};
+    modalidades.forEach(m => { custos[m] = Math.round((acc[m].s / acc[m].n) * 100) / 100; });
+    return {examesProjeto: examesProjeto, modalidades: modalidades, numExames: {}, custos: custos};
+  };
+
+  window.restaurarExamesProjeto_ = function(p){
+    let lista = []; try { lista = JSON.parse(p.ExamesProjeto || '[]'); } catch (e) {}
+    if (Array.isArray(lista) && lista.length) { lista.forEach(x => window.addPjMod(x.exame, x.modalidade, x.custo || '')); return; }
+    try {   // projetos antigos (só modalidades): cada modalidade vira uma linha editável
+      const mods = JSON.parse(p.Modalidades || '[]'), cust = JSON.parse(p.CustoPorModalidade || '{}');
+      mods.forEach(m => window.addPjMod(m, m, cust[m] || ''));
+    } catch (e) {}
+  };
+
+  window.projExamesHtml_ = function(p){
+    let lista = []; try { lista = JSON.parse(p['ExamesProjeto'] || '[]'); } catch (e) {}
+    const row = (a, b, c) => '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid var(--bd);font-size:12px;"><span><strong>' + mvEsc_(a) + '</strong>' + (b ? ' <span style="color:var(--tx3);">· ' + mvEsc_(b) + '</span>' : '') + '</span><span style="color:var(--tx2);white-space:nowrap;">' + c + '</span></div>';
+    if (Array.isArray(lista) && lista.length)
+      return lista.map(x => row(x.exame, x.modalidade, 'R$ ' + (Number(x.custo) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2}) + '/exame')).join('');
+    try {
+      const mods = JSON.parse(p['Modalidades'] || '[]'), cu = JSON.parse(p['CustoPorModalidade'] || '{}');
+      return mods.map(m => row(m, '', 'R$ ' + (cu[m] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2}) + '/exame')).join('');
+    } catch (e) { return ''; }
+  };
+
+  /* ── Dropdowns de projeto: rótulo só com a DRO; value continua sendo o nome do projeto ── */
+  window.projDroLabel_ = function(p){ return projectCodigo_(p) || projectApelido_(p) || projectNome_(p) || 'Projeto sem identificação'; };
+  window.projOptsHtml_ = function(){
+    return (DB.proj || []).map(p => {
+      const nm = projectNome_(p); if (!nm) return '';
+      return '<option value="' + mvEsc_(nm) + '" data-codigo="' + mvEsc_(projectCodigo_(p)) + '" data-nome="' + mvEsc_(nm) + '" data-apelido="' + mvEsc_(projectApelido_(p)) + '">' + mvEsc_(window.projDroLabel_(p)) + '</option>';
+    }).join('');
+  };
+
+  /* ── Financeiro: filtro por modalidade ── */
+  window.FIN_MOD = '';
+  const MODRX = {'TC': /^(tc|tomogr)/, 'RM': /^(rm|resson)/, 'RM 7T': /^rm.*7\s*t/, 'RM 3T': /^rm.*3\s*t/, 'RM 1,5T': /^rm.*1[.,]5/, 'RX': /^(rx|raio)/,
+    'Ultrassom (US)': /^(us|usg|ultra)/, 'Mamografia': /mamo/, 'Densitometria Óssea': /densit/, 'Medicina Nuclear': /nuclear/, 'Virtangio': /virtangio/};
+  const normMod = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  window.finModOk_ = function(e){
+    if (!window.FIN_MOD) return true;
+    const m = normMod(e['Modalidade']), rx = MODRX[window.FIN_MOD];
+    return rx ? rx.test(m) : m === normMod(window.FIN_MOD);
+  };
+  window.finSetMod_ = function(v){
+    window.FIN_MOD = v || '';
+    try { renderFin(); renderAFaturar(); renderFinExames(); } catch (e) { console.warn('finSetMod_', e); }
+  };
+
+  /* ── Financeiro: relatório mensal (planilha .xlsx; CSV se a biblioteca XLSX não carregar) ── */
+  window.exportRelatorioMensal = function(){
+    const mes = ($('finRelMes') || {}).value || '';
+    if (!/^\d{4}-\d{2}$/.test(mes)) { toast('Selecione o mês do relatório.', 'warn'); return; }
+    const projSel = ($('finRelProj') || {}).value || '';
+    const projMap = {}; (DB.proj || []).forEach(p => { projMap[p['Nome'] || ''] = p; });
+    const rghc = DB.rghc || {};
+    const br = d => { const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(d || ''); };
+    const exs = (DB.ex || []).filter(e => (e['Status'] || '') === 'Concluído' && String(e['Data'] || '').slice(0, 7) === mes &&
+        (!projSel || (e['Projeto'] || '') === projSel) && window.finModOk_(e))
+      .sort((a, b) => String(a['Data'] || '').localeCompare(String(b['Data'] || '')));
+    if (!exs.length) { toast('Nenhum exame concluído em ' + mes + (window.FIN_MOD ? ' (' + window.FIN_MOD + ')' : '') + (projSel ? ' nesse projeto' : '') + '.', 'warn'); return; }
+    const headers = ['Data do Exame', 'RGHC', 'Nome do Paciente', 'Exame Realizado', 'PACS', 'Valor do Exame', 'Protocolo de Pesquisa', 'Data do Laudo', 'Quem Laudou'];
+    const rows = exs.map(e => {
+      const p = projMap[e['Projeto'] || ''] || {};
+      return [br(e['Data']), rghc[e['SolID'] || ''] || '', e['Sujeito'] || e['NomeVol'] || '', e['ExameEspecifico'] || e['Modalidade'] || '', e['PACS'] || '',
+        custoPorExame_(p, e['Modalidade'] || ''), p['Codigo'] || e['Projeto'] || '', br(e['DataLaudo']), e['MedicoLaudador'] || ''];
+    });
+    const slug = window.FIN_MOD ? '_' + normMod(window.FIN_MOD).replace(/[^a-z0-9]+/g, '') : '';
+    const base = 'PISApp_Relatorio_Mensal_' + mes + slug;
+    if (typeof XLSX !== 'undefined') {
+      const ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+      ws['!cols'] = [{wch: 14}, {wch: 14}, {wch: 34}, {wch: 34}, {wch: 14}, {wch: 16}, {wch: 20}, {wch: 14}, {wch: 28}];
+      for (let r = 1; r <= rows.length; r++) { const c = ws[XLSX.utils.encode_cell({r: r, c: 5})]; if (c) { c.t = 'n'; c.z = '"R$" #,##0.00'; } }
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Relatório mensal');
+      XLSX.writeFile(wb, base + '.xlsx');
+      toast('✓ Planilha "' + base + '.xlsx" gerada (' + rows.length + ' exames).');
+    } else {
+      const csv = [headers].concat(rows.map(r => { r = r.slice(); r[5] = String(r[5]).replace('.', ','); return r; }))
+        .map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8;'}));
+      a.download = base + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast('Biblioteca XLSX indisponível — gerado CSV (' + rows.length + ' exames).', 'warn');
+    }
+  };
+
+  /* ── Inicialização ── */
+  function init(){
+    buildPicker();
+    if ($('finRelMes') && !$('finRelMes').value) $('finRelMes').value = new Date().toISOString().slice(0, 7);
+    if ($('finModFilt') && $('finModFilt').options.length < 2)
+      $('finModFilt').innerHTML = '<option value="">Todas as modalidades</option>' + Object.keys(MODRX).map(k => '<option>' + k + '</option>').join('');
+    window.pisappSearchable.enhanceAll(['sjPj', 'vincProj', 'artProj', 'bloqProjeto', 'mkDRO', 'ptProjeto', 'mvProjeto', 'pagcProj', 'payProj', 'nfProj',
+      'afaturarProjFilt', 'finExProjFilt', 'pagProjFilt', 'nfProjFilt', 'cmProjeto', 'finRelProj', 'pjExamePick']);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
 </body>
 </html>
 
