@@ -205,8 +205,8 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
       <div class="ct"><div class="cti">🏛️</div> Instituto que Realizará o Exame</div>
       <div class="al a-n">A escolha do instituto define o formulário e o processo de agendamento. Exames no INRAD seguem um protocolo específico exigido pelo sistema interno daquele instituto.</div>
       <div class="cg mb" id="cgInst">
-        <div class="chip" onclick="pickInst('PISA',this)" style="padding:12px 20px;font-size:14px;">🏥 PISA / LIM44</div>
         <div class="chip" onclick="pickInst('INRAD',this)" style="padding:12px 20px;font-size:14px;">🏛️ INRAD</div>
+        <div class="chip" onclick="pickInst('PISA',this)" style="padding:12px 20px;font-size:14px;">🏥 PISA / LIM44</div>
       </div>
       <div id="instDesc" style="font-size:13px;color:var(--tx2);"></div>
     </div>
@@ -218,6 +218,14 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
 
   <!-- ── STEP 3: Exame ── -->
   <div id="ps3" style="display:none;">
+
+    <div class="card" style="padding:14px 20px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:13.5px;">
+        <input type="checkbox" id="pMedNuclear" onchange="onMedNuclear(this)" style="width:18px;height:18px;accent-color:var(--teal);">
+        ☢️ É medicina nuclear?
+      </label>
+      <div style="font-size:12px;color:var(--tx3);margin-top:6px;">Marque quando o exame for de Medicina Nuclear. A informação é gravada na solicitação e enviada à planilha do INRAD.</div>
+    </div>
 
     <!-- Seção PISA -->
     <div id="pisaSec">
@@ -317,7 +325,7 @@ input[type=date]{-webkit-appearance:textfield;appearance:textfield;}
             <div class="fg"><label class="fl">CID nº</label><input class="fi" id="inradCID" placeholder="Ex: C50.9"></div>
           </div>
           <div class="fr c2 mb">
-            <div class="fg"><label class="fl">Tipo de Exame INRAD *</label><select class="fs" id="inradTipo"><option value="">Selecione</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option><option>Ultrassom (US)</option><option>RX</option><option>Densitometria Óssea</option><option>Mamografia</option><option>Medicina Nuclear</option></select></div>
+            <div class="fg"><label class="fl">Tipo de Exame INRAD *</label><select class="fs" id="inradTipo" onchange="onInradTipo()"><option value="">Selecione</option><option>RM 3T</option><option>RM 1,5T</option><option>TC</option><option>Ultrassom (US)</option><option>RX</option><option>Densitometria Óssea</option><option>Mamografia</option><option>Medicina Nuclear</option></select></div>
             <div class="fg"><label class="fl">Uso de Contraste?</label><div class="cg" id="cgInradContr"><div class="chip" onclick="schip('cgInradContr',this)">Não</div><div class="chip" onclick="schip('cgInradContr',this)">Sim</div></div></div>
           </div>
           <div class="fg mb"><label class="fl">Região Anatômica / Área de Interesse *</label><input class="fi" id="inradRegiao" placeholder="Ex: Crânio e encéfalo sem e com contraste"></div>
@@ -488,11 +496,11 @@ function renderProjectSelect_(){
     const nm = p['Nome'] || p['Titulo'] || p.nome || p.titulo || '';
     const cod = p['Codigo'] || p['Código'] || p.codigo || '';
     const apel = p['Apelido'] || p.apelido || '';
-    const dur = p['DuracaoAgendaMin'] || p['ReservaAgendaMinutos'] || '';
     const op = document.createElement('option');
     op.value = nm || cod || apel;
     op.dataset.idx = String(idx);
-    op.textContent = (apel ? apel + ' — ' : '') + (cod ? cod + ' — ' : '') + (nm || 'Projeto sem nome') + (dur ? ' · ' + dur + ' min' : '');
+    op.dataset.codigo = cod; op.dataset.nome = nm; op.dataset.apelido = apel;   // usados apenas na pesquisa
+    op.textContent = cod || apel || nm || 'Projeto sem identificação';          // rótulo: apenas a DRO
     sel.appendChild(op);
   });
 
@@ -518,9 +526,11 @@ function loadProjects(){
   if(cached){ projList = cached; renderProjectSelect_(); }
   api('getProjetosPublicos', {ts: Date.now()}).then(r => {
     if(!r.ok){ if(!cached) toast('Erro ao carregar projetos.','err'); return; }
+    // v7.12: só ficam de fora os projetos inativados/cancelados. Antes, qualquer Status diferente de "ativo"
+    // (ex.: "Bloqueado" pela antiga regra de Bloqueio Ético, ou vazio) fazia o projeto sumir do portal.
     const ativos = (r.projetos || r.proj || []).filter(p => {
       const st = String(p.Status || p.status || '').toLowerCase();
-      return st === 'ativo' || st === 'active';
+      return !/inativ|cancelad|exclu/.test(st);
     });
     projList = ativos;
     savePortalCache_('projetosPublicos', ativos);
@@ -733,7 +743,8 @@ async function submitSol() {
     pontuacao: v('inradPontuacao'),
     suporteFinanceiro: v('inradSuporteFinanceiro'),
     tipo: v('inradTipo'), pacs: v('inradPACS'), regiao: v('inradRegiao'), indicacao: v('inradIndicacao'),
-    contraste: selChip('cgInradContr') || 'Não', obs: v('inradObs')
+    contraste: selChip('cgInradContr') || 'Não', obs: v('inradObs'),
+    medicinaNuclear: (ge('pMedNuclear') && ge('pMedNuclear').checked) ? 'Sim' : ''
   } : {};
 
   const sol = {
@@ -754,6 +765,7 @@ async function submitSol() {
     periodo: curInst === 'PISA' ? v('pPeriodo') : v('inradSugestaoDatas'),
     justificativa: curInst === 'PISA' ? v('pJust') : v('inradIndicacao'),
     arquivoNome, arquivoURL, arquivoID, qSeg, inradDados,
+    medicinaNuclear: (ge('pMedNuclear') && ge('pMedNuclear').checked) ? 'Sim' : 'Não',
   };
 
   const res = await api('novaSol', sol);
@@ -768,6 +780,7 @@ async function submitSol() {
 /* ── RESET ── */
 function resetPortal() {
   selFile = null; selFileB64 = null; curInst = 'PISA';
+  if (ge('pMedNuclear')) ge('pMedNuclear').checked = false;
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel','selm'));
   document.querySelectorAll('.fi,.ft').forEach(el => el.value = '');
   document.querySelectorAll('.fs').forEach(el => el.selectedIndex = 0);
@@ -777,6 +790,16 @@ function resetPortal() {
   ge('instDesc').innerHTML = '';
   buildQSeg();
   setStep(1);
+}
+
+/* ── MEDICINA NUCLEAR (v7.12) ── */
+function onMedNuclear(cb){
+  if (curInst !== 'INRAD' || !ge('inradTipo')) return;
+  if (cb.checked) ge('inradTipo').value = 'Medicina Nuclear';
+  else if (ge('inradTipo').value === 'Medicina Nuclear') ge('inradTipo').value = '';
+}
+function onInradTipo(){
+  if (ge('pMedNuclear')) ge('pMedNuclear').checked = (ge('inradTipo').value === 'Medicina Nuclear');
 }
 
 /* ── CHIP HELPERS ── */
@@ -817,10 +840,130 @@ function toast(msg, type) {
   window.pickInst = function(inst, el){
     if(typeof oldPickInst === 'function') oldPickInst(inst, el);
     renderPortalModalidades(inst);
+    // v7.12: mantém "É medicina nuclear?" coerente com o tipo de exame INRAD recém-reconstruído
+    if(inst === 'INRAD' && document.getElementById('pMedNuclear') && document.getElementById('pMedNuclear').checked && document.getElementById('inradTipo')) document.getElementById('inradTipo').value = 'Medicina Nuclear';
   };
   document.addEventListener('DOMContentLoaded',()=>renderPortalModalidades(window.curInst || 'PISA'));
 })();
 
+</script>
+<script>
+/* ═══ PISApp v7.12 — Select pesquisável (melhoria progressiva sobre <select>) ═══
+   - O <select> original continua sendo a fonte da verdade (value, change, options, selectedIndex).
+   - Reage a repovoamento de opções (MutationObserver) e a atribuições .value= / .selectedIndex=.
+   - Pesquisa por texto da opção + data-codigo / data-nome / data-apelido / data-search (sem acento, sem caixa). */
+(function(){
+  if (window.pisappSearchable) return;
+  var css = document.createElement('style');
+  css.textContent =
+    '.ss-wrap{position:relative;width:100%;min-width:150px}' +
+    '.ss-inp{width:100%;cursor:text;padding-right:30px;text-overflow:ellipsis}' +
+    '.ss-wrap:after{content:"\\25BE";position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--tx3,#8FA3B8);pointer-events:none}' +
+    '.ss-list{position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:10050;max-height:260px;overflow-y:auto;background:var(--sf,#fff);border:1.5px solid var(--teal,#2DBFAD);border-radius:8px;box-shadow:0 12px 32px rgba(27,42,74,.18)}' +
+    '.ss-it{padding:8px 12px;font-size:13px;cursor:pointer;color:var(--tx,#1B2A4A);line-height:1.35;border-bottom:1px solid var(--bd,#DDE5EF);word-break:break-word}' +
+    '.ss-it:last-child{border-bottom:none}' +
+    '.ss-it.act,.ss-it:hover{background:var(--tdim,rgba(45,191,173,.10))}' +
+    '.ss-it.sel{font-weight:700}' +
+    '.ss-it.ss-empty{color:var(--tx3,#8FA3B8);font-style:italic}' +
+    '.ss-none,.ss-more{padding:10px 12px;font-size:12.5px;color:var(--tx3,#8FA3B8)}';
+  document.head.appendChild(css);
+
+  var dVal = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  var dIdx = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
+  var LIMIT = 400;
+
+  function norm(s){ return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  function enhance(sel, opts){
+    if (typeof sel === 'string') sel = document.getElementById(sel);
+    if (!sel || sel.tagName !== 'SELECT' || sel.dataset.ssDone) return sel && sel._ss;
+    opts = opts || {};
+    sel.dataset.ssDone = '1';
+
+    var wrap = document.createElement('div'); wrap.className = 'ss-wrap';
+    if (sel.style.maxWidth) wrap.style.maxWidth = sel.style.maxWidth;
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'fi ss-inp';
+    inp.setAttribute('autocomplete', 'off'); inp.setAttribute('spellcheck', 'false');
+    var list = document.createElement('div'); list.className = 'ss-list'; list.style.display = 'none';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(inp); wrap.appendChild(list); wrap.appendChild(sel);
+    sel.style.display = 'none';
+
+    var isOpen = false, shown = [], act = -1;
+
+    function curText(){ var o = sel.options[dIdx.get.call(sel)]; return (o && dVal.get.call(sel) !== '') ? o.text : ''; }
+    function placeholder(){ var o = sel.options[0]; return (o && o.value === '') ? o.text : (opts.placeholder || 'Pesquisar…'); }
+    function refresh(){ if (!isOpen) inp.value = curText(); inp.placeholder = placeholder(); inp.disabled = sel.disabled; }
+    function hay(o){
+      var d = o.dataset || {};
+      return norm(o.text + ' ' + (d.codigo || '') + ' ' + (d.nome || '') + ' ' + (d.apelido || '') + ' ' + (d.search || ''));
+    }
+    function setActive(i){
+      if (act >= 0 && shown[act]) shown[act].classList.remove('act');
+      act = i;
+      if (act >= 0 && shown[act]) { shown[act].classList.add('act'); shown[act].scrollIntoView({block: 'nearest'}); }
+    }
+    function render(q){
+      var tk = norm(q).split(/\s+/).filter(Boolean);
+      list.innerHTML = ''; shown = [];
+      var total = 0, cut = false, selAct = -1;
+      for (var i = 0; i < sel.options.length; i++) {
+        var o = sel.options[i];
+        if (o.value === '' && tk.length) continue;               // opção "vazia" só aparece sem filtro
+        if (tk.length) { var h = hay(o), ok = true; for (var t = 0; t < tk.length; t++) if (h.indexOf(tk[t]) < 0) { ok = false; break; } if (!ok) continue; }
+        if (total >= LIMIT) { cut = true; break; }
+        var d = document.createElement('div');
+        d.className = 'ss-it' + (o.value === '' ? ' ss-empty' : '') + (dIdx.get.call(sel) === i && o.value !== '' ? ' sel' : '');
+        d.textContent = o.text; d.dataset.i = i;
+        d.addEventListener('mousedown', function(ev){ ev.preventDefault(); pickIdx(Number(this.dataset.i)); });
+        list.appendChild(d); shown.push(d);
+        if (d.classList.contains('sel')) selAct = shown.length - 1;
+        total++;
+      }
+      if (!total) { var n = document.createElement('div'); n.className = 'ss-none'; n.textContent = opts.noneText || 'Nenhum resultado encontrado'; list.appendChild(n); }
+      if (cut) { var m = document.createElement('div'); m.className = 'ss-more'; m.textContent = 'Mostrando os primeiros ' + LIMIT + ' — continue digitando para filtrar.'; list.appendChild(m); }
+      setActive(shown.length ? (selAct >= 0 ? selAct : (tk.length ? 0 : -1)) : -1);
+    }
+    function openList(){ if (isOpen) return; isOpen = true; list.style.display = ''; inp.select(); render(''); }
+    function closeList(){ if (!isOpen) return; isOpen = false; list.style.display = 'none'; inp.value = curText(); }
+    function pickIdx(i){
+      dIdx.set.call(sel, i);
+      sel.dispatchEvent(new Event('change', {bubbles: true}));
+      closeList(); refresh();
+    }
+
+    inp.addEventListener('focus', function(){
+      try { sel.dispatchEvent(new Event('focusin', {bubbles: true})); } catch (e) {}   // mantém o carregamento sob demanda do PISApp
+      openList();
+    });
+    inp.addEventListener('click', openList);
+    inp.addEventListener('input', function(){ if (!isOpen) { isOpen = true; list.style.display = ''; } render(inp.value); });
+    inp.addEventListener('keydown', function(ev){
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!isOpen) openList(); else setActive(Math.min(shown.length - 1, act + 1)); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); setActive(Math.max(0, act - 1)); }
+      else if (ev.key === 'Enter') { if (isOpen && act >= 0 && shown[act]) { ev.preventDefault(); pickIdx(Number(shown[act].dataset.i)); } }
+      else if (ev.key === 'Escape') { closeList(); inp.blur(); }
+      else if (ev.key === 'Tab') closeList();
+    });
+    inp.addEventListener('blur', closeList);
+
+    Object.defineProperty(sel, 'value', { configurable: true, get: function(){ return dVal.get.call(sel); }, set: function(v){ dVal.set.call(sel, v); refresh(); } });
+    Object.defineProperty(sel, 'selectedIndex', { configurable: true, get: function(){ return dIdx.get.call(sel); }, set: function(v){ dIdx.set.call(sel, v); refresh(); } });
+    sel.focus = function(){ inp.focus(); };
+    new MutationObserver(function(){ refresh(); if (isOpen) render(inp.value); })
+      .observe(sel, {childList: true, subtree: true, attributes: true, attributeFilter: ['disabled']});
+
+    sel._ss = { input: inp, refresh: refresh };
+    refresh();
+    return sel._ss;
+  }
+
+  function enhanceAll(ids){ (ids || []).forEach(function(id){ try { enhance(id); } catch (e) { console.warn('pisappSearchable:', id, e); } }); }
+  window.pisappSearchable = { enhance: enhance, enhanceAll: enhanceAll };
+})();
+
+pisappSearchable.enhance('pProjSel', {placeholder:'Pesquisar projeto (DRO)…', noneText:'Nenhum projeto encontrado'});
 </script>
 </body>
 </html>
