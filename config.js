@@ -1,2 +1,2 @@
-window.PISAPP_API_URL = 'https://script.google.com/macros/s/AKfycbz1YYd7i_U4c22WIdg29AKHjgJN4w0cUetLIdvVsxcCQbjOsbvOWMdHhVkRUww-hnSu/exec';
+window.PISAPP_API_URL = 'https://script.google.com/macros/s/AKfycbxG7_liQ_5xStcniH0zQYIVnNbmQXFJYVzYdSNwZSLdmM_KxY4R0qPyJMvMnL4lUMw/exec';
 const PISAPP_API_URL = window.PISAPP_API_URL;
