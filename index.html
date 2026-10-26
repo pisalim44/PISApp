@@ -771,7 +771,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
       </div>
     </div>
     <div class="fg mb"><label class="fl">Observações</label><textarea class="ft" id="fatObs" rows="2"></textarea></div>
-    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlEmitirFatura')">Cancelar</button><button class="btn bt" onclick="saveEmitirFatura()">📄 Emitir Fatura</button></div>
+    <div class="fe mt"><button class="btn bo" onclick="ovlClose('ovlEmitirFatura')">Cancelar</button><button class="btn bo" onclick="baixarFaturaModal_()">🧾 Planilha da fatura (.xlsx)</button><button class="btn bt" onclick="saveEmitirFatura()">📄 Emitir Fatura</button></div>
   </div>
 </div>
 
@@ -971,6 +971,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
     <div class="pj-add">
       <div class="fg"><label class="fl">Modalidade</label><select class="fs" id="pjAddMod"><option value="">Selecione…</option></select></div>
       <div class="fg"><label class="fl">Exame</label><select class="fs" id="pjExamePick"><option value="">Escolha a modalidade primeiro</option></select></div>
+      <div class="fg"><label class="fl">Cód. procedimento</label><input class="fi" id="pjAddCod" placeholder="ex.: 0207000352"></div>
       <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="pjAddValor" type="number" min="0" step="0.01" placeholder="0,00"></div>
       <div class="fg"><label class="fl">&nbsp;</label><button type="button" class="btn bt" onclick="pjAddExame()">+ Adicionar</button></div>
     </div>
@@ -1436,6 +1437,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <input type="month" class="fi" id="finRelMes" style="max-width:160px;">
           <select class="fs" id="finRelProj" style="max-width:220px;"><option value="">Todos os projetos</option></select>
           <button class="btn bt btn-sm" onclick="exportRelatorioMensal()">📥 Exportar planilha mensal</button>
+          <button class="btn bo btn-sm" onclick="exportarFaturaProtocolo()" title="Usa o mês e o projeto escolhidos ao lado">🧾 Fatura do protocolo (.xlsx)</button>
           <button class="btn bo btn-sm" onclick="reclassificarPelaDescr()" title="Lê a coluna DESCR do MV e corrige o exame realizado dos exames já existentes">🔁 Reclassificar pela DESCR do MV</button>
           <div style="font-size:11px;color:var(--tx3);flex-basis:100%;">O filtro de modalidade vale para custo realizado, a receber, A faturar, Exames × pagamentos e para o relatório. "Recebido" não é separado por modalidade.</div>
         </div>
@@ -5900,6 +5902,81 @@ async function reclassificarPelaDescr(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
 })();
 
+/* ── v7.12: planilha da fatura do protocolo (modelo "Lista de Exames Realizados") ── */
+function pisappCarregaXlsxEstilo_(){
+  return new Promise(res=>{
+    if(window.XLSX&&window.XLSX.__styled) return res(true);
+    const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+    s.onload=()=>{try{window.XLSX.__styled=true;}catch(_){} res(true);}; s.onerror=()=>res(false);
+    document.head.appendChild(s); setTimeout(()=>res(false),6000);
+  });
+}
+async function gerarPlanilhaFatura_(projNome, exs, rotulo){
+  const p=(DB.proj||[]).find(x=>(x['Nome']||'')===projNome)||{};
+  let cad=[]; try{cad=JSON.parse(p['ExamesProjeto']||'[]')||[];}catch(_){}
+  const rghc=DB.rghc||{};
+  const serial=s=>{const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?Date.UTC(+m[1],+m[2]-1,+m[3])/86400000+25569:'';};
+  const protoCurto=c=>{const m=String(c||'').match(/^DRO_?0*(\d+)(.*)$/i);return m?m[1]+m[2]:String(c||'');};
+  const clin=m=>{const n=String(m||'').toLowerCase(); if(/^rm|7t|resson/.test(n))return 'MR'; if(/^tc|tomog/.test(n))return 'CT'; if(/^rx|raio/.test(n))return 'CR'; if(/ultra|^us/.test(n))return 'US'; if(/mamo/.test(n))return 'MG'; if(/densit/.test(n))return 'DX'; if(/nuclear/.test(n))return 'NM'; return '';};
+  const rows=[]; let total=0;
+  exs.forEach(e=>{
+    let feitos=[]; try{feitos=JSON.parse(e['ExamesRealizados']||'[]')||[];}catch(_){}
+    const pos=parseFloat(p['ValorPosProcessamento']||0)||0;
+    const lista=feitos.length?feitos:[{exame:e['Modalidade']||'',modalidade:e['Modalidade']||'',valor:custoPorExame_(p,e['Modalidade']||'')-pos}];
+    lista.forEach((f,k)=>{
+      const val=(parseFloat(f.valor)||0)+(k===0?pos:0);
+      const cod=f.codigo||((cad.find(x=>x.exame===f.exame&&x.modalidade===f.modalidade)||{}).codigo)||'';
+      const chave=String(e['MVChaveExterna']||'').trim(); const pacs=String(e['PACS']||'').trim();
+      rows.push([/^\d+$/.test(chave)?Number(chave):chave, clin(f.modalidade||e['Modalidade']), f.exame||'', cod, serial(e['Data']), '', '', val, 1, 0, 0,
+        e['Sujeito']||e['NomeVol']||'', rghc[e['SolID']||'']||'', /^\d+$/.test(pacs)?Number(pacs):pacs, 'Consistente', 'Previsto', val]);
+      total+=val;
+    });
+  });
+  const st=String(p['Status']||'Ativo'); const situ=/ativo|bloq/i.test(st)?'Andamento':st;
+  const inst=(exs[0]&&exs[0]['Instituto'])||p['Instituto']||'INRAD';
+  const H=['Id Registro','Clínica','Desc. Procedimento','Cód. Procedimento','Data/ Hora','Categoria','Nº Categoria','Valor Cobrado','Qte.','Acréscimo','Desconto','Paciente','RGHC','ID DW','Situação','Pagamento','Valor Total'];
+  const aoa=[[],[],[],[],[],[],[],[],[],[]]; // linhas 1-10
+  aoa[5]=['Categoria: Pesquisa','','','Código Protocolo: '+protoCurto(p['Codigo']||projNome),'','Departamento: '+(p['Departamento']||''),'','','','Situação Protocolo: '+situ,'','','Instituto: '+inst];
+  aoa[7]=['Lista de Exames Realizados'];
+  aoa[9]=H;
+  rows.forEach(r=>aoa.push(r));
+  aoa.push([]); aoa[aoa.length-1][16]=total;
+  const rt=[]; rt[15]='Total'; rt[16]=total; aoa.push(rt);
+  const styled=await pisappCarregaXlsxEstilo_();
+  if(typeof XLSX==='undefined'){ toast('Biblioteca XLSX indisponível: não foi possível gerar a planilha.','err'); return; }
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges']=[{s:{r:5,c:0},e:{r:5,c:2}},{s:{r:5,c:3},e:{r:5,c:4}},{s:{r:5,c:5},e:{r:5,c:8}},{s:{r:5,c:9},e:{r:5,c:11}},{s:{r:5,c:12},e:{r:5,c:14}},{s:{r:7,c:0},e:{r:7,c:15}}];
+  ws['!cols']=[12,7.4,24,19.3,14,10.1,14,14.8,5,11.3,10,46.7,12,12,12.6,11.7,12].map(w=>({wch:w}));
+  const bd={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+  const setS=(r,c,s,z)=>{const a=XLSX.utils.encode_cell({r:r,c:c}); const cell=ws[a]||(ws[a]={t:'s',v:''}); cell.s=s; if(z)cell.z=z;};
+  for(let c=0;c<17;c++) if(c<15) setS(5,c,{font:{sz:11,name:'Calibri',bold:true},fill:{fgColor:{rgb:'E7E6E6'}},border:bd});
+  for(let c=0;c<16;c++) setS(7,c,{font:{sz:14,name:'Calibri',bold:true},alignment:{horizontal:'center'},fill:{fgColor:{rgb:'D9E1F2'}},border:bd});
+  for(let c=0;c<17;c++) setS(9,c,{font:{sz:11,name:'Calibri',bold:true},fill:{fgColor:{rgb:'E7E6E6'}},alignment:{horizontal:'center',wrapText:true},border:bd});
+  for(let r=10;r<10+rows.length;r++) for(let c=0;c<17;c++) setS(r,c,{font:{sz:11,name:'Calibri'},alignment:{wrapText:true},border:bd}, c===4?'dd/mm/yyyy':(c===7||c===16)?'#,##0.00':undefined);
+  const rs=10+rows.length;
+  setS(rs,16,{font:{sz:11,name:'Calibri',bold:true},border:bd},'#,##0.00');
+  setS(rs+1,15,{font:{sz:11,name:'Calibri',bold:true},alignment:{horizontal:'right'}}); setS(rs+1,16,{font:{sz:11,name:'Calibri',bold:true},border:bd},'#,##0.00');
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Lista de Exames Realizados');
+  const nome='PISApp_Fatura_'+protoCurto(p['Codigo']||projNome).replace(/[^A-Za-z0-9_-]+/g,'')+(rotulo?'_'+rotulo:'')+'.xlsx';
+  XLSX.writeFile(wb,nome);
+  toast('✓ Planilha da fatura "'+nome+'" gerada ('+rows.length+' linhas, total R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2})+').'+(styled?'':' Sem formatação de cores.'));
+}
+function exportarFaturaProtocolo(){
+  const mes=(ge('finRelMes')||{}).value||''; const proj=(ge('finRelProj')||{}).value||'';
+  if(!/^\d{4}-\d{2}$/.test(mes)){toast('Selecione o mês.','warn');return;}
+  if(!proj){toast('Selecione o projeto (DRO) da fatura.','warn');return;}
+  const exs=(DB.ex||[]).filter(e=>(e['Status']||'')==='Concluído'&&(e['Projeto']||'')===proj&&String(e['Data']||'').slice(0,7)===mes&&(e['StatusFinanceiro']||'')!=='Isento'&&finModOk_(e))
+    .sort((a,b)=>String(a['Data']||'').localeCompare(String(b['Data']||'')));
+  if(!exs.length){toast('Nenhum exame faturável desse projeto em '+mes+'.','warn');return;}
+  gerarPlanilhaFatura_(proj,exs,mes);
+}
+function baixarFaturaModal_(){
+  const m=ge('ovlEmitirFatura'); let cods=[]; try{cods=JSON.parse(m.dataset.cods||'[]');}catch(_){}
+  const set=new Set(cods); const exs=(DB.ex||[]).filter(e=>set.has(e['Cod']||e['cod']||'')).sort((a,b)=>String(a['Data']||'').localeCompare(String(b['Data']||'')));
+  if(!exs.length){toast('Nenhum exame na fatura.','warn');return;}
+  gerarPlanilhaFatura_(m.dataset.proj||'',exs,'');
+}
+
 function finExTag_(e){
   const idx=DB.ex.indexOf(e);
   const feito=e['ExameEspecifico'];
@@ -9103,9 +9180,9 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
   /* ── CSS ── */
   const st = document.createElement('style');
   st.textContent =
-    '.pj-add{display:grid;grid-template-columns:170px 1fr 130px auto;gap:10px;align-items:end;margin-bottom:10px;}' +
+    '.pj-add{display:grid;grid-template-columns:170px 1fr 150px 130px auto;gap:10px;align-items:end;margin-bottom:10px;}' +
     '.pj-ex-mod{font-size:12px;color:var(--tx2);font-family:var(--m);}' +
-    '.pj-ex-row{display:grid;grid-template-columns:1fr 150px 120px 34px;gap:8px;align-items:center;padding:8px 10px;margin-bottom:6px;border:1.5px solid var(--bd);border-radius:8px;background:var(--sf2);}' +
+    '.pj-ex-row{display:grid;grid-template-columns:1fr 140px 150px 120px 34px;gap:8px;align-items:center;padding:8px 10px;margin-bottom:6px;border:1.5px solid var(--bd);border-radius:8px;background:var(--sf2);}' +
     '.pj-ex-nm{font-size:12.5px;font-weight:600;color:var(--navy);word-break:break-word;line-height:1.35;}' +
     '.pj-ex-row .fs,.pj-ex-row .fi{padding:6px 8px;font-size:12.5px;}' +
     '@media(max-width:640px){.pj-add{grid-template-columns:1fr 1fr;}.pj-ex-row{grid-template-columns:1fr 1fr;}.pj-ex-nm{grid-column:1/-1;}}';
@@ -9114,13 +9191,14 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
   /* ── Projetos: escolher MODALIDADE e, ao lado, o EXAME ESPECÍFICO daquela modalidade, com valor ── */
   const GERAL = 'Geral (sem exame específico)';
 
-  window.addPjMod = function(exame, mod, custo){
+  window.addPjMod = function(exame, mod, custo, codigo){
     const box = $('pjModSlots'); if (!box || !exame || !mod) return false;
     if ([...box.querySelectorAll('.pj-ex-row')].some(r => r.dataset.exame === exame && r.dataset.mod === mod)) { toast('Esse exame já está no projeto nessa modalidade.', 'warn'); return false; }
     const div = document.createElement('div'); div.className = 'pj-ex-row'; div.dataset.exame = exame; div.dataset.mod = mod;
     div.innerHTML =
       '<div class="pj-ex-nm">' + mvEsc_(exame === mod ? GERAL : exame) + '</div>' +
       '<div class="pj-ex-mod">' + mvEsc_(mod) + '</div>' +
+      '<input class="fi pjm-cod" placeholder="Cód. proced." value="' + mvEsc_(codigo || '') + '">' +
       '<input class="fi pjm-custo" type="number" min="0" step="0.01" placeholder="R$/exame" value="' + mvEsc_(custo === undefined ? '' : custo) + '">' +
       '<button type="button" class="btn br btn-xs" title="Remover" onclick="this.closest(\'.pj-ex-row\').remove()">✕</button>';
     box.appendChild(div);
@@ -9182,7 +9260,8 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
     if (!mod) { toast('Escolha a modalidade.', 'warn'); return; }
     if (!exame) { toast('Escolha o exame.', 'warn'); return; }
     const v = $('pjAddValor');
-    if (window.addPjMod(exame, mod, v && v.value !== '' ? v.value : '')) { $('pjExamePick').value = ''; if (v) v.value = ''; }
+    const cd = $('pjAddCod');
+    if (window.addPjMod(exame, mod, v && v.value !== '' ? v.value : '', cd ? cd.value.trim() : '')) { $('pjExamePick').value = ''; if (v) v.value = ''; if (cd) cd.value = ''; }
   };
 
   function buildPicker(){
@@ -9198,7 +9277,7 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
     document.querySelectorAll('#pjModSlots .pj-ex-row').forEach(r => {
       const exame = r.dataset.exame, mod = r.dataset.mod;
       const custo = parseFloat(r.querySelector('.pjm-custo').value) || 0;
-      examesProjeto.push({exame: exame, modalidade: mod, custo: custo});
+      examesProjeto.push({exame: exame, modalidade: mod, custo: custo, codigo: ((r.querySelector('.pjm-cod') || {}).value || '').trim()});
       if (!modalidades.includes(mod)) { modalidades.push(mod); acc[mod] = {n: 0, s: 0}; }
       acc[mod].n += 1; acc[mod].s += custo;
     });
@@ -9210,7 +9289,7 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
 
   window.restaurarExamesProjeto_ = function(p){
     let lista = []; try { lista = JSON.parse(p.ExamesProjeto || '[]'); } catch (e) {}
-    if (Array.isArray(lista) && lista.length) { lista.forEach(x => window.addPjMod(x.exame, x.modalidade, x.custo || '')); return; }
+    if (Array.isArray(lista) && lista.length) { lista.forEach(x => window.addPjMod(x.exame, x.modalidade, x.custo || '', x.codigo || '')); return; }
     try {   // projetos antigos (só modalidades): cada modalidade vira uma linha editável
       const mods = JSON.parse(p.Modalidades || '[]'), cust = JSON.parse(p.CustoPorModalidade || '{}');
       mods.forEach(m => window.addPjMod(m, m, cust[m] || ''));
@@ -9264,28 +9343,64 @@ window.PISAPP_EXAMES_CATALOGO = ["CONSULTA NEURO - INRAD", "CONSULTA PERCUTANEA-
         (!projSel || (e['Projeto'] || '') === projSel) && window.finModOk_(e))
       .sort((a, b) => String(a['Data'] || '').localeCompare(String(b['Data'] || '')));
     if (!exs.length) { toast('Nenhum exame concluído em ' + mes + (window.FIN_MOD ? ' (' + window.FIN_MOD + ')' : '') + (projSel ? ' nesse projeto' : '') + '.', 'warn'); return; }
-    const headers = ['Data do Exame', 'RGHC', 'Nome do Paciente', 'Exame Realizado', 'PACS', 'Valor do Exame', 'Protocolo de Pesquisa', 'Data do Laudo', 'Quem Laudou'];
-    const rows = exs.map(e => {
+    const headers = ['RGHC', 'DATA DO EXAME', 'NOME DO PACIENTE', 'NOME DO EXAME', 'PACS', 'VALOR DO EXAME', 'PROTOCOLO', 'DATA DO LAUDO', 'LAUDADO POR'];
+    const toDate = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) / 86400000 + 25569 : null; };  // serial do Excel (sem fuso)
+    const protoCurto = c => { const m = String(c || '').match(/^DRO_?0*(\d+)(.*)$/i); return m ? m[1] + m[2] : String(c || ''); };
+    const rows = []; const laudoTemHora = [];
+    exs.forEach(e => {
       const p = projMap[e['Projeto'] || ''] || {};
-      return [br(e['Data']), rghc[e['SolID'] || ''] || '', e['Sujeito'] || e['NomeVol'] || '', e['ExameEspecifico'] || e['Modalidade'] || '', e['PACS'] || '',
-        custoExame_(p,e), p['Codigo'] || e['Projeto'] || '', br(e['DataLaudo']), e['MedicoLaudador'] || ''];
+      let feitos = []; try { feitos = JSON.parse(e['ExamesRealizados'] || '[]') || []; } catch (_) {}
+      const pos = parseFloat(p['ValorPosProcessamento'] || 0) || 0;
+      const base = [rghc[e['SolID'] || ''] || '', toDate(e['Data']), e['Sujeito'] || e['NomeVol'] || ''];
+      const pacs = /^\d+$/.test(String(e['PACS'] || '')) ? Number(e['PACS']) : (e['PACS'] || '');
+      const fim = [protoCurto(p['Codigo'] || e['Projeto'] || ''), toDate(e['DataLaudo']), e['MedicoLaudador'] || ''];
+      if (feitos.length) {   // um exame por linha, cada um com o seu valor (complementares)
+        feitos.forEach((f, k) => rows.push(base.concat([f.exame || '', pacs, (parseFloat(f.valor) || 0) + (k === 0 ? pos : 0)], fim)));
+      } else {
+        rows.push(base.concat([e['Modalidade'] || '', pacs, custoExame_(p, e)], fim));
+      }
     });
     const slug = window.FIN_MOD ? '_' + normMod(window.FIN_MOD).replace(/[^a-z0-9]+/g, '') : '';
     const base = 'PISApp_Relatorio_Mensal_' + mes + slug;
-    if (typeof XLSX !== 'undefined') {
-      const ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
-      ws['!cols'] = [{wch: 14}, {wch: 14}, {wch: 34}, {wch: 34}, {wch: 14}, {wch: 16}, {wch: 20}, {wch: 14}, {wch: 28}];
-      for (let r = 1; r <= rows.length; r++) { const c = ws[XLSX.utils.encode_cell({r: r, c: 5})]; if (c) { c.t = 'n'; c.z = '"R$" #,##0.00'; } }
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Relatório mensal');
-      XLSX.writeFile(wb, base + '.xlsx');
-      toast('✓ Planilha "' + base + '.xlsx" gerada (' + rows.length + ' exames).');
-    } else {
-      const csv = [headers].concat(rows.map(r => { r = r.slice(); r[5] = String(r[5]).replace('.', ','); return r; }))
-        .map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8;'}));
-      a.download = base + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      toast('Biblioteca XLSX indisponível — gerado CSV (' + rows.length + ' exames).', 'warn');
-    }
+    const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    const titulo = 'EXAMES DE PESQUISA CLÍNICA LAUDADOS PELOS MÉDICOS ' + MESES[+mes.slice(5, 7) - 1] + ' / ' + mes.slice(0, 4);
+    const carregaEstilo = () => new Promise(res => {   // SheetJS com estilos (se indisponível, gera sem cores/bordas)
+      if (window.XLSX && window.XLSX.__styled) return res(true);
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+      s.onload = () => { try { window.XLSX.__styled = true; } catch (_) {} res(true); }; s.onerror = () => res(false);
+      document.head.appendChild(s); setTimeout(() => res(false), 6000);
+    });
+    (async () => {
+      const keepXlsx = window.XLSX;
+      const styled = await carregaEstilo();
+      if (!styled && keepXlsx && !window.XLSX) window.XLSX = keepXlsx;
+      if (typeof XLSX !== 'undefined') {
+        const aoa = [[titulo], [], [], headers].concat(rows);
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!merges'] = [{s: {r: 0, c: 0}, e: {r: 2, c: 8}}];
+        ws['!cols'] = [10.4, 17.1, 42, 34.3, 10.7, 22, 25, 19.6, 50.7].map(w => ({wch: w}));
+        const bd = {top: {style: 'thin'}, bottom: {style: 'thin'}, left: {style: 'thin'}, right: {style: 'thin'}};
+        const setS = (r, c, s, z) => { const a = XLSX.utils.encode_cell({r: r, c: c}); const cell = ws[a] || (ws[a] = {t: 's', v: ''}); cell.s = s; if (z) cell.z = z; };
+        for (let r = 0; r <= 2; r++) for (let c = 0; c < 9; c++) setS(r, c, {font: {bold: true, sz: 22, name: 'Calibri'}, alignment: {horizontal: 'center', vertical: 'center', wrapText: true}, fill: {fgColor: {rgb: 'D9E1F2'}}, border: bd});
+        for (let c = 0; c < 9; c++) setS(3, c, {font: {sz: 12, name: 'Calibri'}, fill: {fgColor: {rgb: 'E7E6E6'}}, border: bd});
+        for (let r = 4; r < aoa.length; r++) for (let c = 0; c < 9; c++) {
+          const bold = (c === 5 || c === 6);
+          setS(r, c, {font: {sz: 11, name: 'Calibri', bold: bold}, alignment: {horizontal: (c === 5 || c === 2 || c === 3) ? undefined : 'left', wrapText: true}, border: bd},
+            c === 1 ? 'dd/mm/yyyy' : c === 5 ? '"R$" #,##0.00' : c === 7 ? 'dd/mm/yyyy hh:mm' : undefined);
+        }
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Plan1');
+        XLSX.writeFile(wb, base + '.xlsx');
+        toast('✓ Planilha "' + base + '.xlsx" gerada (' + rows.length + ' linhas de exame' + (styled ? '' : '; sem formatação de cores — biblioteca de estilos indisponível') + ').');
+      } else {
+        const f2 = (d, i) => (i === 1 || i === 7) && typeof d === 'number' ? new Date(Math.round((d - 25569) * 86400000)).toISOString().slice(0, 16).replace('T', ' ') : d;
+        const csv = [headers].concat(rows.map(r => { r = r.map((x, i) => f2(x, i)); r[5] = String(r[5]).replace('.', ','); return r; }))
+          .map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8;'}));
+        a.download = base + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        toast('Biblioteca XLSX indisponível — gerado CSV (' + rows.length + ' linhas).', 'warn');
+      }
+    })();
   };
 
   /* ── Inicialização ── */
