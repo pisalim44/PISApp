@@ -1439,6 +1439,9 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <button class="btn bt btn-sm" onclick="exportRelatorioMensal()">📥 Exportar planilha mensal</button>
           <button class="btn bo btn-sm" onclick="exportarFaturaProtocolo()" title="Usa o mês e o projeto escolhidos ao lado">🧾 Fatura do protocolo (.xlsx)</button>
           <button class="btn bo btn-sm" onclick="reclassificarPelaDescr()" title="Lê a coluna DESCR do MV e corrige o exame realizado dos exames já existentes">🔁 Reclassificar pela DESCR do MV</button>
+          <button class="btn bt btn-sm" onclick="loteAbrir()" title="Painel único: simula e grava de uma vez a data do laudo, a reclassificação por grupo e a marcação em massa por projeto">🛠 Correção em lote</button>
+          <button class="btn bo btn-sm" onclick="geminiAbrirSugestoes()" title="O Gemini sugere o exame cadastrado para as DESCRs que o sistema não conseguiu classificar. Nada é gravado sem a sua aprovação; nenhum dado de paciente é enviado.">🤖 Sugestões do Gemini</button>
+          <button class="btn bo btn-sm" onclick="preencherDataLaudoMV()" title="Lê DT_LAUDO e o laudador na planilha do MV e preenche data/hora do laudo dos exames já existentes (só o que estiver vazio ou sem hora)">🕒 Preencher data do laudo (MV)</button>
           <div style="font-size:11px;color:var(--tx3);flex-basis:100%;">O filtro de modalidade vale para custo realizado, a receber, A faturar, Exames × pagamentos e para o relatório. "Recebido" não é separado por modalidade.</div>
         </div>
         <!-- Sub-abas -->
@@ -3166,7 +3169,7 @@ async function doMVConfirmar(){
   const r=await api('confirmarImportMV',{lote, arquivo:MV_FILE_NAME});
   if(!r.ok){ toast('Erro: '+(r.msg||'falha na importação'),'err'); return; }
   const nDup=(r.bloqueadosDuplicados||[]).length;
-  toast(`✓ ${(r.criados||[]).length} exame(s) importado(s)${(r.erros||[]).length?(', '+r.erros.length+' erro(s)'):''}${nDup?(', '+nDup+' duplicado(s) bloqueado(s)'):''}${((r.erros||[]).length||nDup)?' — veja o console':''}.`);
+  toast(`✓ ${(r.criados||[]).length} exame(s) importado(s)${(r.erros||[]).length?(', '+r.erros.length+' erro(s)'):''}${nDup?(', '+nDup+' duplicado(s) bloqueado(s)'):''}${(r.incorporados||[]).length?(', '+r.incorporados.length+' linha(s) somada(s) ao exame do mesmo dia'):''}${((r.erros||[]).length||nDup)?' — veja o console':''}.`);
   if((r.erros||[]).length) console.warn('Erros na importação MV:', r.erros);
   if(nDup) console.warn('Duplicados bloqueados na importação MV (não criados, já existiam no PISApp):', r.bloqueadosDuplicados);
   MV_RECON=null; MV_SELECTED=new Set(); MV_RAW_ROWS=[]; MV_HEADERS=[]; MV_WORKBOOK=null;
@@ -5849,19 +5852,244 @@ async function reclassificarPelaDescr(){
   let r=await api('reclassificarExamesPelaDescr',{dryRun:true});
   if(!r.ok){toast(r.msg||'Erro na simulação.','err');return;}
   const s=r.resumo||{};
-  const txt='SIMULAÇÃO — nada foi gravado ainda\n\n'+
+  const txt='SIMULAÇÃO — nada foi gravado ainda\n'+
+    '(vários exames da mesma modalidade, no mesmo dia e para o mesmo paciente são somados)\n\n'+
     'Serão reclassificados: '+s.reclassificados+'\n'+
+    '  • com mais de um exame no dia (somados): '+s.agrupados+'\n'+
+    'Podem ser COMPLETADOS (têm só parte dos exames do dia): '+s.parciaisCompletaveis+'\n'+
     'Sem correspondência na planilha do MV: '+s.semCorrespondencia+'\n'+
-    'DESCR sem exame cadastrado no projeto: '+s.semMatchDescr+'\n'+
+    'Algum exame do dia sem cadastro no projeto (ficam pendentes): '+s.semMatchDescr+'\n'+
     'Já faturados/pagos (ignorados): '+s.ignoradosFaturados+'\n'+
     'Escolhas específicas mantidas: '+s.mantidos+'\n\n'+
+    ((r.exemplos||[]).slice(0,8).join('\n'))+(r.interrompido?'\n\n⚠ Tempo esgotado: rode de novo para continuar.':'');
+  if(!s.reclassificados && !s.parciaisCompletaveis){ alert(txt); return; }
+  let feitos=0;
+  if(s.reclassificados){
+    if(!confirm(txt+'\n\nGravar agora?')) return;
+    r=await api('reclassificarExamesPelaDescr',{dryRun:false});
+    if(!r.ok){toast(r.msg||'Erro ao gravar.','err');return;}
+    feitos+=r.resumo.reclassificados;
+  }
+  if(s.parciaisCompletaveis && confirm(s.parciaisCompletaveis+' exame(s) de origem automática têm só PARTE dos exames feitos no dia.\n\nCompletar com os que faltam? (os já escolhidos são mantidos; faturados/pagos não mudam)')){
+    r=await api('reclassificarExamesPelaDescr',{dryRun:false,completarParciais:true});
+    if(!r.ok){toast(r.msg||'Erro ao gravar.','err');return;}
+    feitos+=r.resumo.reclassificados;
+  }
+  toast('✓ '+feitos+' exame(s) reclassificado(s).');
+  try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
+}
+/* ── v7.13: Correção em lote (painel único) ── */
+function loteEnsureOvl_(){
+  if(ge('ovlLote')) return;
+  const o=document.createElement('div'); o.className='ovl'; o.id='ovlLote';
+  o.innerHTML='<div class="modal" style="max-width:860px;"><div class="mttl">🛠 Correção em lote</div><div id="loteBody"></div></div>';
+  o.addEventListener('click',e=>{ if(e.target===o) ovlClose('ovlLote'); });
+  document.body.appendChild(o);
+}
+function loteAbrir(){
+  loteEnsureOvl_();
+  ge('loteBody').innerHTML=
+    '<div class="al a-i">Tudo é simulado primeiro; nada é gravado até você confirmar. Faturados/pagos só mudam se você marcar.</div>'+
+    '<div class="fl" style="margin:10px 0 4px;">1 · Correção automática a partir do MV</div>'+
+    '<label style="display:block;"><input type="checkbox" id="loteLaudo" checked> Preencher data/hora do laudo e laudador (DT_LAUDO)</label>'+
+    '<label style="display:block;"><input type="checkbox" id="loteReclass" checked> Reclassificar pela DESCR (soma exames da mesma modalidade no dia)</label>'+
+    '<label style="display:block;"><input type="checkbox" id="loteParciais"> Completar exames automáticos que têm só parte dos exames do dia</label>'+
+    '<label style="display:block;"><input type="checkbox" id="loteFat"> Incluir exames já faturados/pagos na correção da data do laudo</label>'+
+    '<div style="margin:10px 0;"><button class="btn bo" onclick="loteSimular()">Simular</button> <button class="btn bo" onclick="geminiAbrirSugestoes()">🤖 Sugestões do Gemini (DESCRs sem regra)</button></div>'+
+    '<pre id="loteRes" style="white-space:pre-wrap;font-size:12px;background:var(--bg,#f5f7fa);padding:10px;border-radius:8px;display:none;max-height:260px;overflow:auto;"></pre>'+
+    '<div id="loteAcoes" style="display:none;margin-bottom:6px;"><button class="btn bt" onclick="loteGravar()">Gravar tudo que foi simulado</button></div>'+
+    '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;">2 · Marcar em massa os exames sem classificação de um projeto</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">'+
+      '<div class="fg" style="min-width:200px;flex:1;"><label class="fl">Projeto</label><select class="fi" id="loteProj" onchange="loteProjMudou()"><option value="">Selecione…</option>'+(window.projOptsHtml_?window.projOptsHtml_():'')+'</select></div>'+
+      '<div class="fg" style="min-width:220px;flex:1;"><label class="fl">Exame</label><select class="fi" id="loteExame"><option value="">Selecione o projeto…</option></select></div>'+
+      '<div class="fg"><label class="fl">De</label><input class="fi" type="date" id="loteDe"></div>'+
+      '<div class="fg"><label class="fl">Até</label><input class="fi" type="date" id="loteAte"></div>'+
+    '</div>'+
+    '<label style="display:block;"><input type="checkbox" id="loteGeral"> Incluir também os que estão só como “Geral”</label>'+
+    '<div style="margin:8px 0;"><button class="btn bo" onclick="loteMassaSimular()">Simular marcação</button> <button class="btn bt" id="loteMassaGravar" style="display:none;" onclick="loteMassaGravar()">Aplicar</button></div>'+
+    '<pre id="loteMassaRes" style="white-space:pre-wrap;font-size:12px;background:var(--bg,#f5f7fa);padding:10px;border-radius:8px;display:none;max-height:200px;overflow:auto;"></pre>'+
+    '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;">3 · Histórico de lotes e reversão</div>'+
+    '<div id="loteHist" style="font-size:12px;">Carregando…</div>'+
+    '<div style="text-align:right;margin-top:10px;"><button class="btn bo" onclick="ovlClose(\'ovlLote\')">Fechar</button></div>';
+  ovlOpen('ovlLote');
+  loteCarregarHist_();
+}
+async function loteCarregarHist_(){
+  const box=ge('loteHist'); if(!box) return;
+  const r=await api('getLotesCorrecao',{});
+  if(!r.ok){ box.textContent=r.msg||'Erro ao carregar o histórico.'; return; }
+  const l=r.lotes||[];
+  box.innerHTML=l.length?('<div class="tw"><table><thead><tr><th>Lote</th><th>Quando</th><th>Quem</th><th>Ação</th><th>Exames</th><th></th></tr></thead><tbody>'+
+    l.map(x=>'<tr><td style="font-family:var(--m);font-size:11px;">'+mvEsc_(x.loteId)+'</td><td>'+mvEsc_(x.data)+'</td><td>'+mvEsc_(x.usuario)+'</td><td>'+mvEsc_(x.acao)+'</td><td>'+x.registros+'</td>'+
+      '<td>'+(x.revertido?'<span class="pill p-g">revertido</span>':(x.revertidas?'<span class="pill">revertido em parte</span> ':'')+(x.revertido?'':'<button class="btn bo btn-xs" onclick="loteReverter(\''+mvEsc_(x.loteId)+'\')">↩ Desfazer</button>'))+'</td></tr>').join('')+
+    '</tbody></table></div>'):'Nenhum lote gravado ainda.';
+}
+async function loteReverter(id){
+  const sim=await api('reverterLoteCorrecao',{loteId:id,dryRun:true});
+  if(!sim.ok){ toast(sim.msg||'Erro.','err'); return; }
+  const s=sim.resumo;
+  if(!s.restauradas){ alert('Nada a desfazer neste lote.\n\nAlteradas depois do lote (mantidas): '+s.conflitos+'\nJá faturados/pagos (mantidos): '+s.faturados+'\nNão encontradas: '+s.naoEncontrados); return; }
+  if(!confirm('DESFAZER o lote '+id+'?\n\nSerão restauradas: '+s.restauradas+' célula(s)\nAlteradas depois do lote (ficam como estão): '+s.conflitos+'\nJá faturados/pagos (ficam como estão): '+s.faturados+'\nNão encontradas: '+s.naoEncontrados)) return;
+  const r=await api('reverterLoteCorrecao',{loteId:id,dryRun:false});
+  if(!r.ok){ toast(r.msg||'Erro ao desfazer.','err'); return; }
+  toast('✓ Lote desfeito: '+r.resumo.restauradas+' célula(s) restaurada(s).');
+  loteCarregarHist_();
+  try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
+}
+let LOTE_SIM=null;
+async function loteSimular(){
+  const usaLaudo=ge('loteLaudo').checked, usaReclass=ge('loteReclass').checked;
+  if(!usaLaudo&&!usaReclass){ toast('Marque ao menos uma correção.','warn'); return; }
+  const out=ge('loteRes'); out.style.display='block'; out.textContent='Simulando… (lê a planilha do MV)'; ge('loteAcoes').style.display='none';
+  LOTE_SIM={laudo:null,reclass:null}; let txt='SIMULAÇÃO — nada foi gravado\n';
+  if(usaLaudo){
+    const r=await api('preencherDataLaudoPeloMV',{dryRun:true});
+    if(!r.ok){ out.textContent='Data do laudo: '+(r.msg||'erro'); return; }
+    LOTE_SIM.laudo=r.resumo; const s=r.resumo;
+    txt+='\n● Data do laudo: '+s.atualizados+' exame(s) a atualizar (data/hora: '+s.dataComHora+', laudador: '+s.medicoPreenchido+'); '+
+      'faturados/pagos que também mudariam: '+s.faturadosAfetaveis+(ge('loteFat').checked?' (serão incluídos)':' (ficam de fora)')+'; laudos da produtividade a corrigir: '+(s.laudosCorrigidos||0)+'; sem laudo/correspondência: '+(s.semCorrespondencia+s.semDtLaudoNoMV)+'; ambíguos: '+s.ambiguos+'.';
+  }
+  if(usaReclass){
+    const r=await api('reclassificarExamesPelaDescr',{dryRun:true});
+    if(!r.ok){ out.textContent=txt+'\n\nReclassificação: '+(r.msg||'erro'); return; }
+    LOTE_SIM.reclass=r.resumo; const s=r.resumo;
+    txt+='\n\n● Reclassificação: '+s.reclassificados+' exame(s) (com mais de um exame no dia: '+s.agrupados+'); podem ser completados: '+s.parciaisCompletaveis+(ge('loteParciais').checked?' (serão completados)':' (ficam de fora)')+
+      '; DESCR sem exame cadastrado (pendentes): '+s.semMatchDescr+'; sem correspondência no MV: '+s.semCorrespondencia+'; faturados/pagos ignorados: '+s.ignoradosFaturados+'.'+
+      ((r.exemplos||[]).length?'\n  '+r.exemplos.slice(0,6).join('\n  '):'')+(r.interrompido?'\n  ⚠ Tempo esgotado na simulação: os totais são parciais.':'');
+  }
+  out.textContent=txt; ge('loteAcoes').style.display='block';
+}
+async function loteRepetir_(acao,params,rotulo,out){
+  let total=0,ultimo=null;
+  for(let n=0;n<12;n++){   // cada chamada tem limite de tempo; ao interromper, repete (o que já foi feito não volta a entrar)
+    out.textContent+='\n… '+rotulo+(n?(' (parte '+(n+1)+')'):'');
+    const r=await api(acao,params);
+    if(!r.ok) return {ok:false,msg:r.msg||'erro'};
+    ultimo=r; total+=(r.resumo&&(r.resumo.atualizados!=null?r.resumo.atualizados:r.resumo.reclassificados))||0;
+    if(!r.interrompido) break;
+  }
+  return {ok:true,total,ultimo};
+}
+async function loteGravar(){
+  if(!LOTE_SIM) return;
+  if(!confirm('Gravar todas as correções simuladas?')) return;
+  const out=ge('loteRes'); out.textContent='GRAVANDO…'; ge('loteAcoes').style.display='none';
+  if(LOTE_SIM.laudo){
+    const r=await loteRepetir_('preencherDataLaudoPeloMV',{dryRun:false,incluirFaturados:ge('loteFat').checked},'data do laudo',out);
+    out.textContent+=r.ok?('\n✓ Data do laudo: '+r.total+' exame(s).'):('\n✗ Data do laudo: '+r.msg);
+  }
+  if(LOTE_SIM.reclass){
+    let r=await loteRepetir_('reclassificarExamesPelaDescr',{dryRun:false},'reclassificação',out);
+    out.textContent+=r.ok?('\n✓ Reclassificação: '+r.total+' exame(s).'):('\n✗ Reclassificação: '+r.msg);
+    if(ge('loteParciais').checked){
+      r=await loteRepetir_('reclassificarExamesPelaDescr',{dryRun:false,completarParciais:true},'completar parciais',out);
+      out.textContent+=r.ok?('\n✓ Parciais completados: '+r.total+' exame(s).'):('\n✗ Parciais: '+r.msg);
+    }
+  }
+  out.textContent+='\n\nConcluído. Cada gravação ficou registrada como lote (veja o histórico abaixo para desfazer). Confira a aba A faturar.';
+  loteCarregarHist_();
+  LOTE_SIM=null;
+  try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
+}
+function loteProjMudou(){
+  const nome=ge('loteProj').value, sel=ge('loteExame');
+  const p=(DB.proj||[]).find(x=>(x['Nome']||'')===nome);
+  let lista=[]; try{ lista=JSON.parse((p&&p['ExamesProjeto'])||'[]')||[]; }catch(_){}
+  sel.innerHTML=lista.length?('<option value="">Selecione o exame…</option>'+lista.map(x=>'<option value="'+mvEsc_(x.exame)+'" data-mod="'+mvEsc_(x.modalidade||'')+'">'+mvEsc_(x.exame)+' ('+mvEsc_(x.modalidade||'')+') — R$ '+(Number(x.custo)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+'</option>').join('')):'<option value="">Projeto sem exames cadastrados</option>';
+  ge('loteMassaGravar').style.display='none';
+}
+function loteMassaParams_(dry){
+  const sel=ge('loteExame'), opt=sel.options[sel.selectedIndex];
+  return {projeto:ge('loteProj').value, exame:sel.value, modalidade:opt?(opt.dataset.mod||''):'', dataDe:ge('loteDe').value, dataAte:ge('loteAte').value, incluirGeral:ge('loteGeral').checked, dryRun:dry};
+}
+async function loteMassaSimular(){
+  const pr=loteMassaParams_(true);
+  if(!pr.projeto||!pr.exame){ toast('Escolha o projeto e o exame.','warn'); return; }
+  const out=ge('loteMassaRes'); out.style.display='block'; out.textContent='Simulando…';
+  const r=await api('classificarEmMassaProjeto',pr);
+  if(!r.ok){ out.textContent=r.msg||'Erro.'; return; }
+  const ig=r.ignorados||{};
+  out.textContent='SIMULAÇÃO — nada foi gravado\n'+r.total+' exame(s) de "'+pr.projeto+'" serão marcados como "'+pr.exame+'" (R$ '+Number(r.valorUnitario||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+' cada; total R$ '+Number(r.valorTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+').\n'+
+    'Ignorados: outra modalidade '+ig.outraModalidade+' · já classificados '+ig.jaClassificados+' · faturados/pagos '+ig.faturados+'\n'+(r.exemplos||[]).join('\n');
+  ge('loteMassaGravar').style.display=r.total?'inline-flex':'none';
+}
+async function loteMassaGravar(){
+  const pr=loteMassaParams_(false);
+  if(!confirm('Marcar os exames sem classificação de "'+pr.projeto+'" como "'+pr.exame+'"?')) return;
+  const r=await api('classificarEmMassaProjeto',pr);
+  if(!r.ok){ toast(r.msg||'Erro ao gravar.','err'); return; }
+  ge('loteMassaRes').textContent='✓ '+r.total+' exame(s) marcado(s) como "'+pr.exame+'". Lote '+(r.loteId||'—')+' (dá para desfazer no histórico abaixo).'; ge('loteMassaGravar').style.display='none';
+  toast('✓ '+r.total+' exame(s) classificado(s).'); loteCarregarHist_();
+  try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
+}
+/* ── v7.13: sugestões do Gemini para DESCRs sem classificação (só texto do procedimento; aprovação humana) ── */
+let GEM_ITENS=[];
+function geminiEnsureOvl_(){
+  if(ge('ovlGemini')) return;
+  const o=document.createElement('div'); o.className='ovl'; o.id='ovlGemini'; o.style.zIndex=600;
+  o.innerHTML='<div class="modal" style="max-width:980px;"><div class="mttl">🤖 Sugestões do Gemini — classificação de exames</div><div id="gemBody"></div></div>';
+  o.addEventListener('click',e=>{ if(e.target===o) ovlClose('ovlGemini'); });
+  document.body.appendChild(o);
+}
+async function geminiAbrirSugestoes(){
+  geminiEnsureOvl_();
+  const body=ge('gemBody');
+  body.innerHTML='<div class="al a-i">Verificando configuração…</div>'; ovlOpen('ovlGemini');
+  let st=await api('geminiStatus',{});
+  if(!st.ok||!st.configurado){ body.innerHTML='<div class="al a-w">'+mvEsc_(st.msg||'Gemini não configurado.')+'</div><div style="text-align:right;margin-top:12px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button></div>'; return; }
+  body.innerHTML='<div class="al a-i">Consultando o Gemini ('+mvEsc_(st.provedor)+' / '+mvEsc_(st.modelo)+')… pode levar alguns segundos. Só o texto da DESCR, a modalidade e a lista de exames do projeto são enviados — nenhum dado de paciente.</div>';
+  const r=await api('sugerirClassificacaoGemini',{max:40});
+  if(!r.ok){ body.innerHTML='<div class="al a-w">'+mvEsc_(r.msg||'Erro ao consultar o Gemini.')+'</div>'; return; }
+  GEM_ITENS=r.itens||[];
+  if(!GEM_ITENS.length){ body.innerHTML='<div class="al a-i">Nenhuma DESCR pendente de classificação'+((r.erros||[]).length?(' (erro: '+mvEsc_(r.erros[0])+')'):'')+'.</div><div style="text-align:right;margin-top:12px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button></div>'; return; }
+  const cor={alta:'var(--teal)',media:'#b7791f',baixa:'var(--red)'};
+  const linhas=GEM_ITENS.map((it,i)=>'<tr>'+
+    '<td><input type="checkbox" class="gem-ck" data-i="'+i+'" '+((it.confianca==='alta'&&it.exames.length)?'checked':'')+(it.exames.length?'':' disabled')+'></td>'+
+    '<td style="max-width:260px;"><strong>'+mvEsc_(it.descr)+'</strong><div style="font-size:11px;color:var(--tx3);">'+mvEsc_(it.modalidade)+' · '+it.qtdExames+' exame(s) · '+mvEsc_(it.projeto)+'</div></td>'+
+    '<td>'+(it.exames.length?it.exames.map(x=>'<span class="pill p-g" style="margin:1px;">'+mvEsc_(x)+'</span>').join(' '):'<em style="color:var(--tx3);">sem sugestão</em>')+'</td>'+
+    '<td style="color:'+(cor[it.confianca]||'inherit')+';font-weight:700;">'+mvEsc_(it.confianca)+'</td>'+
+    '<td style="font-size:12px;">'+mvEsc_(it.motivo)+'</td></tr>').join('');
+  body.innerHTML='<div class="al a-i">Marque só o que estiver correto. Cada aprovação vira uma <strong>regra</strong> (DESCR + modalidade → exame) usada nas próximas sincronizações e reclassificações. Já vêm marcadas apenas as de confiança alta. Depois de aprovar, rode “Reclassificar pela DESCR do MV” para aplicar nos exames já existentes.</div>'+
+    '<div class="tw"><table><thead><tr><th></th><th>DESCR do MV</th><th>Exame(s) sugerido(s)</th><th>Confiança</th><th>Motivo</th></tr></thead><tbody>'+linhas+'</tbody></table></div>'+
+    '<div style="font-size:12px;color:var(--tx2);margin-top:8px;">'+r.enviadas+' de '+r.descrDistintasTotal+' DESCR distintas analisadas'+(r.interrompido?' (tempo esgotado — rode de novo)':'')+((r.erros||[]).length?(' · erro: '+mvEsc_(r.erros[0])):'')+'</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button><button class="btn bt" onclick="geminiAprovarSelecionadas()">Aprovar selecionadas</button></div>';
+}
+async function geminiAprovarSelecionadas(){
+  const itens=Array.from(qsa('.gem-ck')).filter(c=>c.checked).map(c=>GEM_ITENS[+c.dataset.i]).filter(x=>x&&x.exames.length)
+    .map(x=>({descr:x.descr,modalidade:x.modalidade,exames:x.exames}));
+  if(!itens.length){ toast('Nenhuma sugestão selecionada.','warn'); return; }
+  if(!confirm('Aprovar '+itens.length+' regra(s) de classificação?')) return;
+  const r=await api('aprovarSugestoesClassificacao',{itens});
+  if(!r.ok){ toast(r.msg||'Erro ao aprovar.','err'); return; }
+  ovlClose('ovlGemini');
+  toast('✓ '+r.criadas+' regra(s) aprovada(s)'+(r.ignoradas?(' ('+r.ignoradas+' já existiam ou sem exame)'):'')+'. Rode “Reclassificar pela DESCR do MV” para aplicar.');
+}
+async function preencherDataLaudoMV(){
+  toast('Lendo a planilha do MV (simulação)…');
+  let r=await api('preencherDataLaudoPeloMV',{dryRun:true});
+  if(!r.ok){toast(r.msg||'Erro na simulação.','err');return;}
+  const s=r.resumo||{};
+  const txt='SIMULAÇÃO — nada foi gravado ainda\n\n'+
+    'Exames que serão atualizados: '+s.atualizados+'\n'+
+    '  • com data/hora do laudo: '+s.dataComHora+'\n'+
+    '  • com médico laudador preenchido: '+s.medicoPreenchido+'\n'+
+    'Já corretos (mantidos): '+s.mantidos+'\n'+
+    'Sem laudo/correspondência no MV: '+(s.semCorrespondencia+s.semDtLaudoNoMV)+'\n'+
+    'Ambíguos no MV (ignorados): '+s.ambiguos+'\n'+
+    'Já faturados/pagos que também mudariam: '+s.faturadosAfetaveis+' (não serão alterados sem confirmação)\n'+
+    'Linhas da aba de laudos (produtividade) a corrigir: '+(s.laudosCorrigidos||0)+'\n\n'+
     ((r.exemplos||[]).slice(0,8).join('\n'))+(r.interrompido?'\n\n⚠ Tempo esgotado: rode de novo para continuar.':'')+
     '\n\nGravar agora?';
-  if(!s.reclassificados){ alert(txt.replace('\n\nGravar agora?','')); return; }
-  if(!confirm(txt)) return;
-  r=await api('reclassificarExamesPelaDescr',{dryRun:false});
+  if(!s.atualizados && !s.faturadosAfetaveis && !s.laudosCorrigidos){ alert(txt.replace('\n\nGravar agora?','')); return; }
+  let incluir=false;
+  if(s.atualizados||s.laudosCorrigidos){ if(!confirm(txt)) return; }
+  if(s.faturadosAfetaveis){
+    incluir=confirm('Existem '+s.faturadosAfetaveis+' exame(s) já FATURADOS/PAGOS com data do laudo a corrigir.\n\nIncluí-los também? (OK = incluir; Cancelar = deixar como estão)');
+    if(!s.atualizados && !s.laudosCorrigidos && !incluir) return;
+  }
+  r=await api('preencherDataLaudoPeloMV',{dryRun:false,incluirFaturados:incluir});
   if(!r.ok){toast(r.msg||'Erro ao gravar.','err');return;}
-  toast('✓ '+r.resumo.reclassificados+' exame(s) reclassificado(s).');
+  toast('✓ '+r.resumo.atualizados+' exame(s) atualizado(s).'+(r.interrompido?' Tempo esgotado — rode de novo para continuar.':''));
   try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
 }
 /* ── v7.12: paginação automática de todas as listas (não altera a lógica de cada tela; as seleções ficam no DOM/estado) ── */
