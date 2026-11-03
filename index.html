@@ -1440,7 +1440,7 @@ console.info('PISApp v7.5.5 reset feedback/fast carregado');
           <button class="btn bo btn-sm" onclick="exportarFaturaProtocolo()" title="Usa o mês e o projeto escolhidos ao lado">🧾 Fatura do protocolo (.xlsx)</button>
           <button class="btn bo btn-sm" onclick="reclassificarPelaDescr()" title="Lê a coluna DESCR do MV e corrige o exame realizado dos exames já existentes">🔁 Reclassificar pela DESCR do MV</button>
           <button class="btn bt btn-sm" onclick="loteAbrir()" title="Painel único: simula e grava de uma vez a data do laudo, a reclassificação por grupo e a marcação em massa por projeto">🛠 Correção em lote</button>
-          <button class="btn bo btn-sm" onclick="geminiAbrirSugestoes()" title="O Gemini sugere o exame cadastrado para as DESCRs que o sistema não conseguiu classificar. Nada é gravado sem a sua aprovação; nenhum dado de paciente é enviado.">🤖 Sugestões do Gemini</button>
+          <button class="btn bo btn-sm" onclick="geminiAbrirSugestoes()" title="A IA sugere o exame cadastrado para as DESCRs que o sistema não conseguiu classificar. Nada é gravado sem a sua aprovação; nenhum dado de paciente é enviado.">🤖 Sugestões da IA</button>
           <button class="btn bo btn-sm" onclick="preencherDataLaudoMV()" title="Lê DT_LAUDO e o laudador na planilha do MV e preenche data/hora do laudo dos exames já existentes (só o que estiver vazio ou sem hora)">🕒 Preencher data do laudo (MV)</button>
           <div style="font-size:11px;color:var(--tx3);flex-basis:100%;">O filtro de modalidade vale para custo realizado, a receber, A faturar, Exames × pagamentos e para o relatório. "Recebido" não é separado por modalidade.</div>
         </div>
@@ -5895,7 +5895,8 @@ function loteAbrir(){
     '<label style="display:block;"><input type="checkbox" id="loteReclass" checked> Reclassificar pela DESCR (soma exames da mesma modalidade no dia)</label>'+
     '<label style="display:block;"><input type="checkbox" id="loteParciais"> Completar exames automáticos que têm só parte dos exames do dia</label>'+
     '<label style="display:block;"><input type="checkbox" id="loteFat"> Incluir exames já faturados/pagos na correção da data do laudo</label>'+
-    '<div style="margin:10px 0;"><button class="btn bo" onclick="loteSimular()">Simular</button> <button class="btn bo" onclick="geminiAbrirSugestoes()">🤖 Sugestões do Gemini (DESCRs sem regra)</button></div>'+
+    '<div style="margin:10px 0;"><button class="btn bo" onclick="loteSimular()">Simular</button> <button class="btn bo" onclick="geminiAbrirSugestoes()">🤖 Sugestões da IA (DESCRs sem regra)</button> <button class="btn bo" onclick="loteDiagnostico()" title="Explica por que os exames ficaram sem classificação (usa o projeto escolhido na seção 2, se houver)">🔍 Diagnóstico das pendentes</button></div>'+
+    '<div id="loteDiag" style="display:none;margin-bottom:10px;"></div>'+
     '<pre id="loteRes" style="white-space:pre-wrap;font-size:12px;background:var(--bg,#f5f7fa);padding:10px;border-radius:8px;display:none;max-height:260px;overflow:auto;"></pre>'+
     '<div id="loteAcoes" style="display:none;margin-bottom:6px;"><button class="btn bt" onclick="loteGravar()">Gravar tudo que foi simulado</button></div>'+
     '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;">2 · Marcar em massa os exames sem classificação de um projeto</div>'+
@@ -5908,11 +5909,71 @@ function loteAbrir(){
     '<label style="display:block;"><input type="checkbox" id="loteGeral"> Incluir também os que estão só como “Geral”</label>'+
     '<div style="margin:8px 0;"><button class="btn bo" onclick="loteMassaSimular()">Simular marcação</button> <button class="btn bt" id="loteMassaGravar" style="display:none;" onclick="loteMassaGravar()">Aplicar</button></div>'+
     '<pre id="loteMassaRes" style="white-space:pre-wrap;font-size:12px;background:var(--bg,#f5f7fa);padding:10px;border-radius:8px;display:none;max-height:200px;overflow:auto;"></pre>'+
-    '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;">3 · Histórico de lotes e reversão</div>'+
+    '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;" id="loteRgTitulo">3 · Regras de classificação (DESCR do MV → exame)</div>'+
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:6px;">Uma regra vale para qualquer paciente com a mesma DESCR e modalidade, e tem prioridade sobre o reconhecimento automático. Funciona sem IA.</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">'+
+      '<div class="fg" style="min-width:260px;flex:2;"><label class="fl">DESCR do MV (como aparece na planilha)</label><input class="fi" id="loteRgDescr"></div>'+
+      '<div class="fg" style="min-width:200px;flex:1;"><label class="fl">Projeto (de onde vêm os exames)</label><select class="fi" id="loteRgProj" onchange="loteRgProjMudou()"><option value="">Selecione…</option>'+(window.projOptsHtml_?window.projOptsHtml_():'')+'</select></div>'+
+      '<div class="fg" style="min-width:140px;"><label class="fl">Modalidade</label><select class="fi" id="loteRgMod" onchange="loteRgModMudou()"><option value="">—</option></select></div>'+
+    '</div>'+
+    '<div id="loteRgExames" style="margin:6px 0;font-size:13px;"></div>'+
+    '<div style="margin-bottom:8px;"><button class="btn bt btn-sm" onclick="loteRgSalvar()">Salvar regra</button></div>'+
+    '<div id="loteRgLista" style="font-size:12px;">Carregando…</div>'+
+    '<div class="fl" style="margin:16px 0 4px;border-top:1.5px solid var(--bd);padding-top:12px;">4 · Histórico de lotes e reversão</div>'+
     '<div id="loteHist" style="font-size:12px;">Carregando…</div>'+
     '<div style="text-align:right;margin-top:10px;"><button class="btn bo" onclick="ovlClose(\'ovlLote\')">Fechar</button></div>';
   ovlOpen('ovlLote');
-  loteCarregarHist_();
+  loteCarregarHist_(); loteRgCarregar();
+}
+/* ── regras de classificação manuais ── */
+const loteFam_=m=>/^\s*(rm|resson|mr\b)/i.test(String(m||''))?'RM':String(m||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+function loteRgExamesProj_(){
+  const nome=ge('loteRgProj').value, p=(DB.proj||[]).find(x=>(x['Nome']||'')===nome);
+  try{ return JSON.parse((p&&p['ExamesProjeto'])||'[]')||[]; }catch(_){ return []; }
+}
+function loteRgProjMudou(modSel){
+  const lista=loteRgExamesProj_(), mods=[];
+  lista.forEach(x=>{ const f=loteFam_(x.modalidade); if(f && !mods.find(m=>m.f===f)) mods.push({f, rot:/^rm/i.test(f)?'RM':(x.modalidade||f)}); });
+  ge('loteRgMod').innerHTML='<option value="">—</option>'+mods.map(m=>'<option value="'+mvEsc_(m.rot)+'">'+mvEsc_(m.rot)+'</option>').join('');
+  if(modSel){ const o=Array.from(ge('loteRgMod').options).find(o=>loteFam_(o.value)===loteFam_(modSel)); if(o) ge('loteRgMod').value=o.value; }
+  loteRgModMudou();
+}
+function loteRgModMudou(){
+  const mod=ge('loteRgMod').value, box=ge('loteRgExames');
+  if(!mod){ box.innerHTML=''; return; }
+  const ex=loteRgExamesProj_().filter(x=>loteFam_(x.modalidade)===loteFam_(mod));
+  box.innerHTML=ex.length?('<div style="font-size:12px;color:var(--tx2);">Exame(s) que essa DESCR representa (marque todos que se aplicam):</div>'+
+    ex.map((x,i)=>'<label style="display:block;"><input type="checkbox" class="lote-rg-ck" value="'+mvEsc_(x.exame)+'"> '+mvEsc_(x.exame)+' <span style="color:var(--tx3);">('+mvEsc_(x.modalidade||'')+')</span></label>').join('')):'<em>Sem exames cadastrados nessa modalidade.</em>';
+}
+function loteRegraDe(i){
+  const x=LOTE_DIAG[i]; if(!x) return;
+  ge('loteRgDescr').value=x.descr; ge('loteRgProj').value=x.projeto; loteRgProjMudou(x.modalidade);
+  const t=ge('loteRgTitulo'); if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function loteRgSalvar(){
+  const descr=ge('loteRgDescr').value.trim(), projeto=ge('loteRgProj').value, modalidade=ge('loteRgMod').value;
+  const exames=Array.from(qsa('.lote-rg-ck')).filter(c=>c.checked).map(c=>c.value);
+  if(!descr||!projeto||!modalidade||!exames.length){ toast('Preencha a DESCR, o projeto, a modalidade e marque ao menos um exame.','warn'); return; }
+  const r=await api('salvarRegraClassificacao',{descr,projeto,modalidade,exames});
+  if(!r.ok){ toast(r.msg||'Erro ao salvar a regra.','err'); return; }
+  toast('✓ Regra salva. Rode a reclassificação para aplicar nos exames já existentes.');
+  ge('loteRgDescr').value=''; qsa('.lote-rg-ck').forEach(c=>c.checked=false);
+  loteRgCarregar();
+}
+async function loteRgCarregar(){
+  const box=ge('loteRgLista'); if(!box) return;
+  const r=await api('getRegrasClassificacao',{});
+  if(!r.ok){ box.textContent=r.msg||'Erro ao carregar as regras.'; return; }
+  const l=r.regras||[];
+  box.innerHTML=l.length?('<div class="tw" style="max-height:220px;overflow:auto;"><table><thead><tr><th>DESCR</th><th>Modal.</th><th>Exame(s)</th><th>Origem</th><th></th></tr></thead><tbody>'+
+    l.map(x=>{ let ex=[]; try{ ex=JSON.parse(x.Exames||'[]'); }catch(_){}
+      return '<tr><td>'+mvEsc_(x.DescrOriginal||x.DescrNorm)+'</td><td>'+mvEsc_(x.Familia)+'</td><td>'+ex.map(mvEsc_).join(' + ')+'</td><td>'+mvEsc_(x.Origem)+'</td><td><button class="btn br btn-xs" onclick="loteRgDel(\''+mvEsc_(x.ID)+'\')">remover</button></td></tr>'; }).join('')+'</tbody></table></div>'):'Nenhuma regra cadastrada.';
+}
+async function loteRgDel(id){
+  if(!confirm('Remover esta regra?')) return;
+  const r=await api('delRegraClassificacao',{id});
+  if(!r.ok){ toast(r.msg||'Erro.','err'); return; }
+  toast('Regra removida.'); loteRgCarregar();
 }
 async function loteCarregarHist_(){
   const box=ge('loteHist'); if(!box) return;
@@ -5935,6 +5996,21 @@ async function loteReverter(id){
   toast('✓ Lote desfeito: '+r.resumo.restauradas+' célula(s) restaurada(s).');
   loteCarregarHist_();
   try{ LOADED.financeiro=false; LOADED.exames=false; await loadSectionData('financeiro'); }catch(e){ try{renderAFaturar();renderFinExames();}catch(_){} }
+}
+let LOTE_DIAG=[];
+async function loteDiagnostico(){
+  const box=ge('loteDiag'); box.style.display='block'; box.innerHTML='<div class="al a-i">Analisando (lê a planilha do MV)…</div>';
+  const proj=(ge('loteProj')||{}).value||'';
+  const r=await api('diagnosticarClassificacao',{projeto:proj});
+  if(!r.ok){ box.innerHTML='<div class="al a-w">'+mvEsc_(r.msg||'Erro.')+'</div>'; return; }
+  const s=r.resumo||{};
+  LOTE_DIAG=r.itens||[];
+  const linhas=(r.itens||[]).map((x,i)=>'<tr><td style="max-width:300px;"><strong>'+mvEsc_(x.descr)+'</strong><div style="font-size:11px;color:var(--tx3);">'+mvEsc_(x.projeto)+' · '+mvEsc_(x.modalidade)+' · ex.: '+mvEsc_(x.exemploCod)+'</div></td><td>'+x.qtdGrupos+'</td>'+
+    '<td style="font-size:12px;color:'+(x.reconhecida?'var(--teal)':'var(--red)')+';">'+(x.reconhecida?'✓ ':'✗ ')+mvEsc_(x.motivo)+'</td><td>'+(x.reconhecida?'':'<button class="btn bo btn-xs" onclick="loteRegraDe('+i+')">＋ Regra</button>')+'</td></tr>').join('');
+  box.innerHTML='<div class="al a-i">'+(proj?('Projeto <strong>'+mvEsc_(proj)+'</strong>: '):'')+s.examesPendentes+' exame(s) sem classificação · '+s.comMotivo+' com DESCR que o sistema não resolve · '+s.semLinhaNoMV+' sem linha correspondente no MV. '+
+    '✗ = a DESCR não casa com nenhum exame cadastrado (cadastre o exame, ajuste o nome ou aprove uma regra pelo Gemini). ✓ = a DESCR é reconhecida, mas outra DESCR do mesmo paciente/dia não é — o exame todo fica pendente para não cobrar a menos.</div>'+
+    (r.examesCadastrados&&r.examesCadastrados.length?('<div style="font-size:11px;color:var(--tx2);margin:4px 0;">Cadastrados no projeto: '+r.examesCadastrados.map(mvEsc_).join(' · ')+'</div>'):'')+
+    (linhas?('<div class="tw" style="max-height:300px;overflow:auto;"><table><thead><tr><th>DESCR do MV</th><th>Pacientes/dias</th><th>Motivo</th><th></th></tr></thead><tbody>'+linhas+'</tbody></table></div>'):'<div class="al a-i">Nada pendente com motivo a explicar. Se ainda há exames “⚠ classificar”, rode a reclassificação.</div>');
 }
 let LOTE_SIM=null;
 async function loteSimular(){
@@ -6027,7 +6103,7 @@ let GEM_ITENS=[];
 function geminiEnsureOvl_(){
   if(ge('ovlGemini')) return;
   const o=document.createElement('div'); o.className='ovl'; o.id='ovlGemini'; o.style.zIndex=600;
-  o.innerHTML='<div class="modal" style="max-width:980px;"><div class="mttl">🤖 Sugestões do Gemini — classificação de exames</div><div id="gemBody"></div></div>';
+  o.innerHTML='<div class="modal" style="max-width:980px;"><div class="mttl">🤖 Sugestões da IA — classificação de exames</div><div id="gemBody"></div></div>';
   o.addEventListener('click',e=>{ if(e.target===o) ovlClose('ovlGemini'); });
   document.body.appendChild(o);
 }
@@ -6036,10 +6112,10 @@ async function geminiAbrirSugestoes(){
   const body=ge('gemBody');
   body.innerHTML='<div class="al a-i">Verificando configuração…</div>'; ovlOpen('ovlGemini');
   let st=await api('geminiStatus',{});
-  if(!st.ok||!st.configurado){ body.innerHTML='<div class="al a-w">'+mvEsc_(st.msg||'Gemini não configurado.')+'</div><div style="text-align:right;margin-top:12px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button></div>'; return; }
-  body.innerHTML='<div class="al a-i">Consultando o Gemini ('+mvEsc_(st.provedor)+' / '+mvEsc_(st.modelo)+')… pode levar alguns segundos. Só o texto da DESCR, a modalidade e a lista de exames do projeto são enviados — nenhum dado de paciente.</div>';
+  if(!st.ok||!st.configurado){ body.innerHTML='<div class="al a-w">'+mvEsc_(st.msg||'IA não configurada.')+'</div><div style="text-align:right;margin-top:12px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button></div>'; return; }
+  body.innerHTML='<div class="al a-i">Consultando a IA ('+mvEsc_(st.provedor)+' / '+mvEsc_(st.modelo)+')… pode levar alguns segundos. Só o texto da DESCR, a modalidade e a lista de exames do projeto são enviados — nenhum dado de paciente.</div>';
   const r=await api('sugerirClassificacaoGemini',{max:40});
-  if(!r.ok){ body.innerHTML='<div class="al a-w">'+mvEsc_(r.msg||'Erro ao consultar o Gemini.')+'</div>'; return; }
+  if(!r.ok){ body.innerHTML='<div class="al a-w">'+mvEsc_(r.msg||'Erro ao consultar a IA.')+'</div>'; return; }
   GEM_ITENS=r.itens||[];
   if(!GEM_ITENS.length){ body.innerHTML='<div class="al a-i">Nenhuma DESCR pendente de classificação'+((r.erros||[]).length?(' (erro: '+mvEsc_(r.erros[0])+')'):'')+'.</div><div style="text-align:right;margin-top:12px;"><button class="btn bo" onclick="ovlClose(\'ovlGemini\')">Fechar</button></div>'; return; }
   const cor={alta:'var(--teal)',media:'#b7791f',baixa:'var(--red)'};
